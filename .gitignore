@@ -35,3 +35,8 @@ dist-ssr
 .env.local
 .env.*.local
 .vercel/
+
+# Environment secrets
+.env
+.env.*
+!.env.example
