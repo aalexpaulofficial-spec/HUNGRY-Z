@@ -17,7 +17,7 @@ export const Route = createFileRoute("/install/canteen")({
   head: () => ({
     links: [
       { rel: "manifest", href: "/manifest-canteen.webmanifest" },
-      { rel: "icon", href: "/HUNGRY%20Z%20CANTEEN%20DAHSBOARD%20LOGO.png", type: "image/png", sizes: "1254x1254" },
+      { rel: "icon", href: "/icons/canteen-192.png", type: "image/png", sizes: "192x192" },
     ],
     meta: [
       { title: "Install HUNGRY Z Canteen Dashboard" },
@@ -54,7 +54,8 @@ export function CanteenInstallPage() {
       });
     };
     const onAppInstalled = () => {
-      if (getPendingInstallApp() !== "canteen") return;
+      // Chrome also dispatches this event when installation was started from its
+      // browser menu instead of this page's captured prompt.
       checkRevision.current += 1;
       setPendingInstallApp(null);
       clearDeferredInstallPrompt(undefined, "canteen");
@@ -86,12 +87,20 @@ export function CanteenInstallPage() {
       // The capture script registers the worker early. Wait for it to become active,
       // then allow Chrome time to dispatch beforeinstallprompt before offering guidance.
       promptFallbackTimer = window.setTimeout(() => setInstallAvailability("guide"), 15000);
-      void navigator.serviceWorker.ready.then(() => {
+      const installState = (window as Window & {
+        __hungryPwaInstallState?: { serviceWorkerReady?: Promise<ServiceWorkerRegistration | null> };
+      }).__hungryPwaInstallState;
+      const workerReady = installState?.serviceWorkerReady ?? navigator.serviceWorker.ready;
+      void workerReady.then((registration) => {
+        if (!registration?.active) throw new Error("No active app service worker");
         if (!active || getDeferredInstallPrompt("canteen")) return;
         if (promptFallbackTimer !== undefined) window.clearTimeout(promptFallbackTimer);
         promptFallbackTimer = window.setTimeout(() => setInstallAvailability("guide"), 5000);
       }).catch(() => {
-        if (active && !getDeferredInstallPrompt("canteen")) setInstallAvailability("guide");
+        if (active && !getDeferredInstallPrompt("canteen")) {
+          setInstallAvailability("guide");
+          setStatus("This page could not prepare the app installation. Refresh the page, then use Chrome’s menu to choose Install app or Add to Home screen.");
+        }
       });
     }
     window.addEventListener("pageshow", checkInstalled);
@@ -147,7 +156,7 @@ export function CanteenInstallPage() {
         installInProgress.current = false;
         setInstalling(false);
         setInstallAvailability("guide");
-        setStatus("Waiting for Chrome to confirm installation…");
+        setStatus("Chrome accepted the install request. This page will update when the browser confirms the app is installed.");
       }
     } catch {
       setPendingInstallApp(null);
@@ -215,7 +224,7 @@ export function CanteenInstallPage() {
               {!installed && <ArrowDown aria-hidden="true" className="h-5 w-5" />}
             </button>
             {status && <p className="mt-4 text-center text-sm leading-relaxed text-white/60" role="status">{status}</p>}
-            <p className="mt-5 text-center text-xs leading-relaxed text-white/45">After installation, open Register Canteen / Login Canteen from your home screen.</p>
+            <p className="mt-5 text-center text-xs leading-relaxed text-white/45">After installation, open HUNGRY Z Canteen Dashboard from your home screen and sign in with your owner ID and password code.</p>
           </div>
         </section>
       </div>

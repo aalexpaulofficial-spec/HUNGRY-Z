@@ -17,7 +17,7 @@ type PwaInstallWindow = Window & {
 
 const appIdentity: Record<HungryApp, { id: string; manifest: string }> = {
   student: { id: "/?hungry_app=student", manifest: "/manifest-student.webmanifest" },
-  canteen: { id: "/?hungry_app=canteen", manifest: "/manifest-canteen.webmanifest" },
+  canteen: { id: "/canteen?hungry_app=canteen", manifest: "/manifest-canteen.webmanifest" },
 };
 
 const installedStorageKey: Record<HungryApp, string> = {

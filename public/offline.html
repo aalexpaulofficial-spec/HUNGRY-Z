@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#050505" />
+    <title>HUNGRY Z — Offline</title>
+    <style>
+      :root { color-scheme: dark; font-family: Inter, system-ui, sans-serif; background: #050505; color: #fff; }
+      body { min-height: 100vh; margin: 0; display: grid; place-items: center; padding: 24px; box-sizing: border-box; }
+      main { width: min(100%, 460px); text-align: center; }
+      img { width: 82px; height: 82px; object-fit: contain; margin-bottom: 18px; }
+      h1 { margin: 0 0 10px; font-size: 1.65rem; }
+      p { color: #aaa; line-height: 1.6; }
+      button { margin-top: 10px; border: 0; border-radius: 999px; background: #e60012; color: #fff; padding: 14px 24px; font: inherit; font-weight: 700; cursor: pointer; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <img src="/icons/canteen-192.png" alt="HUNGRY Z Canteen Dashboard" />
+      <h1>You’re offline</h1>
+      <p>Connect to the internet to sign in and load your canteen dashboard. Your account and dashboard data are not stored on this device by the offline page.</p>
+      <button type="button" onclick="location.reload()">Try again</button>
+    </main>
+  </body>
+</html>

@@ -42,7 +42,7 @@ export const Route = createFileRoute("/canteen")({
     ],
     links: [
       { rel: "manifest", href: "/manifest-canteen.webmanifest" },
-      { rel: "icon", href: "/HUNGRY%20Z%20CANTEEN%20DAHSBOARD%20LOGO.png", type: "image/png", sizes: "1254x1254" },
+      { rel: "icon", href: "/icons/canteen-192.png", type: "image/png", sizes: "192x192" },
     ],
   }),
   component: CanteenPage,

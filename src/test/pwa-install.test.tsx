@@ -28,6 +28,7 @@ type InstallManifest = {
   start_url: string;
   scope: string;
   theme_color: string;
+  display: string;
   short_name: string;
   icons: { src: string; type: string; sizes: string }[];
 };
@@ -63,12 +64,15 @@ describe("independent HUNGRY Z PWA install flows", () => {
     expect(studentManifest.name).toBe("HUNGRY Z");
     expect(studentManifest.start_url).toBe("/auth?hungry_app=student");
     expect(canteenManifest.name).toBe("HUNGRY Z Canteen Dashboard");
-    expect(canteenManifest.start_url).toBe("/register-canteen?hungry_app=canteen");
+    expect(canteenManifest.start_url).toBe("/canteen?hungry_app=canteen");
     expect(studentManifest.scope).toBe("/");
     expect(canteenManifest.scope).toBe("/");
     expect(studentManifest.icons.map((icon) => icon.src)).not.toEqual(canteenManifest.icons.map((icon) => icon.src));
     expect(studentManifest.icons[0]?.src).toBe("/HUNGRY%20Z%20Q%20LOGO.png");
-    expect(canteenManifest.icons[0]?.src).toBe("/HUNGRY%20Z%20CANTEEN%20DAHSBOARD%20LOGO.png");
+    expect(canteenManifest.display).toBe("standalone");
+    expect(canteenManifest.icons.map((icon) => icon.sizes)).toContain("192x192");
+    expect(canteenManifest.icons.map((icon) => icon.sizes)).toContain("512x512");
+    expect(canteenManifest.icons.every((icon) => icon.src.includes("CANTEEN") || icon.src.includes("canteen"))).toBe(true);
   });
 
   it("uses the HUNGRY Z manifest on the landing page so the student prompt is captured", () => {
@@ -246,6 +250,17 @@ describe("independent HUNGRY Z PWA install flows", () => {
     expect(screen.queryByRole("heading", { name: "Installation Successful!" })).not.toBeInTheDocument();
   });
 
+  it("confirms a menu-started installation only when Chrome fires appinstalled", async () => {
+    setManifest("canteen");
+    Object.defineProperty(navigator, "getInstalledRelatedApps", { configurable: true, value: vi.fn().mockResolvedValue([]) });
+    render(<CanteenInstallPage />);
+    expect(screen.queryByRole("button", { name: "Already Installed" })).not.toBeInTheDocument();
+
+    await act(async () => { window.dispatchEvent(new Event("appinstalled")); });
+    expect(screen.getByRole("button", { name: "Already Installed" })).toBeDisabled();
+    expect(localStorage.getItem("hungry:pwa:installed:canteen")).toBe("confirmed");
+  });
+
   it("waits for the Canteen prompt instead of immediately showing the Chrome fallback", async () => {
     setManifest("canteen");
     Object.defineProperty(navigator, "getInstalledRelatedApps", { configurable: true, value: vi.fn().mockResolvedValue([]) });
@@ -270,7 +285,7 @@ describe("independent HUNGRY Z PWA install flows", () => {
     setManifest("canteen");
     Object.defineProperty(navigator, "getInstalledRelatedApps", {
       configurable: true,
-      value: vi.fn().mockResolvedValue([{ platform: "webapp", id: `${window.location.origin}/?hungry_app=canteen` }]),
+      value: vi.fn().mockResolvedValue([{ platform: "webapp", id: `${window.location.origin}/canteen?hungry_app=canteen` }]),
     });
     render(<HeroInstallButton app="canteen" dedicatedInstallPage />);
     await act(async () => {

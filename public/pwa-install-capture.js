@@ -6,9 +6,10 @@
   // Start the worker before the hydrated UI so Chrome can assess installability early.
   if (window.isSecureContext && "serviceWorker" in navigator) {
     state.serviceWorkerReady = navigator.serviceWorker.register("/sw.js", { scope: "/" })
-      .then(() => navigator.serviceWorker.ready)
+      .then((registration) => navigator.serviceWorker.ready.then(() => registration))
       .catch((error) => {
         state.serviceWorkerError = error instanceof Error ? error.message : String(error);
+        window.dispatchEvent(new CustomEvent("hungry-pwa-worker-error"));
         return null;
       });
   }

@@ -11,7 +11,7 @@
   "theme_color": "#e60012",
   "related_applications": [
     { "platform": "webapp", "id": "/?hungry_app=student", "url": "/manifest-student.webmanifest" },
-    { "platform": "webapp", "id": "/?hungry_app=canteen", "url": "/manifest-canteen.webmanifest" }
+    { "platform": "webapp", "id": "/canteen?hungry_app=canteen", "url": "/manifest-canteen.webmanifest" }
   ],
   "icons": [
     { "src": "/HUNGRY%20Z%20Q%20LOGO.png", "sizes": "1254x1254", "type": "image/png", "purpose": "any" }

@@ -1,18 +1,20 @@
 {
-  "id": "/?hungry_app=canteen",
+  "id": "/canteen?hungry_app=canteen",
   "name": "HUNGRY Z Canteen Dashboard",
   "short_name": "HUNGRY Z Canteen",
-  "description": "Register and manage your HUNGRY Z campus canteen.",
-  "start_url": "/register-canteen?hungry_app=canteen",
+  "description": "Open and manage your HUNGRY Z campus canteen dashboard.",
+  "start_url": "/canteen?hungry_app=canteen",
   "scope": "/",
   "display": "standalone",
   "display_override": ["standalone", "minimal-ui"],
   "background_color": "#050505",
   "theme_color": "#050505",
   "related_applications": [
-    { "platform": "webapp", "id": "/?hungry_app=canteen", "url": "/manifest-canteen.webmanifest" }
+    { "platform": "webapp", "id": "/canteen?hungry_app=canteen", "url": "/manifest-canteen.webmanifest" }
   ],
   "icons": [
+    { "src": "/icons/canteen-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/canteen-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" },
     { "src": "/HUNGRY%20Z%20CANTEEN%20DAHSBOARD%20LOGO.png", "sizes": "1254x1254", "type": "image/png", "purpose": "any" }
   ]
 }
