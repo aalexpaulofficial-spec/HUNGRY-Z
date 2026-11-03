@@ -42,6 +42,10 @@ const USDA_BASE = "https://api.nal.usda.gov/fdc/v1";
 const normalizeFoodName = (value: string) => value.toLowerCase()
   .replace(/\b(veg|veggie)\b/g, "vegetable")
   .replace(/\b(chips|fries)\b/g, "fries")
+  .replace(/\bvegetables\b/g, "vegetable")
+  .replace(/\bpotatoes\b/g, "potato")
+  .replace(/\btomatoes\b/g, "tomato")
+  .replace(/\bberries\b/g, "berry")
   .replace(/[^a-z0-9]+/g, " ").trim();
 
 function foodSimilarity(query: string, label: string): number {
@@ -52,6 +56,9 @@ function foodSimilarity(query: string, label: string): number {
   const overlap = q.filter((word) => l.includes(word)).length;
   const coverage = overlap / q.length;
   const precision = overlap / l.length;
+  // Every distinctive word in the scanned food name must appear in the USDA
+  // record. A generic meatless/fried dish is not a verified vegetable dish.
+  if (coverage < 1) return 0;
   return (2 * coverage * precision) / (coverage + precision || 1);
 }
 
@@ -95,7 +102,7 @@ export async function lookupUsdaNutrition(foodName: string, portionG: number): P
     .map((item) => ({ item, score: foodSimilarity(foodName, item.description ?? "") }))
     .sort((a, b) => b.score - a.score);
   // Never take an unrelated first result just because it came back from a broad query.
-  const selected = ranked.find((candidate) => candidate.score >= 0.5)?.item;
+  const selected = ranked.find((candidate) => candidate.score >= 0.65)?.item;
   if (!selected?.fdcId) throw new Error("No reliable USDA nutrition match was found for this food. Try correcting its name or description.");
 
   const detailUrl = new URL(`${USDA_BASE}/food/${selected.fdcId}`);

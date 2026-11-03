@@ -155,4 +155,16 @@ describe("scanner food recognition and nutrition safety", () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ foods: [{ fdcId: 1, description: "Raw spinach", dataType: "Foundation" }] }), { status: 200 })));
     await expect(lookupUsdaNutrition("Sushi", 250)).rejects.toThrow(/No reliable USDA nutrition match/);
   });
+
+  it("does not treat generic meatless fried rice as a verified vegetable fried rice match", async () => {
+    vi.stubEnv("USDA_FDC_API_KEY", "test-usda-key");
+    vi.stubGlobal("fetch", vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ foods: [
+        { fdcId: 2708951, description: "Rice, fried, meatless", dataType: "Survey (FNDDS)" },
+      ] }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ foods: [
+        { fdcId: 2708951, description: "Rice, fried, meatless", dataType: "Survey (FNDDS)" },
+      ] }), { status: 200 })));
+    await expect(lookupUsdaNutrition("Vegetable Fried Rice", 350)).rejects.toThrow(/No reliable USDA nutrition match/);
+  });
 });
