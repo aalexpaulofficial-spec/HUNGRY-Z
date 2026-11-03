@@ -17,7 +17,7 @@ import {
   getScannerAccess,
   listFoodScans,
   scanFood,
-  updateFoodScanPortion,
+  updateFoodScan,
 } from "@/lib/scanner.functions";
 import { STUDENT_SCANNER_PLANS, trialDaysLeft } from "@/lib/scanner";
 import { cn } from "@/lib/utils";
@@ -39,6 +39,7 @@ type Scan = {
   fdc_id: number | null;
   nutrition_source: string | null;
   nutrition_reference: string | null;
+  scan_group_id: string | null;
 };
 type Access =
   | { ok: true; startedAt: string; expiresAt: string; version: string; active: boolean }
@@ -68,26 +69,28 @@ async function toJpegDataUrl(file: File): Promise<string> {
 
 const fmtDate = (value: string) =>
   new Date(value).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
-const fmt = (value: number | null, unit = " g") => (value === null ? "—" : `${value}${unit}`);
+const fmt = (value: number | null, unit = " g") =>
+  value === null ? "Not available" : `${value}${unit}`;
 
 export function ScannerTab() {
   const getAccess = useServerFn(getScannerAccess);
   const listScans = useServerFn(listFoodScans);
   const runScan = useServerFn(scanFood);
   const removeScan = useServerFn(deleteFoodScan);
-  const savePortion = useServerFn(updateFoodScanPortion);
+  const saveFoodCorrection = useServerFn(updateFoodScan);
   const [access, setAccess] = useState<Access | null>(null);
   const [scans, setScans] = useState<Scan[]>([]);
   const [preview, setPreview] = useState<string | null>(null);
-  const [result, setResult] = useState<Scan | null>(null);
+  const [results, setResults] = useState<Scan[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [cameraOpen, setCameraOpen] = useState(false);
   const [cameraOpening, setCameraOpening] = useState(false);
   const [cameraError, setCameraError] = useState("");
   const [facingMode, setFacingMode] = useState<"environment" | "user">("environment");
-  const [portionInput, setPortionInput] = useState("");
-  const [portionBusy, setPortionBusy] = useState(false);
+  const [foodInputs, setFoodInputs] = useState<Record<string, string>>({});
+  const [portionInputs, setPortionInputs] = useState<Record<string, string>>({});
+  const [correctionBusy, setCorrectionBusy] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const cameraFallbackRef = useRef<HTMLInputElement>(null);
@@ -179,16 +182,19 @@ export function ScannerTab() {
   async function processImage(dataUrl: string) {
     setPreview(dataUrl);
     setError("");
-    setResult(null);
+    setResults([]);
     setBusy(true);
     try {
       const response = await runScan({ data: { image: dataUrl } });
       if (!response.ok) setError(response.message);
       else {
-        const scan = response.scan as Scan;
-        setResult(scan);
-        setPortionInput(String(scan.portion_g ?? ""));
-        setScans((items) => [scan, ...items]);
+        const saved = response.scans as Scan[];
+        setResults(saved);
+        setFoodInputs(Object.fromEntries(saved.map((scan) => [scan.id, scan.food_name])));
+        setPortionInputs(
+          Object.fromEntries(saved.map((scan) => [scan.id, String(scan.portion_g ?? "")])),
+        );
+        setScans((items) => [...saved, ...items]);
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Scan failed. Please try again.");
@@ -237,27 +243,31 @@ export function ScannerTab() {
   async function onDelete(id: string) {
     await removeScan({ data: { id } });
     setScans((items) => items.filter((item) => item.id !== id));
-    if (result?.id === id) setResult(null);
+    setResults((items) => items.filter((item) => item.id !== id));
   }
 
-  async function correctPortion() {
-    if (!result) return;
-    setPortionBusy(true);
+  async function correctFood(scan: Scan) {
+    const foodName = (foodInputs[scan.id] ?? scan.food_name).trim();
+    const portionG = Number(portionInputs[scan.id]);
+    if (!foodName || portionG < 1 || portionG > 3000) return;
+    setCorrectionBusy(scan.id);
     setError("");
     try {
-      const response = await savePortion({
-        data: { id: result.id, portionG: Number(portionInput) },
+      const response = await saveFoodCorrection({
+        data: { id: scan.id, foodName, portionG },
       });
       if (!response.ok) setError(response.message);
       else {
         const updated = response.scan as Scan;
-        setResult(updated);
+        setResults((items) => items.map((item) => (item.id === updated.id ? updated : item)));
+        setFoodInputs((items) => ({ ...items, [updated.id]: updated.food_name }));
+        setPortionInputs((items) => ({ ...items, [updated.id]: String(updated.portion_g ?? "") }));
         setScans((items) => items.map((item) => (item.id === updated.id ? updated : item)));
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not update the portion.");
+      setError(e instanceof Error ? e.message : "Could not update the food and portion.");
     } finally {
-      setPortionBusy(false);
+      setCorrectionBusy(null);
     }
   }
 
@@ -404,7 +414,7 @@ export function ScannerTab() {
         </section>
       )}
 
-      {(preview || busy || error || result) && (
+      {(preview || busy || error || results.length > 0) && (
         <section className="scanner-card overflow-hidden">
           {preview && (
             <img src={preview} alt="Scanned food" className="aspect-[4/3] w-full object-cover" />
@@ -417,18 +427,40 @@ export function ScannerTab() {
               </p>
             )}
             {error && !busy && (
-              <p role="alert" className="mb-3 text-sm text-destructive">
-                {error}
-              </p>
+              <div className="mb-3 flex flex-wrap items-center gap-3">
+                <p role="alert" className="text-sm text-destructive">
+                  {error}
+                </p>
+                {preview && (
+                  <button
+                    type="button"
+                    onClick={() => void processImage(preview)}
+                    className="scanner-action"
+                  >
+                    Retry scan
+                  </button>
+                )}
+              </div>
             )}
-            {result && !busy && (
-              <ScanResult
-                scan={result}
-                portionInput={portionInput}
-                setPortionInput={setPortionInput}
-                onCorrect={() => void correctPortion()}
-                portionBusy={portionBusy}
-              />
+            {results.length > 0 && !busy && (
+              <div className="flex flex-col gap-5">
+                {results.map((scan) => (
+                  <ScanResult
+                    key={scan.id}
+                    scan={scan}
+                    foodInput={foodInputs[scan.id] ?? scan.food_name}
+                    setFoodInput={(value) =>
+                      setFoodInputs((items) => ({ ...items, [scan.id]: value }))
+                    }
+                    portionInput={portionInputs[scan.id] ?? String(scan.portion_g ?? "")}
+                    setPortionInput={(value) =>
+                      setPortionInputs((items) => ({ ...items, [scan.id]: value }))
+                    }
+                    onCorrect={() => void correctFood(scan)}
+                    correctionBusy={correctionBusy === scan.id}
+                  />
+                ))}
+              </div>
             )}
           </div>
         </section>
@@ -449,8 +481,18 @@ export function ScannerTab() {
                 <button
                   type="button"
                   onClick={() => {
-                    setResult(scan);
-                    setPortionInput(String(scan.portion_g ?? ""));
+                    const group = scan.scan_group_id
+                      ? scans.filter((item) => item.scan_group_id === scan.scan_group_id)
+                      : [scan];
+                    setResults(group);
+                    setFoodInputs(
+                      Object.fromEntries(group.map((item) => [item.id, item.food_name])),
+                    );
+                    setPortionInputs(
+                      Object.fromEntries(
+                        group.map((item) => [item.id, String(item.portion_g ?? "")]),
+                      ),
+                    );
                     setPreview(null);
                     setError("");
                   }}
@@ -459,7 +501,7 @@ export function ScannerTab() {
                   <p className="truncate text-sm font-semibold">{scan.food_name}</p>
                   <p className="text-xs text-muted-foreground">
                     {scan.fdc_id === null || scan.calories === null
-                      ? "No verified match"
+                      ? "Nutrition unavailable"
                       : `${scan.calories} kcal · P ${scan.protein_g}g · C ${scan.carbs_g}g · F ${scan.fat_g}g`}{" "}
                     · {fmtDate(scan.created_at)}
                   </p>
@@ -507,22 +549,26 @@ export function ScannerTab() {
 
 function ScanResult({
   scan,
+  foodInput,
+  setFoodInput,
   portionInput,
   setPortionInput,
   onCorrect,
-  portionBusy,
+  correctionBusy,
 }: {
   scan: Scan;
+  foodInput: string;
+  setFoodInput: (value: string) => void;
   portionInput: string;
   setPortionInput: (value: string) => void;
   onCorrect: () => void;
-  portionBusy: boolean;
+  correctionBusy: boolean;
 }) {
-  const matched = scan.fdc_id !== null && scan.calories !== null;
+  const matched = scan.fdc_id !== null && scan.nutrition_source !== null;
   const stats: [string, string][] = [
     ["Protein", fmt(scan.protein_g)],
-    ["Carbs", fmt(scan.carbs_g)],
-    ["Fats", fmt(scan.fat_g)],
+    ["Carbohydrates", fmt(scan.carbs_g)],
+    ["Total fat", fmt(scan.fat_g)],
     ["Fibre", fmt(scan.fibre_g)],
     ["Sugar", fmt(scan.sugar_g)],
   ];
@@ -535,69 +581,78 @@ function ScanResult({
             confidence
           </p>
           <p className="mt-1 text-xl font-semibold tracking-tight">{scan.food_name}</p>
-          {scan.portion && (
-            <p className="text-xs text-muted-foreground">Estimated portion: {scan.portion}</p>
-          )}
+          <p className="text-xs text-muted-foreground">
+            Estimated serving weight: {fmt(scan.portion_g)}
+          </p>
         </div>
         <div className="text-right">
           <p className="text-3xl font-semibold leading-none text-primary">
-            {matched ? scan.calories : "—"}
+            {fmt(scan.calories, "")}
           </p>
-          <p className="text-[10px] tracking-widest text-muted-foreground">KCAL</p>
+          <p className="text-[10px] tracking-widest text-muted-foreground">CALORIES (KCAL)</p>
         </div>
       </div>
-      {matched ? (
-        <>
-          <div className="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-5">
-            {stats.map(([label, value]) => (
-              <div
-                key={label}
-                className="rounded-2xl border border-border bg-background/60 px-3 py-2 text-center"
-              >
-                <p className="text-sm font-semibold">{value}</p>
-                <p className="text-[10px] text-muted-foreground">{label}</p>
-              </div>
-            ))}
+      <div className="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-5">
+        {stats.map(([label, value]) => (
+          <div
+            key={label}
+            className="rounded-2xl border border-border bg-background/60 px-3 py-2 text-center"
+          >
+            <p className="text-sm font-semibold">{value}</p>
+            <p className="text-[10px] text-muted-foreground">{label}</p>
           </div>
-          <div className="mt-4 flex flex-wrap items-end gap-2">
-            <label className="text-xs text-muted-foreground">
-              Correct portion (g)
-              <input
-                type="number"
-                min="1"
-                max="3000"
-                step="1"
-                value={portionInput}
-                onChange={(event) => setPortionInput(event.target.value)}
-                className="mt-1 block w-32 rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground"
-              />
-            </label>
-            <button
-              type="button"
-              disabled={
-                portionBusy ||
-                !portionInput ||
-                Number(portionInput) < 1 ||
-                Number(portionInput) > 3000 ||
-                Number(portionInput) === scan.portion_g
-              }
-              onClick={onCorrect}
-              className="scanner-action"
-            >
-              <Upload className="h-4 w-4" />
-              {portionBusy ? "Updating…" : "Update portion"}
-            </button>
-          </div>
-          <p className="mt-3 text-xs text-muted-foreground">
-            Nutrition estimate from {scan.nutrition_source ?? "FoodData Central"}:{" "}
-            {scan.nutrition_reference}
-          </p>
-        </>
-      ) : (
+        ))}
+      </div>
+      {!matched ? (
         <p className="mt-4 rounded-xl border border-border bg-background/60 p-3 text-sm text-muted-foreground">
-          No verified nutrition match was found. Nutrition values are not shown.
+          Verified nutrition data is unavailable for this food. Values remain unavailable until a
+          verified database match is found.
+        </p>
+      ) : (
+        <p className="mt-3 text-xs text-muted-foreground">
+          Verified source: {scan.nutrition_source} · {scan.nutrition_reference}
         </p>
       )}
+      <div className="mt-4 flex flex-wrap items-end gap-2">
+        <label className="text-xs text-muted-foreground">
+          Correct food name
+          <input
+            type="text"
+            maxLength={120}
+            value={foodInput}
+            onChange={(event) => setFoodInput(event.target.value)}
+            className="mt-1 block w-56 max-w-full rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground"
+          />
+        </label>
+        <label className="text-xs text-muted-foreground">
+          Correct serving (g)
+          <input
+            type="number"
+            min="1"
+            max="3000"
+            step="1"
+            value={portionInput}
+            onChange={(event) => setPortionInput(event.target.value)}
+            className="mt-1 block w-32 rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground"
+          />
+        </label>
+        <button
+          type="button"
+          disabled={
+            correctionBusy ||
+            !foodInput.trim() ||
+            !portionInput ||
+            Number(portionInput) < 1 ||
+            Number(portionInput) > 3000 ||
+            (foodInput.trim() === scan.food_name && Number(portionInput) === scan.portion_g)
+          }
+          onClick={onCorrect}
+          className="scanner-action"
+        >
+          <Upload className="h-4 w-4" />
+          {correctionBusy ? "Updating…" : "Update food and serving"}
+        </button>
+      </div>
       {scan.notes && <p className="mt-3 text-xs text-muted-foreground">{scan.notes}</p>}
       <p className="mt-2 text-[10px] text-muted-foreground">Estimates only — not medical advice.</p>
     </div>

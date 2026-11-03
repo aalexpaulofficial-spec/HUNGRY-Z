@@ -7,7 +7,7 @@ const mocks = vi.hoisted(() => ({
   listScans: vi.fn(),
   scan: vi.fn(),
   remove: vi.fn(),
-  savePortion: vi.fn(),
+  saveFood: vi.fn(),
 }));
 
 vi.mock("@tanstack/react-start", () => ({ useServerFn: (fn: unknown) => fn }));
@@ -16,7 +16,7 @@ vi.mock("@/lib/scanner.functions", () => ({
   listFoodScans: mocks.listScans,
   scanFood: mocks.scan,
   deleteFoodScan: mocks.remove,
-  updateFoodScanPortion: mocks.savePortion,
+  updateFoodScan: mocks.saveFood,
 }));
 
 const row = {
@@ -36,6 +36,7 @@ const row = {
   fdc_id: 1,
   nutrition_source: "USDA FoodData Central",
   nutrition_reference: "Dosa, plain (FDC 1, per 100 g)",
+  scan_group_id: "22222222-2222-4222-8222-222222222222",
 };
 
 describe("scanner camera and photo input", () => {
@@ -49,9 +50,9 @@ describe("scanner camera and photo input", () => {
       active: true,
     });
     mocks.listScans.mockResolvedValue([]);
-    mocks.scan.mockResolvedValue({ ok: true, scan: row });
+    mocks.scan.mockResolvedValue({ ok: true, scans: [row] });
     mocks.remove.mockResolvedValue({ ok: true });
-    mocks.savePortion.mockResolvedValue({ ok: true, scan: row });
+    mocks.saveFood.mockResolvedValue({ ok: true, scan: row });
     vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue(undefined);
     vi.spyOn(HTMLVideoElement.prototype, "videoWidth", "get").mockReturnValue(640);
     vi.spyOn(HTMLVideoElement.prototype, "videoHeight", "get").mockReturnValue(480);

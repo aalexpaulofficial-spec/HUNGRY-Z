@@ -384,6 +384,7 @@ export type Database = {
           nutrition_reference: string | null
           nutrition_source: string | null
           protein_g: number | null
+          scan_group_id: string | null
           sugar_g: number | null
           user_id: string
         }
@@ -403,6 +404,7 @@ export type Database = {
           nutrition_reference?: string | null
           nutrition_source?: string | null
           protein_g?: number | null
+          scan_group_id?: string | null
           sugar_g?: number | null
           user_id: string
         }
@@ -422,6 +424,7 @@ export type Database = {
           nutrition_reference?: string | null
           nutrition_source?: string | null
           protein_g?: number | null
+          scan_group_id?: string | null
           sugar_g?: number | null
           user_id?: string
         }
