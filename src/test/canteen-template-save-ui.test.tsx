@@ -47,7 +47,7 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@tanstack/react-router")>();
   return {
     ...actual,
-    Link: ({ to, children, ...props }: ComponentProps<typeof actual.Link>) => <a href={to as string} {...props}>{children}</a>,
+    Link: ({ to, children, ...props }: ComponentProps<typeof actual.Link>) => <a href={to as string} {...props}>{children as React.ReactNode}</a>,
   };
 });
 vi.mock("@/lib/hungry.functions", () => ({
