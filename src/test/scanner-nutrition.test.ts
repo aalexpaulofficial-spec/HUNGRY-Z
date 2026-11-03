@@ -43,6 +43,56 @@ describe("scanner nutrition sources", () => {
     expect(result).toMatchObject({ food_name: "plain dosa", portion_g: 120 });
     expect(JSON.stringify(result)).not.toMatch(/calories|protein|carbs|fat/i);
     expect(fetchMock).toHaveBeenCalledOnce();
+    expect(fetchMock.mock.calls[0][0]).toContain("/models/gemini-3.8-flash:generateContent");
+    expect(fetchMock.mock.calls[0][1].headers["x-goog-api-key"]).toBe("test-key");
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body).contents[0].parts[1]).toEqual({
+      inline_data: { mime_type: "image/jpeg", data: "Zm9vZA==" },
+    });
+  });
+
+  it("falls back to another supported Vision model when Gemini is unavailable", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "test-key");
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ error: { code: 503, status: "UNAVAILABLE" } }), {
+          status: 503,
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            candidates: [
+              {
+                content: {
+                  parts: [
+                    {
+                      text: JSON.stringify({
+                        is_food: true,
+                        food_name: "idli",
+                        portion_g: 100,
+                        confidence: "high",
+                        notes: "One idli.",
+                      }),
+                    },
+                  ],
+                },
+              },
+            ],
+          }),
+          { status: 200 },
+        ),
+      );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await identifyFoodWithGemini("data:image/jpeg;base64,Zm9vZA==");
+
+    expect(result.food_name).toBe("idli");
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock.mock.calls[1][0]).toContain("/models/gemini-3.6-flash:generateContent");
+    expect(JSON.parse(fetchMock.mock.calls[1][1].body).contents[0].parts[1]).toEqual({
+      inline_data: { mime_type: "image/jpeg", data: "Zm9vZA==" },
+    });
   });
 
   it("maps FDC nutrient values and scales them to a portion", () => {

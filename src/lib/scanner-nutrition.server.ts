@@ -1,7 +1,7 @@
 import { z } from "zod";
 
-const GEMINI_MODEL = "gemini-3.6-flash";
-const GEMINI_FALLBACK_MODEL = "gemini-3.8-flash";
+const GEMINI_MODEL = "gemini-3.8-flash";
+const GEMINI_FALLBACK_MODEL = "gemini-3.6-flash";
 const FDC_BASE = "https://api.nal.usda.gov/fdc/v1";
 
 const identificationSchema = z.object({
@@ -74,20 +74,47 @@ export async function identifyFoodWithGemini(dataUrl: string): Promise<FoodIdent
   const match = /^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/.exec(dataUrl);
   if (!match) throw new Error("Please upload a JPG, PNG or WEBP photo.");
   let response: Response;
+  let model = GEMINI_MODEL;
   try {
-    response = await requestGemini(GEMINI_MODEL, match[1], match[2], key);
+    response = await requestGemini(model, match[1], match[2], key);
   } catch {
-    response = await requestGemini(GEMINI_FALLBACK_MODEL, match[1], match[2], key);
+    model = GEMINI_FALLBACK_MODEL;
+    try {
+      response = await requestGemini(model, match[1], match[2], key);
+    } catch {
+      throw new Error("Gemini could not be reached. Check the server network and try again.");
+    }
   }
   if (response.status === 503 || response.status === 404) {
-    response = await requestGemini(GEMINI_FALLBACK_MODEL, match[1], match[2], key);
+    model = model === GEMINI_MODEL ? GEMINI_FALLBACK_MODEL : GEMINI_MODEL;
+    try {
+      response = await requestGemini(model, match[1], match[2], key);
+    } catch {
+      throw new Error("Gemini could not be reached. Check the server network and try again.");
+    }
   }
   if (!response.ok) {
-    console.error("Gemini recognition request failed", response.status);
+    const providerError = await response.json().catch(() => null);
+    const detail = providerError?.error;
+    const providerCode = typeof detail?.status === "string" ? detail.status : "unknown";
+    const providerMessage =
+      typeof detail?.message === "string" ? detail.message.slice(0, 500) : "No provider message";
+    console.error("Gemini recognition request failed", {
+      model,
+      httpStatus: response.status,
+      providerCode,
+      providerMessage,
+    });
     throw new Error(
       response.status === 429
-        ? "Food recognition is busy. Please try again shortly."
-        : "Food recognition is temporarily unavailable.",
+        ? "Gemini is busy or this API key has reached its request quota. Please try again shortly."
+        : response.status === 401 || response.status === 403
+          ? "Gemini rejected the server API key. Check GEMINI_API_KEY in Vercel Production settings."
+          : response.status === 503
+            ? "Gemini is temporarily overloaded. Please try again in a moment."
+            : response.status === 404
+              ? "Gemini recognition model is unavailable. Check the configured model name."
+              : "Gemini rejected this photo request. Try a clear JPG, PNG or WEBP food photo.",
     );
   }
   const result = await response.json();
