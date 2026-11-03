@@ -6,6 +6,7 @@ import {
 } from "@/lib/scanner-nutrition.server";
 
 afterEach(() => {
+  vi.useRealTimers();
   vi.unstubAllEnvs();
   vi.unstubAllGlobals();
 });
@@ -54,17 +55,22 @@ describe("scanner food recognition and nutrition safety", () => {
     expect(result[0]).toMatchObject({ food_name: "plain dosa", portion_g: 120 });
     expect(JSON.stringify(result)).not.toMatch(/calories|protein|carbs|fat/i);
     expect(fetchMock).toHaveBeenCalledOnce();
-    expect(fetchMock.mock.calls[0][0]).toContain("/models/gemini-3.8-flash:generateContent");
+    expect(fetchMock.mock.calls[0][0]).toContain("/models/gemini-3.6-flash:generateContent");
     expect(fetchMock.mock.calls[0][1].headers["x-goog-api-key"]).toBe("test-key");
     expect(JSON.parse(fetchMock.mock.calls[0][1].body).contents[0].parts[1]).toEqual({
       inline_data: { mime_type: "image/jpeg", data: "Zm9vZA==" },
     });
   });
 
-  it("falls back to Gemini 3.6 Vision when the primary model is unavailable", async () => {
+  it("retries primary Gemini 503 with backoff, then falls back to Gemini 3.6 Vision", async () => {
     vi.stubEnv("GEMINI_API_KEY", "test-key");
     const fetchMock = vi
       .fn()
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ error: { code: 503, status: "UNAVAILABLE" } }), {
+          status: 503,
+        }),
+      )
       .mockResolvedValueOnce(
         new Response(JSON.stringify({ error: { code: 503, status: "UNAVAILABLE" } }), {
           status: 503,
@@ -99,11 +105,76 @@ describe("scanner food recognition and nutrition safety", () => {
       );
     vi.stubGlobal("fetch", fetchMock);
 
-    const result = await identifyFoodsWithGemini("data:image/jpeg;base64,Zm9vZA==");
+    vi.useFakeTimers();
+    const pendingResult = identifyFoodsWithGemini("data:image/jpeg;base64,Zm9vZA==");
+    await vi.runAllTimersAsync();
+    const result = await pendingResult;
+    vi.useRealTimers();
 
     expect(result[0].food_name).toBe("idli");
-    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(fetchMock.mock.calls[0][0]).toContain("/models/gemini-3.6-flash:generateContent");
     expect(fetchMock.mock.calls[1][0]).toContain("/models/gemini-3.6-flash:generateContent");
+    expect(fetchMock.mock.calls[2][0]).toContain("/models/gemini-3.5-flash:generateContent");
+  });
+
+  it("retries transient 429 rate limits and recovers without duplicating a scan", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "test-key");
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ error: { status: "RATE_LIMIT_EXCEEDED", message: "retry later" } }), { status: 429 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: JSON.stringify({ foods: [{ food_name: "vegetable fried rice", portion_g: 320, confidence: "high", notes: "Rice with vegetables." }] }) }] } }] }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    vi.useFakeTimers();
+    const pendingResult = identifyFoodsWithGemini("data:image/jpeg;base64,Zm9vZA==");
+    await vi.runAllTimersAsync();
+    const result = await pendingResult;
+    vi.useRealTimers();
+    expect(result[0]).toMatchObject({ food_name: "vegetable fried rice", portion_g: 320 });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(String(fetchMock.mock.calls[0][0])).toBe(String(fetchMock.mock.calls[1][0]));
+  });
+
+  it("recovers from a transient network timeout through the fallback model", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "test-key");
+    const success = new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: JSON.stringify({ foods: [{ food_name: "idli", portion_g: 100, confidence: "medium", notes: "One idli." }] }) }] } }] }), { status: 200 });
+    const fetchMock = vi.fn()
+      .mockRejectedValueOnce(new DOMException("Timed out", "TimeoutError"))
+      .mockRejectedValueOnce(new TypeError("Network unavailable"))
+      .mockResolvedValueOnce(success);
+    vi.stubGlobal("fetch", fetchMock);
+    vi.useFakeTimers();
+    const pendingResult = identifyFoodsWithGemini("data:image/jpeg;base64,Zm9vZA==");
+    await vi.runAllTimersAsync();
+    const result = await pendingResult;
+    vi.useRealTimers();
+    expect(result[0].food_name).toBe("idli");
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(fetchMock.mock.calls[0][0]).toContain("/models/gemini-3.6-flash:generateContent");
+    expect(fetchMock.mock.calls[1][0]).toContain("/models/gemini-3.6-flash:generateContent");
+    expect(fetchMock.mock.calls[2][0]).toContain("/models/gemini-3.5-flash:generateContent");
+  });
+
+  it("uses the stable image-capable Flash fallback and stops after bounded attempts", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "test-key");
+    const unavailable = () => new Response(JSON.stringify({ error: { status: "UNAVAILABLE", message: "temporarily overloaded" } }), { status: 503 });
+    const fetchMock = vi.fn().mockResolvedValueOnce(unavailable()).mockResolvedValueOnce(unavailable()).mockResolvedValueOnce(unavailable()).mockResolvedValueOnce(unavailable());
+    vi.stubGlobal("fetch", fetchMock);
+    vi.useFakeTimers();
+    const pendingResult = expect(identifyFoodsWithGemini("data:image/jpeg;base64,Zm9vZA=="))
+      .rejects.toThrow(/temporarily unavailable after retrying/);
+    await vi.runAllTimersAsync();
+    await pendingResult;
+    vi.useRealTimers();
+    expect(fetchMock).toHaveBeenCalledTimes(4);
+    expect(fetchMock.mock.calls.at(-1)?.[0]).toContain("/models/gemini-3.5-flash:generateContent");
+  });
+
+  it("does not retry an exhausted Gemini quota or expose provider details to students", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "test-key");
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ error: { status: "QUOTA_EXCEEDED", message: "daily quota exceeded" } }), { status: 429 }));
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(identifyFoodsWithGemini("data:image/jpeg;base64,Zm9vZA==")).rejects.toThrow(/quota or billing limit/);
+    expect(fetchMock).toHaveBeenCalledOnce();
   });
 
   it("scales only verified source values and keeps absent nutrients unavailable", () => {

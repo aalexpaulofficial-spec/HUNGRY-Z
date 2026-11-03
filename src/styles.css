@@ -627,8 +627,6 @@ html[data-theme="light"] .hungry-install-page svg path[stroke="rgba(255,255,255,
   .scanner-action:hover { transform: translateY(-1px); border-color: color-mix(in oklab, var(--primary) 50%, transparent); }
   .scanner-action:disabled { opacity: .5; transform: none; }
   .scanner-action-primary { border-color: transparent; background: var(--primary); color: var(--primary-foreground); }
-  .scanner-brand { display: inline-flex; align-items: center; gap: .55rem; font-size: .8rem; font-weight: 700; letter-spacing: .04em; }
-  .scanner-brand-mark { display: inline-grid; width: 1.5rem; height: 1.5rem; place-items: center; border-radius: .45rem; background: var(--primary); color: var(--primary-foreground); font-size: .9rem; box-shadow: 0 0 18px color-mix(in oklab, var(--primary) 48%, transparent); }
   .scanner-start { min-height: 5.2rem; justify-content: flex-start; padding: 1rem 1.2rem; text-align: left; }
   .scanner-start span { display: grid; gap: .15rem; }
   .scanner-start small { font-size: .7rem; font-weight: 400; opacity: .78; }

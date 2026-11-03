@@ -107,7 +107,7 @@ export function ScannerTab() {
   const days = trialDaysLeft(access.expiresAt);
   return <div className="scanner-shell mx-auto flex w-full max-w-3xl flex-col gap-5 pb-6">
     <section className="scanner-card relative overflow-hidden p-5 sm:p-7">
-      <div className="flex items-center justify-between gap-3"><span className="scanner-brand"><span className="scanner-brand-mark">H</span> HUNGRY SCAN</span><span className="scanner-pill scanner-pill-accent">AI FOOD SCAN</span></div>
+      <div className="flex items-center justify-end gap-3"><span className="scanner-pill scanner-pill-accent">AI FOOD SCAN</span></div>
       <h2 className="mt-7 text-center text-2xl font-semibold tracking-tight sm:text-3xl">Scan Any Food,<br /><span className="text-primary">Know Its Nutrition</span></h2>
       <p className="mx-auto mt-2 max-w-sm text-center text-sm text-muted-foreground">Use your camera or upload a photo to see food details and verified nutrition.</p>
       <p className={cn("mt-4 text-center text-xs font-medium", access.active ? "text-muted-foreground" : "text-destructive")}>{access.active ? `Free access active · ${days} ${days === 1 ? "day" : "days"} left` : "Your free month has ended."}</p>
