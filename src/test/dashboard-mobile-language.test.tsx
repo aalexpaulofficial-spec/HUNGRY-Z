@@ -25,13 +25,14 @@ const item: MenuItem = {
 const dashboardCopy = {
   HOME: ["Today's picks", "Quick bites", "Order now ↗"],
   MENU: ["Search dishes…", "Add to cart", "Sold out"],
-  ORDERS: ["No orders yet", "Order ID", "Pickup code"],
-  YOU: ["Current canteen", "Verified HUNGRY Z canteen", "Log out"],
+  ORDERS: ["No orders yet", "Order ID", "Pickup code", "Collected", "Ready for pickup"],
+  YOU: ["Current canteen", "Verified HUNGRYZ Canteen", "Log out"],
+  SCAN: ["HUNGRY AI", "Scan Any Food,", "Know Its Nutrition", "Scan Food", "Upload Image"],
 } as const;
 
 const expectedTabCopy = {
-  hi: ["आज के खास व्यंजन", "झटपट नाश्ता", "व्यंजन खोजें…", "टोकरी में जोड़ें", "अभी कोई ऑर्डर नहीं", "ऑर्डर आईडी", "पिकअप कोड", "वर्तमान कैंटीन", "सत्यापित HUNGRY Z कैंटीन", "लॉग आउट"],
-  kn: ["ಇಂದಿನ ವಿಶೇಷಗಳು", "ತ್ವರಿತ ತಿಂಡಿಗಳು", "ತಿನಿಸುಗಳನ್ನು ಹುಡುಕಿ…", "ಕಾರ್ಟ್‌ಗೆ ಸೇರಿಸಿ", "ಇನ್ನೂ ಆರ್ಡರ್‌ಗಳಿಲ್ಲ", "ಆರ್ಡರ್ ಐಡಿ", "ಪಿಕಪ್ ಕೋಡ್", "ಪ್ರಸ್ತುತ ಕ್ಯಾಂಟೀನ್", "ಪರಿಶೀಲಿಸಿದ HUNGRY Z ಕ್ಯಾಂಟೀನ್", "ಲಾಗ್ ಔಟ್"],
+  hi: ["आज के खास व्यंजन", "झटपट नाश्ता", "व्यंजन खोजें…", "टोकरी में जोड़ें", "अभी कोई ऑर्डर नहीं", "ऑर्डर आईडी", "पिकअप कोड", "वर्तमान कैंटीन", "सत्यापित HUNGRYZ कैंटीन", "लॉग आउट"],
+  kn: ["ಇಂದಿನ ವಿಶೇಷಗಳು", "ತ್ವರಿತ ತಿಂಡಿಗಳು", "ತಿನಿಸುಗಳನ್ನು ಹುಡುಕಿ…", "ಕಾರ್ಟ್‌ಗೆ ಸೇರಿಸಿ", "ಇನ್ನೂ ಆರ್ಡರ್‌ಗಳಿಲ್ಲ", "ಆರ್ಡರ್ ಐಡಿ", "ಪಿಕಪ್ ಕೋಡ್", "ಪ್ರಸ್ತುತ ಕ್ಯಾಂಟೀನ್", "ಪರಿಶೀಲಿಸಿದ HUNGRYZ ಕ್ಯಾಂಟೀನ್", "ಲಾಗ್ ಔಟ್"],
 } as const;
 
 describe("multilingual mobile dashboard layout", () => {
@@ -44,6 +45,11 @@ describe("multilingual mobile dashboard layout", () => {
     for (const language of ["hi", "kn"] as const) {
       const stop = localizeDashboard(root, language);
       for (const label of expectedTabCopy[language]) expect(root.textContent).toContain(label);
+      const orders = root.querySelector('[data-tab="ORDERS"]')!;
+      expect(orders.textContent).toContain(translateDashboardText("Collected", language));
+      expect(orders.textContent).toContain(translateDashboardText("Ready for pickup", language));
+      const scanner = root.querySelector('[data-tab="SCAN"]')!;
+      for (const label of dashboardCopy.SCAN) expect(scanner.textContent).toContain(translateDashboardText(label, language));
       expect(root.textContent).not.toContain("Today's picks");
       expect(root.textContent).not.toContain("Search dishes…");
       expect(root.textContent).not.toContain("No orders yet");
@@ -52,6 +58,20 @@ describe("multilingual mobile dashboard layout", () => {
       expect(root.textContent).toContain("South Canteen");
       stop();
     }
+  });
+
+  it("translates collected status, verified canteen identity, and HUNGRY AI controls", () => {
+    expect(translateDashboardText("Collected", "en")).toBe("Collected");
+    expect(translateDashboardText("Collected", "hi")).toBe("ले लिया गया");
+    expect(translateDashboardText("Collected", "kn")).toBe("ಪಡೆದುಕೊಳ್ಳಲಾಗಿದೆ");
+    expect(translateDashboardText("Verified HUNGRYZ Canteen", "hi")).toBe("सत्यापित HUNGRYZ कैंटीन");
+    expect(translateDashboardText("Verified HUNGRYZ Canteen", "kn")).toBe("ಪರಿಶೀಲಿಸಿದ HUNGRYZ ಕ್ಯಾಂಟೀನ್");
+    expect(translateDashboardText("Scan Any Food,", "hi")).toBe("किसी भी खाने को स्कैन करें,");
+    expect(translateDashboardText("Scan Any Food,", "kn")).toBe("ಯಾವುದೇ ಆಹಾರವನ್ನು ಸ್ಕ್ಯಾನ್ ಮಾಡಿ,");
+    expect(translateDashboardText("Upload Image", "hi")).toBe("तस्वीर अपलोड करें");
+    expect(translateDashboardText("Upload Image", "kn")).toBe("ಚಿತ್ರ ಅಪ್‌ಲೋಡ್ ಮಾಡಿ");
+    expect(translateDashboardText("HUNGRY AI", "hi")).toBe("HUNGRY AI");
+    expect(translateDashboardText("HUNGRY AI", "kn")).toBe("HUNGRY AI");
   });
 
   it("keeps mobile food-card content constrained and the add button visible with long translated stock text", () => {

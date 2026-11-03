@@ -15,6 +15,8 @@ import { bannerCropStyle } from "@/lib/banner-crop";
 import { ORDER_LABELS, ORDER_STATUSES, canAcceptOrders, type MenuItem } from "@/lib/access";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { ScannerTab } from "@/components/foodexa/ScannerTab";
+import { OrderStatusBadge } from "@/components/foodexa/OrderStatusBadge";
+import { VerifiedCanteenLabel } from "@/components/foodexa/VerifiedCanteenLabel";
 import {
   cancelPendingOrder,
   ensureWelcomeEmail,
@@ -888,7 +890,7 @@ function OrdersTab({ orders, onOpen }: { orders: Order[]; onOpen: (o: Order) => 
             <span className="flex shrink-0 items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1 text-[10px] font-semibold text-primary-bright"><Clock className="h-3 w-3" />{o.prep_minutes} min</span>
           </div>
           <div className="mt-2 flex justify-end">
-            <span className={cn("max-w-[65%] break-words rounded-full px-3 py-1 text-right text-[10px] font-bold uppercase leading-tight tracking-normal sm:max-w-none sm:text-left sm:leading-normal sm:tracking-widest", o.status === "ready" || o.status === "pending_payment" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground")}>{ORDER_LABELS[o.status]}</span>
+            <OrderStatusBadge status={o.status} />
           </div>
           <p data-no-translate className="mt-2 truncate text-sm text-muted-foreground">{o.lines.map((l) => `${l.qty}× ${l.name}`).join(", ")}</p>
           <p className="mt-2 flex items-center justify-between text-sm">
@@ -1051,7 +1053,7 @@ function OrderDetail({ order, canteenName, refund, notice, onNotice }: { order: 
       <dl className="mt-4 grid grid-cols-1 gap-x-4 gap-y-3 rounded-2xl border border-border bg-ink-soft p-4 text-xs sm:grid-cols-2">
         <div className="min-w-0"><dt className="text-muted-foreground">Customer</dt><dd className="mt-1 break-words font-semibold text-foreground">{order.customer_name}</dd></div>
         <div className="min-w-0"><dt className="text-muted-foreground">Canteen</dt><dd className="mt-1 break-words font-semibold text-foreground">{canteenName}</dd></div>
-        <div className="min-w-0"><dt className="text-muted-foreground">Order status</dt><dd className="mt-1 break-words font-semibold capitalize text-foreground">{ORDER_LABELS[order.status] ?? order.status.replaceAll("_", " ")}</dd></div>
+        <div className="min-w-0"><dt className="text-muted-foreground">Order status</dt><dd className="mt-1 break-words font-semibold capitalize text-foreground">{order.status === "collected" ? <OrderStatusBadge status={order.status} className="max-w-full text-left normal-case tracking-normal" /> : (ORDER_LABELS[order.status] ?? order.status.replaceAll("_", " "))}</dd></div>
         <div className="min-w-0"><dt className="text-muted-foreground">Date and time</dt><dd className="mt-1 break-words font-semibold text-foreground">{placedAt} IST</dd></div>
       </dl>
       {notice && <p className="mt-4 rounded-2xl border border-primary/40 bg-primary/10 p-3 text-sm" role="status">{notice}</p>}
@@ -1072,7 +1074,7 @@ function OrderDetail({ order, canteenName, refund, notice, onNotice }: { order: 
         <div className="mt-6 space-y-4">
           {ORDER_STATUSES.map((s, i) => (
             <div key={s} className="flex items-center gap-3">
-              <span className={cn("grid h-7 w-7 place-items-center rounded-full border text-xs font-bold", i <= step ? "border-primary bg-primary text-primary-foreground" : "border-input text-muted-foreground", i === step && "anim-pulse-glow")}>{i < step ? <Check className="h-3.5 w-3.5" /> : i + 1}</span>
+              <span className={cn("grid h-7 w-7 place-items-center rounded-full border text-xs font-bold", i <= step ? "border-primary bg-primary text-primary-foreground" : "border-input text-muted-foreground", i === step && s === "collected" && "status-collected", i === step && "anim-pulse-glow")}>{i < step ? <Check className="h-3.5 w-3.5" /> : i + 1}</span>
               <span className={cn("text-sm", i <= step ? "font-semibold" : "text-muted-foreground")}>{ORDER_LABELS[s]}</span>
             </div>
           ))}
@@ -1151,7 +1153,7 @@ function YouTab({ profile, canteen, onSwitch, onSignOut }: { profile: Profile; c
         <p className="text-xs uppercase tracking-widest text-muted-foreground">Current canteen</p>
         <p data-no-translate className="mt-1 font-semibold">{canteen.name}</p>
         <p className="text-xs text-muted-foreground">{canteen.university_name} · {canteen.campus_location}</p>
-        <p className="mt-1 text-xs text-chart-4">Verified HUNGRY Z canteen</p>
+        <VerifiedCanteenLabel />
       </div>
       <button onClick={onSwitch} className="group flex w-full items-center gap-4 rounded-3xl border border-primary/40 bg-gradient-to-r from-primary/20 to-transparent p-5 text-left transition hover:border-primary">
         <span className="grid h-11 w-11 place-items-center rounded-full bg-primary text-primary-foreground transition group-hover:rotate-180"><Repeat className="h-5 w-5" /></span>

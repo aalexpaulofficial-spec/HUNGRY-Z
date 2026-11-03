@@ -223,6 +223,26 @@ html[data-theme="light"] {
   --shadow-device: 0 40px 80px -40px oklch(0.2 0 0 / 0.25), 0 0 60px -30px color-mix(in oklab, var(--primary) 24%, transparent);
 }
 
+.status-collected {
+  border-color: rgb(34 197 94 / 0.35);
+  background-color: rgb(34 197 94 / 0.12);
+  color: #15803d;
+}
+
+html[data-theme="dark"] .status-collected {
+  border-color: rgb(74 222 128 / 0.34);
+  background-color: rgb(74 222 128 / 0.12);
+  color: #86efac;
+}
+
+.verified-canteen-indicator {
+  color: #15803d;
+}
+
+html[data-theme="dark"] .verified-canteen-indicator {
+  color: #86efac;
+}
+
 html[data-theme="light"] body {
   color-scheme: light;
 }
