@@ -10,7 +10,8 @@
 <!-- LOVABLE:END -->
 
 ## Architecture rules
-- Backend is the owner's own Supabase project; schema lives in `database/*.sql` (run manually in order, documented in docs/SETUP.md). Any schema change = a new numbered SQL file + regenerate `src/integrations/supabase/types.ts` + extend `src/test/database.test.ts`. Why: the owner applies SQL themselves.
+- Backend is Lovable Cloud; schema changes go through Lovable migrations (`drizzle/migrations`). `database/*.sql` is the historical reference for the original schema. Storage buckets are private because the workspace blocks public buckets. Why: one managed backend for preview and live.
+- HUNGRY SCANNER: client-safe plan/trial rules in `src/lib/scanner.ts` (tested in `src/test/scanner.test.ts`); server functions in `src/lib/scanner.functions.ts` call the AI gateway and write `food_scans` as the user; the free month starts once per student via the `hungry_start_scanner_trial` SQL function. Why: trial dates can't be set by clients.
 - All privileged writes (applications, approvals, canteen joins, orders, payments, refunds, coupons, admin login) go through server functions in `src/lib/hungry.functions.ts`; customers/owners never write those tables directly — RLS and revoked grants enforce this. Why: totals, stock and payment state must stay consistent.
 - Orders are created only via the `hungry_place_order` SQL function (row locks for stock + coupon limits, idempotency key); paid/cancel transitions only via `hungry_mark_order_paid` / `hungry_release_order`. Why: atomic, duplicate-safe state changes.
 - Payment, refund and confirmation workflows live in `src/lib/orders.server.ts`, shared by server functions and the Razorpay webhook (`/api/public/razorpay-webhook`); every step is idempotent. Why: client callbacks and webhooks can arrive in any order or repeat.
