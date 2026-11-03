@@ -5,11 +5,12 @@ export const SCANNER_TRIAL_MONTHS = 1;
 export const SCANNER_PRICE_INR = 0;
 export const MAX_SCAN_IMAGE_BYTES = 6 * 1024 * 1024;
 
-export type ScannerPlan = { version: string; name: string; features: string[]; status: "live" | "coming_soon" };
+export type ScannerPlan = { version: string; brand: string; name: string; features: string[]; status: "live" | "coming_soon" };
 
 export const STUDENT_SCANNER_PLANS: ScannerPlan[] = [
   {
     version: "1.0",
+    brand: "HUNGRYZ SCAN",
     name: "AI Food Scanner",
     status: "live",
     features: [
@@ -21,6 +22,7 @@ export const STUDENT_SCANNER_PLANS: ScannerPlan[] = [
   },
   {
     version: "2.0",
+    brand: "HUNGRYZ NUTRI",
     name: "AI Nutrition Assistant",
     status: "coming_soon",
     features: [
@@ -32,6 +34,7 @@ export const STUDENT_SCANNER_PLANS: ScannerPlan[] = [
   },
   {
     version: "3.0",
+    brand: "HUNGRYZ INTELLI",
     name: "Nutrition Intelligence",
     status: "coming_soon",
     features: [
