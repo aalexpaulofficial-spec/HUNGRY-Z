@@ -617,3 +617,14 @@ html[data-theme="light"] .hungry-install-page svg path[stroke="rgba(255,255,255,
   @media (min-width: 640px) { .back-btn-float { top: 1.25rem; left: 1.25rem; } }
   @media (min-width: 1024px) { .back-btn-float { top: 1.5rem; left: 1.5rem; } }
 }
+
+/* HUNGRY SCANNER + student plans — Apple-style surfaces; adapt to White and HUNGRY themes via tokens. */
+@layer components {
+  .scanner-card { border-radius: 1.5rem; border: 1px solid var(--border); background: color-mix(in oklab, var(--card) 92%, transparent); box-shadow: 0 1px 2px color-mix(in oklab, var(--foreground) 6%, transparent), 0 12px 32px -18px color-mix(in oklab, var(--foreground) 22%, transparent); backdrop-filter: blur(18px); }
+  .scanner-pill { display: inline-flex; align-items: center; border-radius: 999px; border: 1px solid var(--border); padding: 0.25rem 0.65rem; font-size: 10px; font-weight: 600; letter-spacing: 0.14em; color: var(--muted-foreground); }
+  .scanner-pill-accent { border-color: color-mix(in oklab, var(--primary) 45%, transparent); background: color-mix(in oklab, var(--primary) 12%, transparent); color: var(--primary); }
+  .scanner-action { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; border-radius: 1rem; border: 1px solid var(--border); background: var(--background); padding: 0.9rem 0.75rem; font-size: 0.85rem; font-weight: 600; color: var(--foreground); transition: transform .2s, border-color .2s, opacity .2s; }
+  .scanner-action:hover { transform: translateY(-1px); border-color: color-mix(in oklab, var(--primary) 50%, transparent); }
+  .scanner-action:disabled { opacity: .5; transform: none; }
+  .scanner-action-primary { border-color: transparent; background: var(--primary); color: var(--primary-foreground); }
+}

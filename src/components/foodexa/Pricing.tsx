@@ -1,5 +1,6 @@
 import { useGsap } from "./use-gsap";
 import { Phone } from "./Phone";
+import { SCANNER_PRICE_INR, STUDENT_SCANNER_PLANS } from "@/lib/scanner";
 
 export const GENERAL_ENQUIRY_HREF = `mailto:hungryofficialx@gmail.com?subject=${encodeURIComponent("HUNGRY — General Enquiry")}`;
 
@@ -43,6 +44,37 @@ export function Pricing() {
             </span>
           ))}
         </h2>
+
+        <div className="mt-16">
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="scanner-pill scanner-pill-accent">EXCLUSIVELY FOR STUDENTS</span>
+            <p className="text-sm text-muted-foreground">HUNGRY SCANNER — ₹0, free for 1 month. No card, no billing.</p>
+          </div>
+          <div className="mt-6 grid gap-4 md:grid-cols-3">
+            {STUDENT_SCANNER_PLANS.map((p) => (
+              <article key={p.version} className="scanner-card flex flex-col p-7">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="scanner-pill">VERSION {p.version}</span>
+                  {p.status === "coming_soon" && <span className="text-[10px] tracking-[0.2em] text-muted-foreground">COMING SOON</span>}
+                </div>
+                <h3 className="mt-5 text-xl font-semibold tracking-tight">{p.name}</h3>
+                <p className="mt-4 flex items-end gap-2">
+                  <span className="display text-5xl leading-none text-primary-bright">₹{SCANNER_PRICE_INR}</span>
+                  <span className="pb-1 text-xs font-semibold tracking-[0.18em] text-muted-foreground">FREE FOR 1 MONTH</span>
+                </p>
+                <ul className="mt-6 flex flex-col gap-2.5 text-sm text-muted-foreground">
+                  {p.features.map((f) => (
+                    <li key={f} className="flex items-start gap-3">
+                      <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-auto pt-6 text-[11px] text-muted-foreground">For students only</p>
+              </article>
+            ))}
+          </div>
+        </div>
 
         <div
           data-panels

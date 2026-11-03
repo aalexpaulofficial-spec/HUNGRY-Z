@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { QRCodeCanvas } from "qrcode.react";
 import { useServerFn } from "@tanstack/react-start";
-import { Home, UtensilsCrossed, Receipt, User, Plus, Minus, ShoppingBag, Clock, X, Check, LogOut, Repeat, MapPin, Store, Download } from "lucide-react";
+import { Home, UtensilsCrossed, Receipt, User, ScanLine, Plus, Minus, ShoppingBag, Clock, X, Check, LogOut, Repeat, MapPin, Store, Download } from "lucide-react";
 import { LogoMark } from "@/components/foodexa/LogoMark";
 import { CanteenTemplateBanner } from "@/components/foodexa/CanteenTemplateBanner";
 import { FeedbackDialog } from "@/components/foodexa/FeedbackDialog";
@@ -14,6 +14,7 @@ import { foodImage } from "@/lib/foodexa-images";
 import { bannerCropStyle } from "@/lib/banner-crop";
 import { ORDER_LABELS, ORDER_STATUSES, canAcceptOrders, type MenuItem } from "@/lib/access";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { ScannerTab } from "@/components/foodexa/ScannerTab";
 import {
   cancelPendingOrder,
   ensureWelcomeEmail,
@@ -76,7 +77,7 @@ type Order = {
   order_type: string; created_at: string; prep_minutes: number; counter: string; status: string; canteen_id: string;
 };
 type Refund = { id: string; order_id: string; amount: number; status: string; admin_note: string | null; created_at: string };
-type Tab = "home" | "menu" | "orders" | "you";
+type Tab = "home" | "menu" | "orders" | "you" | "scan";
 
 const uid = () => Math.random().toString(36).slice(2);
 
@@ -336,6 +337,7 @@ function OrderingApp() {
             {tab === "home" && <HomeTab menu={liveMenu} canteen={canteen} template={canteenTemplate} onOpen={setDetail} onAdd={add} goMenu={() => setTab("menu")} />}
             {tab === "menu" && <MenuTab menu={liveMenu} onOpen={setDetail} onAdd={add} />}
             {tab === "orders" && <OrdersTab orders={orders} onOpen={(o) => setOpenOrderId(o.id)} />}
+            {tab === "scan" && profile.role === "student" && <ScannerTab />}
             {tab === "you" && <YouTab profile={profile} canteen={canteen} onSwitch={() => setSwitching(true)} onSignOut={signOut} />}
           </motion.main>
         </AnimatePresence>
@@ -348,7 +350,7 @@ function OrderingApp() {
         )}
 
         <nav className="glass fixed inset-x-0 bottom-0 z-40 mx-auto flex max-w-3xl justify-around rounded-t-3xl px-2 pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-3">
-          {([["home", "HOME", Home], ["menu", "MENU", UtensilsCrossed], ["orders", "ORDERS", Receipt], ["you", "YOU", User]] as const).map(([k, label, Icon]) => (
+          {([["home", "HOME", Home], ["menu", "MENU", UtensilsCrossed], ["orders", "ORDERS", Receipt], ["you", "YOU", User], ...(profile.role === "student" ? [["scan", "SCAN", ScanLine] as const] : [])] as const).map(([k, label, Icon]) => (
             <button key={k} onClick={() => setTab(k)} className={cn("flex min-w-0 flex-1 flex-col items-center gap-1 py-1 text-[9px] font-bold tracking-normal transition sm:text-[10px] sm:tracking-widest", tab === k ? "text-primary-bright" : "text-muted-foreground")}>
               <Icon className={cn("h-5 w-5 transition", tab === k && "scale-110")} />
               {label}
