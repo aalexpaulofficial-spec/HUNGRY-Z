@@ -2,16 +2,19 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   Outlet,
   Link,
+  useLocation,
   createRootRouteWithContext,
   useRouter,
   HeadContent,
   Scripts,
   type ErrorComponentProps,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
+import { BackProvider, BackButton } from "../lib/back-nav";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { isStandaloneApp, markAppInstalled } from "../lib/pwa-install";
 
 function NotFoundComponent() {
   return (
@@ -78,16 +81,24 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "HUNGRY — Smart Campus Food Ordering" },
+      {
+        name: "description",
+        content:
+          "HUNGRY — smart campus food ordering with ₹0 platform fee on every order.",
+      },
+      { name: "author", content: "HUNGRY" },
+      { name: "theme-color", content: "#050505" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@Lovable" },
     ],
     links: [
+      { rel: "preconnect", href: "https://fonts.googleapis.com" },
+      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Noto+Sans+Devanagari:wght@400;500;600;700;800&family=Noto+Sans+Kannada:wght@400;500;600;700;800&family=Sora:wght@400;600;700;800&display=swap",
+      },
       {
         rel: "stylesheet",
         href: appCss,
@@ -95,6 +106,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
     ],
   }),
+
   shellComponent: RootShell,
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
@@ -103,9 +115,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" data-theme="dark" suppressHydrationWarning>
       <head>
         <HeadContent />
+        <script>{`try { var hungryTheme = localStorage.getItem("hungry-theme"); if (hungryTheme === "light" || hungryTheme === "dark") document.documentElement.dataset.theme = hungryTheme; } catch {}`}</script>
+        {/* Capture Chrome's one-shot install event before the hydrated app bundle loads. */}
+        <script src="/pwa-install-capture.js" />
       </head>
       <body>
         {children}
@@ -117,11 +132,35 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const { pathname, searchStr } = useLocation();
+  const appFromUrl = new URLSearchParams(searchStr).get("hungry_app");
+  const hasAppLaunchMarker = appFromUrl === "student" || appFromUrl === "canteen";
+  const [standaloneApp, setStandaloneApp] = useState(hasAppLaunchMarker);
+
+  useEffect(() => {
+    if ("serviceWorker" in navigator) {
+      void navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch(() => undefined);
+    }
+  }, []);
+
+  useEffect(() => {
+    const standalone = isStandaloneApp();
+    setStandaloneApp(standalone || hasAppLaunchMarker);
+    const app = appFromUrl;
+    if (standalone && (app === "student" || app === "canteen")) {
+      markAppInstalled(app, true);
+      const themeColor = app === "student" ? "#e60012" : "#050505";
+      document.querySelector('meta[name="theme-color"]')?.setAttribute("content", themeColor);
+    }
+  }, [appFromUrl, hasAppLaunchMarker]);
 
   return (
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
+      <BackProvider disabled={standaloneApp && pathname !== "/privacy" && pathname !== "/terms"}>
+        <BackButton />
+        <Outlet />
+      </BackProvider>
     </QueryClientProvider>
   );
 }

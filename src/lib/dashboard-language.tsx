@@ -1,0 +1,164 @@
+import { useCallback, useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+
+export type DashboardLanguage = "en" | "hi" | "kn";
+export const DASHBOARD_LANGUAGES: { value: DashboardLanguage; label: string }[] = [
+  { value: "en", label: "English" },
+  { value: "hi", label: "हिंदी" },
+  { value: "kn", label: "ಕನ್ನಡ" },
+];
+
+const hi: Record<string, string> = {
+  Language: "भाषा", "Log out": "लॉग आउट", "Sign out": "साइन आउट", "Use another account": "दूसरे खाते का उपयोग करें", "Try again": "फिर से कोशिश करें", Continue: "जारी रखें", "Loading…": "लोड हो रहा है…", "Loading...": "लोड हो रहा है…",
+  "CANTEEN DASHBOARD": "कैंटीन डैशबोर्ड", "Canteen Dashboard": "कैंटीन डैशबोर्ड", Menu: "मेन्यू", "Live Orders": "लाइव ऑर्डर", "Change Template": "टेम्पलेट बदलें", "Add item": "आइटम जोड़ें", "Add Item": "आइटम जोड़ें", Save: "सहेजें", Edit: "बदलें", Delete: "हटाएं", Cancel: "रद्द करें", Available: "उपलब्ध", "Sold out": "स्टॉक खत्म", "in stock": "स्टॉक में", Veg: "शाकाहारी", "Non-veg": "मांसाहारी",
+  "Save template": "टेम्पलेट सहेजें", "Saving template…": "टेम्पलेट सहेजा जा रहा है…", "Student Home Banner": "छात्र होम बैनर", "Customize the banner students see on this canteen’s Home page.": "इस कैंटीन के होम पेज पर छात्रों को दिखने वाला बैनर बदलें।", "Customize the banner students see on this canteen's Home page.": "इस कैंटीन के होम पेज पर छात्रों को दिखने वाला बैनर बदलें।", "Banner image (JPG, PNG, WebP, or AVIF; max 8 MB)": "बैनर छवि (JPG, PNG, WebP या AVIF; अधिकतम 8 MB)", "Choose canteen banner image": "कैंटीन बैनर तस्वीर चुनें", "Heading (optional)": "शीर्षक (वैकल्पिक)", "Description (optional)": "विवरण (वैकल्पिक)", "Preview · drag image to reposition": "पूर्वावलोकन · तस्वीर को खींचकर जगह बदलें", Preview: "पूर्वावलोकन", Mobile: "मोबाइल", mobile: "मोबाइल", Tablet: "टैबलेट", tablet: "टैबलेट", Laptop: "लैपटॉप", laptop: "लैपटॉप", Zoom: "ज़ूम",
+  "Item name": "आइटम का नाम", "Category (e.g. Meals)": "श्रेणी (जैसे भोजन)", "Preparation minutes": "तैयारी का समय (मिनट)", Counter: "काउंटर", "Counter (e.g. Counter 1)": "काउंटर (जैसे काउंटर 1)", Tag: "टैग", "Tag (optional, e.g. Bestseller)": "टैग (वैकल्पिक, जैसे बेस्टसेलर)", Stock: "स्टॉक", "Stock (empty = unlimited)": "स्टॉक (खाली छोड़ें = असीमित)", Description: "विवरण", "Upload Food Image": "खाने की तस्वीर अपलोड करें", "Choose food image file": "खाने की तस्वीर चुनें", "Selected food image preview": "चुनी हुई खाने की तस्वीर का पूर्वावलोकन", "Current food image": "मौजूदा खाने की तस्वीर", "Choose a JPG, PNG, WEBP, or AVIF image (up to 8 MB).": "JPG, PNG, WEBP या AVIF तस्वीर चुनें (अधिकतम 8 MB)।",
+  "Available for order": "ऑर्डर के लिए उपलब्ध", "No orders yet. New orders appear here instantly.": "अभी कोई ऑर्डर नहीं है। नए ऑर्डर यहां तुरंत दिखेंगे।", "No orders yet": "अभी कोई ऑर्डर नहीं", "Order ID": "ऑर्डर आईडी", "Pickup code": "पिकअप कोड", "Mark paid & collected": "भुगतान और संग्रहित चिह्नित करें", "Awaiting payment": "भुगतान की प्रतीक्षा", Placed: "ऑर्डर दिया गया", Preparing: "तैयार हो रहा है", "Ready for pickup": "पिकअप के लिए तैयार", Collected: "ले लिया गया", Cancelled: "रद्द",
+  HOME: "होम", MENU: "मेन्यू", ORDERS: "ऑर्डर", YOU: "आप", "Your cart": "आपकी टोकरी", "Cart is empty": "टोकरी खाली है", "Add something tasty from the menu.": "मेन्यू से कुछ स्वादिष्ट जोड़ें।", "Order type": "ऑर्डर का प्रकार", Payment: "भुगतान", Coupon: "कूपन", Apply: "लागू करें", Remove: "हटाएं", Subtotal: "उप-योग", "Coupon discount": "कूपन छूट", "Platform fee": "प्लेटफ़ॉर्म शुल्क", Total: "कुल", "Place order": "ऑर्डर करें", "Canteen not accepting orders": "कैंटीन अभी ऑर्डर नहीं ले रही", "Search dishes…": "व्यंजन खोजें…", "Add to cart": "टोकरी में जोड़ें", "No menu yet": "अभी मेन्यू नहीं है", "On the menu": "मेन्यू में", "Today's picks": "आज के खास व्यंजन", "Quick bites": "झटपट नाश्ता", "Skip the queue.": "कतार से बचें।", "Order now ↗": "अभी ऑर्डर करें ↗",
+  "Dine-in": "यहीं खाएं", Parcel: "पार्सल", "Pay online (UPI / Card / Netbanking)": "ऑनलाइन भुगतान (UPI / कार्ड / नेटबैंकिंग)", "Pay at counter": "काउंटर पर भुगतान", Paid: "भुगतान हुआ", "Payment failed": "भुगतान विफल", "Refund in progress": "रिफंड जारी है", Refunded: "रिफंड हो गया", "Request a refund": "रिफंड का अनुरोध करें", "Send request": "अनुरोध भेजें", Back: "वापस", "Current canteen": "वर्तमान कैंटीन", "Switch Campus / Canteen": "कैंपस / कैंटीन बदलें", "Where are you eating?": "आप कहां खाएंगे?", "Public canteens": "सार्वजनिक कैंटीन", "Enter another approved code": "दूसरा स्वीकृत कोड दर्ज करें", "Switch canteen": "कैंटीन बदलें", "Show at": "यहां दिखाएं", "Verified HUNGRY canteen": "सत्यापित HUNGRY कैंटीन", Close: "बंद करें", Name: "नाम", Email: "ईमेल", Campus: "कैंपस",
+  "Order placed. Pay at the counter when you pick it up.": "ऑर्डर हो गया। पिकअप के समय काउंटर पर भुगतान करें।", "Payment confirmed. Your order is with the kitchen.": "भुगतान की पुष्टि हुई। आपका ऑर्डर रसोई में है।", "Online payment isn't available at the moment.": "अभी ऑनलाइन भुगतान उपलब्ध नहीं है।", "Parcel orders are paid at the counter.": "पार्सल ऑर्डर का भुगतान काउंटर पर होगा।", "Coupon applied": "कूपन लागू हुआ", "Enter code": "कोड दर्ज करें", "Checking…": "जांच जारी है…", "Why do you need a refund?": "आपको रिफंड क्यों चाहिए?", "Your orders, tracking and pickup QR codes will show up here.": "आपके ऑर्डर, ट्रैकिंग और पिकअप QR कोड यहां दिखेंगे।", "Your canteen is getting ready": "आपकी कैंटीन तैयार हो रही है", "Order collected": "ऑर्डर ले लिया गया", "ORDER COLLECTED": "ऑर्डर ले लिया गया", "THANK YOU FOR USING HUNGRY!": "HUNGRY का उपयोग करने के लिए धन्यवाद!", "Continue Exploring": "खोज जारी रखें", "Refund requested": "रिफंड का अनुरोध किया गया", "Refund processing": "रिफंड जारी है", "Refund declined": "रिफंड अस्वीकार", "Something went wrong": "कुछ गड़बड़ हुई", "This order was cancelled.": "यह ऑर्डर रद्द कर दिया गया।", "This order is waiting for payment.": "यह ऑर्डर भुगतान की प्रतीक्षा में है।", "Your last payment attempt failed.": "आपका पिछला भुगतान विफल हुआ।", "Your account isn't a customer account": "यह ग्राहक खाता नहीं है", "Enter your campus code": "अपना कैंपस कोड दर्ज करें", "Your canteen is in maintenance mode — customers can't place orders.": "आपकी कैंटीन रखरखाव में है — ग्राहक ऑर्डर नहीं दे सकते।", "Order cancelled. Nothing was charged.": "ऑर्डर रद्द हुआ। कोई शुल्क नहीं लिया गया।", "Refund requested. We've emailed you a confirmation.": "रिफंड का अनुरोध किया गया। पुष्टि ईमेल कर दी गई है।",
+};
+
+const kn: Record<string, string> = {
+  Language: "ಭಾಷೆ", "Log out": "ಲಾಗ್ ಔಟ್", "Sign out": "ಸೈನ್ ಔಟ್", "Use another account": "ಬೇರೆ ಖಾತೆ ಬಳಸಿ", "Try again": "ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ", Continue: "ಮುಂದುವರಿಸಿ", "Loading…": "ಲೋಡ್ ಆಗುತ್ತಿದೆ…", "Loading...": "ಲೋಡ್ ಆಗುತ್ತಿದೆ…",
+  "CANTEEN DASHBOARD": "ಕ್ಯಾಂಟೀನ್ ಡ್ಯಾಶ್‌ಬೋರ್ಡ್", "Canteen Dashboard": "ಕ್ಯಾಂಟೀನ್ ಡ್ಯಾಶ್‌ಬೋರ್ಡ್", Menu: "ಮೆನು", "Live Orders": "ಲೈವ್ ಆರ್ಡರ್‌ಗಳು", "Change Template": "ಟೆಂಪ್ಲೇಟ್ ಬದಲಿಸಿ", "Add item": "ಐಟಂ ಸೇರಿಸಿ", "Add Item": "ಐಟಂ ಸೇರಿಸಿ", Save: "ಉಳಿಸಿ", Edit: "ತಿದ್ದುಪಡಿ", Delete: "ಅಳಿಸಿ", Cancel: "ರದ್ದುಮಾಡಿ", Available: "ಲಭ್ಯವಿದೆ", "Sold out": "ಸ್ಟಾಕ್ ಖಾಲಿ", "in stock": "ಸ್ಟಾಕ್‌ನಲ್ಲಿದೆ", Veg: "ಸಸ್ಯಾಹಾರಿ", "Non-veg": "ಮಾಂಸಾಹಾರಿ",
+  "Save template": "ಟೆಂಪ್ಲೇಟ್ ಉಳಿಸಿ", "Saving template…": "ಟೆಂಪ್ಲೇಟ್ ಉಳಿಸಲಾಗುತ್ತಿದೆ…", "Student Home Banner": "ವಿದ್ಯಾರ್ಥಿ ಹೋಮ್ ಬ್ಯಾನರ್", "Customize the banner students see on this canteen’s Home page.": "ಈ ಕ್ಯಾಂಟೀನ್‌ನ ಹೋಮ್ ಪುಟದಲ್ಲಿ ವಿದ್ಯಾರ್ಥಿಗಳು ನೋಡುವ ಬ್ಯಾನರ್ ಬದಲಿಸಿ.", "Customize the banner students see on this canteen's Home page.": "ಈ ಕ್ಯಾಂಟೀನ್‌ನ ಹೋಮ್ ಪುಟದಲ್ಲಿ ವಿದ್ಯಾರ್ಥಿಗಳು ನೋಡುವ ಬ್ಯಾನರ್ ಬದಲಿಸಿ.", "Banner image (JPG, PNG, WebP, or AVIF; max 8 MB)": "ಬ್ಯಾನರ್ ಚಿತ್ರ (JPG, PNG, WebP ಅಥವಾ AVIF; ಗರಿಷ್ಠ 8 MB)", "Choose canteen banner image": "ಕ್ಯಾಂಟೀನ್ ಬ್ಯಾನರ್ ಚಿತ್ರ ಆರಿಸಿ", "Heading (optional)": "ಶೀರ್ಷಿಕೆ (ಐಚ್ಛಿಕ)", "Description (optional)": "ವಿವರಣೆ (ಐಚ್ಛಿಕ)", "Preview · drag image to reposition": "ಮುನ್ನೋಟ · ಚಿತ್ರವನ್ನು ಎಳೆದು ಸ್ಥಾನ ಬದಲಿಸಿ", Preview: "ಮುನ್ನೋಟ", Mobile: "ಮೊಬೈಲ್", mobile: "ಮೊಬೈಲ್", Tablet: "ಟ್ಯಾಬ್ಲೆಟ್", tablet: "ಟ್ಯಾಬ್ಲೆಟ್", Laptop: "ಲ್ಯಾಪ್‌ಟಾಪ್", laptop: "ಲ್ಯಾಪ್‌ಟಾಪ್", Zoom: "ಝೂಮ್",
+  "Item name": "ಐಟಂ ಹೆಸರು", "Price (₹)": "ಬೆಲೆ (₹)", "Category (e.g. Meals)": "ವರ್ಗ (ಉದಾ. ಊಟ)", "Preparation minutes": "ತಯಾರಿ ಸಮಯ (ನಿಮಿಷ)", Counter: "ಕೌಂಟರ್", "Counter (e.g. Counter 1)": "ಕೌಂಟರ್ (ಉದಾ. ಕೌಂಟರ್ 1)", Tag: "ಟ್ಯಾಗ್", "Tag (optional, e.g. Bestseller)": "ಟ್ಯಾಗ್ (ಐಚ್ಛಿಕ, ಉದಾ. ಬೆಸ್ಟ್‌ಸೆಲ್ಲರ್)", Stock: "ಸ್ಟಾಕ್", "Stock (empty = unlimited)": "ಸ್ಟಾಕ್ (ಖಾಲಿ = ಮಿತಿಯಿಲ್ಲ)", Description: "ವಿವರಣೆ", "Upload Food Image": "ಆಹಾರದ ಚಿತ್ರ ಅಪ್‌ಲೋಡ್ ಮಾಡಿ", "Choose food image file": "ಆಹಾರದ ಚಿತ್ರ ಆಯ್ಕೆಮಾಡಿ", "Selected food image preview": "ಆಯ್ಕೆ ಮಾಡಿದ ಆಹಾರದ ಚಿತ್ರದ ಮುನ್ನೋಟ", "Current food image": "ಪ್ರಸ್ತುತ ಆಹಾರದ ಚಿತ್ರ", "Choose a JPG, PNG, WEBP, or AVIF image (up to 8 MB).": "JPG, PNG, WEBP ಅಥವಾ AVIF ಚಿತ್ರ ಆಯ್ಕೆಮಾಡಿ (ಗರಿಷ್ಠ 8 MB).", "Available for order": "ಆರ್ಡರ್‌ಗೆ ಲಭ್ಯವಿದೆ",
+  "No orders yet. New orders appear here instantly.": "ಇನ್ನೂ ಆರ್ಡರ್‌ಗಳಿಲ್ಲ. ಹೊಸ ಆರ್ಡರ್‌ಗಳು ಇಲ್ಲಿ ತಕ್ಷಣ ಕಾಣಿಸುತ್ತವೆ.", "No orders yet": "ಇನ್ನೂ ಆರ್ಡರ್‌ಗಳಿಲ್ಲ", "Order ID": "ಆರ್ಡರ್ ಐಡಿ", "Pickup code": "ಪಿಕಪ್ ಕೋಡ್", "Mark paid & collected": "ಪಾವತಿ ಮತ್ತು ಸಂಗ್ರಹ ಗುರುತಿಸಿ", "Awaiting payment": "ಪಾವತಿಗಾಗಿ ಕಾಯುತ್ತಿದೆ", Placed: "ಆರ್ಡರ್ ಮಾಡಲಾಗಿದೆ", Preparing: "ತಯಾರಾಗುತ್ತಿದೆ", "Ready for pickup": "ಪಿಕಪ್‌ಗೆ ಸಿದ್ಧ", Collected: "ಪಡೆದುಕೊಳ್ಳಲಾಗಿದೆ", Cancelled: "ರದ್ದಾಗಿದೆ",
+  HOME: "ಹೋಮ್", MENU: "ಮೆನು", ORDERS: "ಆರ್ಡರ್‌ಗಳು", YOU: "ನೀವು", "Your cart": "ನಿಮ್ಮ ಕಾರ್ಟ್", "Cart is empty": "ಕಾರ್ಟ್ ಖಾಲಿಯಾಗಿದೆ", "Add something tasty from the menu.": "ಮೆನುವಿನಿಂದ ರುಚಿಯಾದದ್ದನ್ನು ಸೇರಿಸಿ.", "Order type": "ಆರ್ಡರ್ ವಿಧ", Payment: "ಪಾವತಿ", Coupon: "ಕೂಪನ್", Apply: "ಅನ್ವಯಿಸಿ", Remove: "ತೆಗೆದುಹಾಕಿ", Subtotal: "ಉಪಮೊತ್ತ", "Coupon discount": "ಕೂಪನ್ ರಿಯಾಯಿತಿ", "Platform fee": "ಪ್ಲಾಟ್‌ಫಾರ್ಮ್ ಶುಲ್ಕ", Total: "ಒಟ್ಟು", "Place order": "ಆರ್ಡರ್ ಮಾಡಿ", "Canteen not accepting orders": "ಕ್ಯಾಂಟೀನ್ ಈಗ ಆರ್ಡರ್ ಸ್ವೀಕರಿಸುತ್ತಿಲ್ಲ", "Search dishes…": "ತಿನಿಸುಗಳನ್ನು ಹುಡುಕಿ…", "Add to cart": "ಕಾರ್ಟ್‌ಗೆ ಸೇರಿಸಿ", "No menu yet": "ಇನ್ನೂ ಮೆನು ಇಲ್ಲ", "On the menu": "ಮೆನುವಿನಲ್ಲಿ", "Today's picks": "ಇಂದಿನ ವಿಶೇಷಗಳು", "Quick bites": "ತ್ವರಿತ ತಿಂಡಿಗಳು", "Skip the queue.": "ಸರದಿಯನ್ನು ತಪ್ಪಿಸಿ.", "Order now ↗": "ಈಗ ಆರ್ಡರ್ ಮಾಡಿ ↗",
+  "Dine-in": "ಇಲ್ಲೇ ಸೇವಿಸಿ", Parcel: "ಪಾರ್ಸೆಲ್", "Pay online (UPI / Card / Netbanking)": "ಆನ್‌ಲೈನ್ ಪಾವತಿ (UPI / ಕಾರ್ಡ್ / ನೆಟ್‌ಬ್ಯಾಂಕಿಂಗ್)", "Pay at counter": "ಕೌಂಟರ್‌ನಲ್ಲಿ ಪಾವತಿ", Paid: "ಪಾವತಿಸಲಾಗಿದೆ", "Payment failed": "ಪಾವತಿ ವಿಫಲವಾಗಿದೆ", "Refund in progress": "ಮರುಪಾವತಿ ಪ್ರಗತಿಯಲ್ಲಿದೆ", Refunded: "ಮರುಪಾವತಿಸಲಾಗಿದೆ", "Request a refund": "ಮರುಪಾವತಿ ವಿನಂತಿಸಿ", "Send request": "ವಿನಂತಿ ಕಳುಹಿಸಿ", Back: "ಹಿಂದೆ", "Current canteen": "ಪ್ರಸ್ತುತ ಕ್ಯಾಂಟೀನ್", "Switch Campus / Canteen": "ಕ್ಯಾಂಪಸ್ / ಕ್ಯಾಂಟೀನ್ ಬದಲಿಸಿ", "Where are you eating?": "ನೀವು ಎಲ್ಲಿ ಊಟ ಮಾಡುತ್ತೀರಿ?", "Public canteens": "ಸಾರ್ವಜನಿಕ ಕ್ಯಾಂಟೀನ್‌ಗಳು", "Enter another approved code": "ಬೇರೆ ಅನುಮೋದಿತ ಕೋಡ್ ನಮೂದಿಸಿ", "Switch canteen": "ಕ್ಯಾಂಟೀನ್ ಬದಲಿಸಿ", "Show at": "ಇಲ್ಲಿ ತೋರಿಸಿ", "Verified HUNGRY canteen": "ಪರಿಶೀಲಿಸಿದ HUNGRY ಕ್ಯಾಂಟೀನ್", Close: "ಮುಚ್ಚಿ", Name: "ಹೆಸರು", Email: "ಇಮೇಲ್", Campus: "ಕ್ಯಾಂಪಸ್",
+  "Order placed. Pay at the counter when you pick it up.": "ಆರ್ಡರ್ ಆಗಿದೆ. ಪಿಕಪ್ ಮಾಡುವಾಗ ಕೌಂಟರ್‌ನಲ್ಲಿ ಪಾವತಿಸಿ.", "Payment confirmed. Your order is with the kitchen.": "ಪಾವತಿ ದೃಢಪಟ್ಟಿದೆ. ನಿಮ್ಮ ಆರ್ಡರ್ ಅಡುಗೆಮನೆಯಲ್ಲಿದೆ.", "Online payment isn't available at the moment.": "ಈಗ ಆನ್‌ಲೈನ್ ಪಾವತಿ ಲಭ್ಯವಿಲ್ಲ.", "Parcel orders are paid at the counter.": "ಪಾರ್ಸೆಲ್ ಆರ್ಡರ್‌ಗಳಿಗೆ ಕೌಂಟರ್‌ನಲ್ಲಿ ಪಾವತಿಸಬೇಕು.", "Coupon applied": "ಕೂಪನ್ ಅನ್ವಯಿಸಲಾಗಿದೆ", "Enter code": "ಕೋಡ್ ನಮೂದಿಸಿ", "Checking…": "ಪರಿಶೀಲಿಸಲಾಗುತ್ತಿದೆ…", "Why do you need a refund?": "ನಿಮಗೆ ಮರುಪಾವತಿ ಏಕೆ ಬೇಕು?", "Your orders, tracking and pickup QR codes will show up here.": "ನಿಮ್ಮ ಆರ್ಡರ್‌ಗಳು, ಟ್ರ್ಯಾಕಿಂಗ್ ಮತ್ತು ಪಿಕಪ್ QR ಕೋಡ್‌ಗಳು ಇಲ್ಲಿ ಕಾಣಿಸುತ್ತವೆ.", "Your canteen is getting ready": "ನಿಮ್ಮ ಕ್ಯಾಂಟೀನ್ ಸಿದ್ಧವಾಗುತ್ತಿದೆ", "ORDER COLLECTED": "ಆರ್ಡರ್ ಪಡೆದುಕೊಳ್ಳಲಾಗಿದೆ", "THANK YOU FOR USING HUNGRY!": "HUNGRY ಬಳಸಿದ್ದಕ್ಕೆ ಧನ್ಯವಾದಗಳು!", "Continue Exploring": "ಮುಂದುವರಿಸಿ ಅನ್ವೇಷಿಸಿ", "Refund requested": "ಮರುಪಾವತಿ ವಿನಂತಿಸಲಾಗಿದೆ", "Refund processing": "ಮರುಪಾವತಿ ಪ್ರಗತಿಯಲ್ಲಿದೆ", "Refund declined": "ಮರುಪಾವತಿ ತಿರಸ್ಕರಿಸಲಾಗಿದೆ", "Something went wrong": "ಏನೋ ತಪ್ಪಾಗಿದೆ", "This order was cancelled.": "ಈ ಆರ್ಡರ್ ರದ್ದಾಗಿದೆ.", "This order is waiting for payment.": "ಈ ಆರ್ಡರ್ ಪಾವತಿಗಾಗಿ ಕಾಯುತ್ತಿದೆ.", "Your last payment attempt failed.": "ನಿಮ್ಮ ಹಿಂದಿನ ಪಾವತಿ ವಿಫಲವಾಗಿದೆ.", "Your account isn't a customer account": "ಇದು ಗ್ರಾಹಕ ಖಾತೆಯಲ್ಲ", "Enter your campus code": "ನಿಮ್ಮ ಕ್ಯಾಂಪಸ್ ಕೋಡ್ ನಮೂದಿಸಿ", "Your canteen is in maintenance mode — customers can't place orders.": "ನಿಮ್ಮ ಕ್ಯಾಂಟೀನ್ ನಿರ್ವಹಣೆಯಲ್ಲಿದೆ — ಗ್ರಾಹಕರು ಆರ್ಡರ್ ಮಾಡಲು ಸಾಧ್ಯವಿಲ್ಲ.", "Order cancelled. Nothing was charged.": "ಆರ್ಡರ್ ರದ್ದಾಗಿದೆ. ಯಾವುದೇ ಹಣ ಕಡಿತವಾಗಿಲ್ಲ.", "Refund requested. We've emailed you a confirmation.": "ಮರುಪಾವತಿ ವಿನಂತಿಸಲಾಗಿದೆ. ದೃಢೀಕರಣ ಇಮೇಲ್ ಮಾಡಲಾಗಿದೆ.",
+};
+
+const hiExtra: Record<string, string> = {
+  "This account isn't a customer account": "यह ग्राहक खाता नहीं है", "Canteen owners use the Canteen Dashboard. Students, faculty and guests create an account from the sign-up page.": "कैंटीन मालिक कैंटीन डैशबोर्ड का उपयोग करते हैं। छात्र, शिक्षक और अतिथि साइन-अप पेज पर खाता बनाएं।",
+  "Enter your campus code": "अपना कैंपस कोड दर्ज करें", "Your university or canteen shares a verified 7-character HUNGRY code. It opens that canteen's live menu.": "आपका विश्वविद्यालय या कैंटीन सत्यापित 7 अक्षरों का HUNGRY कोड साझा करता है। इससे उस कैंटीन का लाइव मेन्यू खुलता है।",
+  "Switch Campus / Canteen": "कैंपस / कैंटीन बदलें", "Where are you eating?": "आप कहां खाएंगे?", "Enter another approved code": "दूसरा स्वीकृत कोड दर्ज करें", "Public canteens": "सार्वजनिक कैंटीन", "Switch canteen": "कैंटीन बदलें", current: "वर्तमान", "University / Canteen code": "विश्वविद्यालय / कैंटीन कोड",
+  "Account details": "खाते का विवरण", "Current canteen": "वर्तमान कैंटीन", "Verified HUNGRY canteen": "सत्यापित HUNGRY कैंटीन",  "Enter another approved code to open its live menu": "लाइव मेन्यू खोलने के लिए दूसरा स्वीकृत कोड दर्ज करें",
+  "Order type": "ऑर्डर का प्रकार", "TEST MODE": "परीक्षण मोड", "Online payment isn't available at the moment.": "अभी ऑनलाइन भुगतान उपलब्ध नहीं है।", "Your cart is empty or too large.": "आपकी टोकरी खाली है या बहुत बड़ी है।", "Choose dine-in or parcel.": "यहीं खाने या पार्सल का विकल्प चुनें।", "Choose a payment method.": "भुगतान का तरीका चुनें।", "Parcel orders are paid at the counter.": "पार्सल ऑर्डर का भुगतान काउंटर पर होगा।", "Each item can be ordered 1–20 times.": "हर आइटम 1–20 बार ऑर्डर किया जा सकता है।", "This canteen isn't accepting orders right now.": "यह कैंटीन अभी ऑर्डर नहीं ले रही है।", "Some items are no longer available. Please review your cart.": "कुछ आइटम अब उपलब्ध नहीं हैं। कृपया अपनी टोकरी जांचें।", "Some items just sold out. Please review your cart.": "कुछ आइटम अभी स्टॉक खत्म हो गए। कृपया टोकरी जांचें।", "Prices changed while you were ordering. Please review your cart.": "ऑर्डर करते समय कीमतें बदल गईं। कृपया टोकरी जांचें।", "This coupon can't be used.": "यह कूपन इस्तेमाल नहीं किया जा सकता।", "Enter a valid coupon code.": "मान्य कूपन कोड दर्ज करें।", "Coupon code": "कूपन कोड", "Coupon removed.": "कूपन हटाया गया।", "Checking…": "जांच जारी है…", "Apply": "लागू करें", "Remove": "हटाएं",
+  "View cart": "टोकरी देखें", "Opening payment…": "भुगतान विंडो खुल रही है…", "Placing order…": "ऑर्डर दिया जा रहा है…", "Payment is processing. We'll confirm your order as soon as Razorpay does.": "भुगतान जारी है। Razorpay की पुष्टि मिलते ही ऑर्डर की पुष्टि होगी।", "Payment failed. You can retry below.": "भुगतान विफल हुआ। आप नीचे फिर कोशिश कर सकते हैं।", "Payment not completed. You can pay or cancel from this order.": "भुगतान पूरा नहीं हुआ। आप इस ऑर्डर से भुगतान या रद्द कर सकते हैं।", "Order placed. Pay at the counter when you pick it up.": "ऑर्डर हो गया। पिकअप के समय काउंटर पर भुगतान करें।", "Order cancelled. Nothing was charged.": "ऑर्डर रद्द हुआ। कोई शुल्क नहीं लिया गया।", "This order was cancelled.": "यह ऑर्डर रद्द कर दिया गया।", "This order is waiting for payment.": "यह ऑर्डर भुगतान की प्रतीक्षा में है।", "Your last payment attempt failed.": "आपका पिछला भुगतान विफल हुआ।", "The kitchen starts once Razorpay confirms your payment. Unpaid orders are cancelled after 30 minutes.": "Razorpay से भुगतान की पुष्टि मिलते ही रसोई तैयारी शुरू करेगी। बिना भुगतान वाले ऑर्डर 30 मिनट बाद रद्द हो जाते हैं।", "Pay now": "अभी भुगतान करें", "Cancel order": "ऑर्डर रद्द करें", "Request a refund": "रिफंड का अनुरोध करें", "Why do you need a refund?": "आपको रिफंड क्यों चाहिए?", "Send request": "अनुरोध भेजें", "Refund requested. We've emailed you a confirmation.": "रिफंड का अनुरोध किया गया। पुष्टि ईमेल कर दी गई है।", "Pickup code": "पिकअप कोड", "Order ID": "ऑर्डर आईडी", "ready in ~": "लगभग इतने समय में तैयार: ", "Your orders, tracking and pickup QR codes will show up here.": "आपके ऑर्डर, ट्रैकिंग और पिकअप QR कोड यहां दिखेंगे।", "No orders yet": "अभी कोई ऑर्डर नहीं", "Today's picks": "आज के खास व्यंजन", "Quick bites": "झटपट नाश्ता", "Your canteen is getting ready": "आपकी कैंटीन तैयार हो रही है", "No menu yet": "अभी मेन्यू नहीं है", "Search dishes…": "व्यंजन खोजें…", "Only 2 left": "केवल 2 बचे", "Order now ↗": "अभी ऑर्डर करें ↗", "Add to cart": "टोकरी में जोड़ें", "Remove one": "एक हटाएं", "Add one": "एक जोड़ें",
+  "Application under review": "आवेदन की समीक्षा जारी है", "Application rejected": "आवेदन अस्वीकृत", "Application not found": "आवेदन नहीं मिला", "Could not load your dashboard": "डैशबोर्ड लोड नहीं हो सका", "Use another account": "दूसरे खाते का उपयोग करें", "Try again": "फिर से कोशिश करें", "Canteen Owner Login": "कैंटीन मालिक लॉगिन", "Register your canteen": "अपनी कैंटीन पंजीकृत करें", "No approved canteen is linked to this account. Sign in with your 7-character Canteen Owner ID and Owner Password Code.": "इस खाते से कोई स्वीकृत कैंटीन जुड़ी नहीं है। अपने 7 अक्षर वाले कैंटीन मालिक आईडी और पासवर्ड कोड से साइन इन करें।",
+  "Your canteen is in maintenance mode — customers can't place orders.": "आपकी कैंटीन रखरखाव में है — ग्राहक ऑर्डर नहीं दे सकते।", "Your menu is empty. Add your first item — it goes live for customers instantly.": "आपका मेन्यू खाली है। पहला आइटम जोड़ें — वह तुरंत ग्राहकों को दिखेगा।", "Save": "सहेजें", "Save template": "टेम्पलेट सहेजें", "Save template…": "टेम्पलेट सहेजा जा रहा है…", "Choose a JPG, PNG, WEBP, or AVIF image (up to 8 MB).": "JPG, PNG, WEBP या AVIF तस्वीर चुनें (अधिकतम 8 MB)।", "Available": "उपलब्ध", "Sold out": "स्टॉक खत्म", "Stock (empty = unlimited)": "स्टॉक (खाली छोड़ें = असीमित)", "Select food image": "खाने की तस्वीर चुनें", "Remove image": "तस्वीर हटाएं", "Item name": "आइटम का नाम", "Price (₹)": "कीमत (₹)", "Category (e.g. Meals)": "श्रेणी (जैसे भोजन)", "Preparation minutes": "तैयारी का समय (मिनट)", "Counter (e.g. Counter 1)": "काउंटर (जैसे काउंटर 1)", "Tag (optional, e.g. Bestseller)": "टैग (वैकल्पिक, जैसे बेस्टसेलर)", "Description": "विवरण", "Upload Food Image": "खाने की तस्वीर अपलोड करें", "Heading (optional)": "शीर्षक (वैकल्पिक)", "Description (optional)": "विवरण (वैकल्पिक)", Preview: "पूर्वावलोकन",  "Saving template…": "टेम्पलेट सहेजा जा रहा है…", "No orders yet. New orders appear here instantly.": "अभी कोई ऑर्डर नहीं है। नए ऑर्डर यहां तुरंत दिखेंगे।", "Mark paid & collected": "भुगतान और संग्रहित चिह्नित करें", "Cancel": "रद्द करें", "Dine-in": "यहीं खाएं", Parcel: "पार्सल", "Awaiting payment": "भुगतान की प्रतीक्षा", "Ready for pickup": "पिकअप के लिए तैयार", Preparing: "तैयार हो रहा है", Collected: "ले लिया गया", Placed: "ऑर्डर दिया गया", Cancelled: "रद्द",
+};
+
+const knExtra: Record<string, string> = {
+  "This account isn't a customer account": "ಇದು ಗ್ರಾಹಕ ಖಾತೆಯಲ್ಲ", "Canteen owners use the Canteen Dashboard. Students, faculty and guests create an account from the sign-up page.": "ಕ್ಯಾಂಟೀನ್ ಮಾಲೀಕರು ಕ್ಯಾಂಟೀನ್ ಡ್ಯಾಶ್‌ಬೋರ್ಡ್ ಬಳಸುತ್ತಾರೆ. ವಿದ್ಯಾರ್ಥಿಗಳು, ಅಧ್ಯಾಪಕರು ಮತ್ತು ಅತಿಥಿಗಳು ಸೈನ್-ಅಪ್ ಪುಟದಲ್ಲಿ ಖಾತೆ ರಚಿಸಬಹುದು.",
+  "Enter your campus code": "ನಿಮ್ಮ ಕ್ಯಾಂಪಸ್ ಕೋಡ್ ನಮೂದಿಸಿ", "Your university or canteen shares a verified 7-character HUNGRY code. It opens that canteen's live menu.": "ನಿಮ್ಮ ವಿಶ್ವವಿದ್ಯಾಲಯ ಅಥವಾ ಕ್ಯಾಂಟೀನ್ ಪರಿಶೀಲಿಸಿದ 7 ಅಕ್ಷರಗಳ HUNGRY ಕೋಡ್ ನೀಡುತ್ತದೆ. ಅದು ಕ್ಯಾಂಟೀನ್‌ನ ಲೈವ್ ಮೆನು ತೆರೆಯುತ್ತದೆ.", "Switch Campus / Canteen": "ಕ್ಯಾಂಪಸ್ / ಕ್ಯಾಂಟೀನ್ ಬದಲಿಸಿ", "Where are you eating?": "ನೀವು ಎಲ್ಲಿ ಊಟ ಮಾಡುತ್ತೀರಿ?", "Enter another approved code": "ಬೇರೆ ಅನುಮೋದಿತ ಕೋಡ್ ನಮೂದಿಸಿ", "Public canteens": "ಸಾರ್ವಜನಿಕ ಕ್ಯಾಂಟೀನ್‌ಗಳು", "Switch canteen": "ಕ್ಯಾಂಟೀನ್ ಬದಲಿಸಿ", current: "ಪ್ರಸ್ತುತ", "University / Canteen code": "ವಿಶ್ವವಿದ್ಯಾಲಯ / ಕ್ಯಾಂಟೀನ್ ಕೋಡ್", "Enter another approved code to open its live menu": "ಲೈವ್ ಮೆನು ತೆರೆಯಲು ಬೇರೆ ಅನುಮೋದಿತ ಕೋಡ್ ನಮೂದಿಸಿ",
+  "TEST MODE": "ಪರೀಕ್ಷಾ ಮೋಡ್", "Choose dine-in or parcel.": "ಇಲ್ಲೇ ಊಟ ಅಥವಾ ಪಾರ್ಸೆಲ್ ಆಯ್ಕೆಮಾಡಿ.", "Choose a payment method.": "ಪಾವತಿ ವಿಧಾನ ಆಯ್ಕೆಮಾಡಿ.", "Each item can be ordered 1–20 times.": "ಪ್ರತಿ ಐಟಂ ಅನ್ನು 1–20 ಬಾರಿ ಆರ್ಡರ್ ಮಾಡಬಹುದು.", "This canteen isn't accepting orders right now.": "ಈ ಕ್ಯಾಂಟೀನ್ ಈಗ ಆರ್ಡರ್ ಸ್ವೀಕರಿಸುತ್ತಿಲ್ಲ.", "Some items are no longer available. Please review your cart.": "ಕೆಲವು ಐಟಂಗಳು ಈಗ ಲಭ್ಯವಿಲ್ಲ. ಕಾರ್ಟ್ ಪರಿಶೀಲಿಸಿ.", "Some items just sold out. Please review your cart.": "ಕೆಲವು ಐಟಂಗಳ ಸ್ಟಾಕ್ ಈಗ ಖಾಲಿಯಾಗಿದೆ. ಕಾರ್ಟ್ ಪರಿಶೀಲಿಸಿ.", "Prices changed while you were ordering. Please review your cart.": "ಆರ್ಡರ್ ಮಾಡುವಾಗ ಬೆಲೆ ಬದಲಾಗಿದೆ. ಕಾರ್ಟ್ ಪರಿಶೀಲಿಸಿ.", "This coupon can't be used.": "ಈ ಕೂಪನ್ ಬಳಸಲಾಗುವುದಿಲ್ಲ.", "Enter a valid coupon code.": "ಮಾನ್ಯ ಕೂಪನ್ ಕೋಡ್ ನಮೂದಿಸಿ.", "Coupon code": "ಕೂಪನ್ ಕೋಡ್", "Coupon removed.": "ಕೂಪನ್ ತೆಗೆದುಹಾಕಲಾಗಿದೆ.", "Checking…": "ಪರಿಶೀಲಿಸಲಾಗುತ್ತಿದೆ…", "Your cart is empty or too large.": "ನಿಮ್ಮ ಕಾರ್ಟ್ ಖಾಲಿಯಾಗಿದೆ ಅಥವಾ ತುಂಬಾ ದೊಡ್ಡದಾಗಿದೆ.",
+  "Opening payment…": "ಪಾವತಿ ವಿಂಡೋ ತೆರೆಯುತ್ತಿದೆ…", "Placing order…": "ಆರ್ಡರ್ ಮಾಡಲಾಗುತ್ತಿದೆ…", "Payment is processing. We'll confirm your order as soon as Razorpay does.": "ಪಾವತಿ ಪ್ರಕ್ರಿಯೆಯಲ್ಲಿದೆ. Razorpay ದೃಢೀಕರಿಸಿದ ತಕ್ಷಣ ಆರ್ಡರ್ ಖಚಿತಪಡಿಸುತ್ತೇವೆ.", "Payment failed. You can retry below.": "ಪಾವತಿ ವಿಫಲವಾಗಿದೆ. ಕೆಳಗೆ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.", "Payment not completed. You can pay or cancel from this order.": "ಪಾವತಿ ಪೂರ್ಣಗೊಂಡಿಲ್ಲ. ಈ ಆರ್ಡರ್‌ನಿಂದ ಪಾವತಿಸಿ ಅಥವಾ ರದ್ದುಮಾಡಿ.", "Order placed. Pay at the counter when you pick it up.": "ಆರ್ಡರ್ ಆಗಿದೆ. ಪಿಕಪ್ ಮಾಡುವಾಗ ಕೌಂಟರ್‌ನಲ್ಲಿ ಪಾವತಿಸಿ.", "The kitchen starts once Razorpay confirms your payment. Unpaid orders are cancelled after 30 minutes.": "Razorpay ಪಾವತಿ ದೃಢಪಡಿಸಿದ ನಂತರ ಅಡುಗೆಮನೆ ಪ್ರಾರಂಭಿಸುತ್ತದೆ. ಪಾವತಿಸದ ಆರ್ಡರ್‌ಗಳು 30 ನಿಮಿಷದ ಬಳಿಕ ರದ್ದಾಗುತ್ತವೆ.", "Pay now": "ಈಗ ಪಾವತಿಸಿ", "Cancel order": "ಆರ್ಡರ್ ರದ್ದುಮಾಡಿ", "Request a refund": "ಮರುಪಾವತಿ ವಿನಂತಿಸಿ", "Why do you need a refund?": "ನಿಮಗೆ ಮರುಪಾವತಿ ಏಕೆ ಬೇಕು?", "Send request": "ವಿನಂತಿ ಕಳುಹಿಸಿ", "Refund requested. We've emailed you a confirmation.": "ಮರುಪಾವತಿ ವಿನಂತಿಸಲಾಗಿದೆ. ದೃಢೀಕರಣ ಇಮೇಲ್ ಮಾಡಲಾಗಿದೆ.", "Pickup code": "ಪಿಕಪ್ ಕೋಡ್", "Order ID": "ಆರ್ಡರ್ ಐಡಿ", "Your orders, tracking and pickup QR codes will show up here.": "ನಿಮ್ಮ ಆರ್ಡರ್‌ಗಳು, ಟ್ರ್ಯಾಕಿಂಗ್ ಮತ್ತು ಪಿಕಪ್ QR ಕೋಡ್‌ಗಳು ಇಲ್ಲಿ ಕಾಣಿಸುತ್ತವೆ.", "No orders yet": "ಇನ್ನೂ ಆರ್ಡರ್‌ಗಳಿಲ್ಲ", "Your canteen is getting ready": "ನಿಮ್ಮ ಕ್ಯಾಂಟೀನ್ ಸಿದ್ಧವಾಗುತ್ತಿದೆ", "Search dishes…": "ತಿನಿಸುಗಳನ್ನು ಹುಡುಕಿ…", "Only 2 left": "ಇನ್ನೂ 2 ಮಾತ್ರ", "Remove one": "ಒಂದನ್ನು ತೆಗೆದುಹಾಕಿ", "Add one": "ಒಂದನ್ನು ಸೇರಿಸಿ",
+  "Application under review": "ಅರ್ಜಿಯ ಪರಿಶೀಲನೆ ನಡೆಯುತ್ತಿದೆ", "Application rejected": "ಅರ್ಜಿ ತಿರಸ್ಕರಿಸಲಾಗಿದೆ", "Application not found": "ಅರ್ಜಿ ಕಂಡುಬಂದಿಲ್ಲ", "Could not load your dashboard": "ಡ್ಯಾಶ್‌ಬೋರ್ಡ್ ಲೋಡ್ ಆಗಲಿಲ್ಲ", "Use another account": "ಬೇರೆ ಖಾತೆ ಬಳಸಿ", "Try again": "ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ", "Canteen Owner Login": "ಕ್ಯಾಂಟೀನ್ ಮಾಲೀಕರ ಲಾಗಿನ್", "Register your canteen": "ನಿಮ್ಮ ಕ್ಯಾಂಟೀನ್ ನೋಂದಾಯಿಸಿ", "No approved canteen is linked to this account. Sign in with your 7-character Canteen Owner ID and Owner Password Code.": "ಈ ಖಾತೆಗೆ ಅನುಮೋದಿತ ಕ್ಯಾಂಟೀನ್ ಜೋಡಿಸಿಲ್ಲ. ನಿಮ್ಮ 7 ಅಕ್ಷರಗಳ ಮಾಲೀಕರ ಐಡಿ ಮತ್ತು ಪಾಸ್‌ವರ್ಡ್ ಕೋಡ್‌ನಿಂದ ಸೈನ್ ಇನ್ ಮಾಡಿ.",
+  "Your menu is empty. Add your first item — it goes live for customers instantly.": "ನಿಮ್ಮ ಮೆನು ಖಾಲಿಯಾಗಿದೆ. ಮೊದಲ ಐಟಂ ಸೇರಿಸಿ — ಅದು ತಕ್ಷಣ ಗ್ರಾಹಕರಿಗೆ ಕಾಣಿಸುತ್ತದೆ.", "Choose a JPG, PNG, WEBP, or AVIF image (up to 8 MB).": "JPG, PNG, WEBP ಅಥವಾ AVIF ಚಿತ್ರ ಆಯ್ಕೆಮಾಡಿ (ಗರಿಷ್ಠ 8 MB).", "No orders yet. New orders appear here instantly.": "ಇನ್ನೂ ಆರ್ಡರ್‌ಗಳಿಲ್ಲ. ಹೊಸ ಆರ್ಡರ್‌ಗಳು ಇಲ್ಲಿ ತಕ್ಷಣ ಕಾಣಿಸುತ್ತವೆ.", "Mark paid & collected": "ಪಾವತಿ ಮತ್ತು ಸಂಗ್ರಹ ಗುರುತಿಸಿ", "Awaiting payment": "ಪಾವತಿಗಾಗಿ ಕಾಯುತ್ತಿದೆ", "Ready for pickup": "ಪಿಕಪ್‌ಗೆ ಸಿದ್ಧ", "Dine-in": "ಇಲ್ಲೇ ಸೇವಿಸಿ", Parcel: "ಪಾರ್ಸೆಲ್", "Your canteen is in maintenance mode — customers can't place orders.": "ನಿಮ್ಮ ಕ್ಯಾಂಟೀನ್ ನಿರ್ವಹಣೆಯಲ್ಲಿದೆ — ಗ್ರಾಹಕರು ಆರ್ಡರ್ ಮಾಡಲು ಸಾಧ್ಯವಿಲ್ಲ.", "Order cancelled. Nothing was charged.": "ಆರ್ಡರ್ ರದ್ದಾಗಿದೆ. ಯಾವುದೇ ಹಣ ಕಡಿತವಾಗಿಲ್ಲ.",
+};
+
+const dictionaries: Record<DashboardLanguage, Record<string, string>> = { en: {}, hi: { ...hi, ...hiExtra }, kn: { ...kn, ...knExtra } };
+
+export function translateDashboardText(input: string, language: DashboardLanguage): string {
+  if (language === "en") return input;
+  const matchWhitespace = input.match(/^(\s*)([\s\S]*?)(\s*)$/)!;
+  const [, leading, core, trailing] = matchWhitespace;
+  if (leading || trailing) return `${leading}${translateDashboardText(core!, language)}${trailing}`;
+  const dict = dictionaries[language];
+  if (dict[input]) return dict[input]!;
+  const patterns: [RegExp, (m: RegExpMatchArray) => string][] = [
+    [/^CANTEEN DASHBOARD · (.+)$/, m => `${dict["CANTEEN DASHBOARD"]} · ${m[1]}`],
+    [/^Menu \((\d+)\)$/, m => `${dict.Menu} (${m[1]})`],
+    [/^Live Orders \((\d+)\)$/, m => `${dict["Live Orders"]} (${m[1]})`],
+    [/^Mark (.+)$/, m => `${language === "hi" ? "चिह्नित करें" : "ಗುರುತಿಸಿ"} ${translateDashboardText(m[1]!, language)}`],
+    [/^Add (.+)$/, m => `${language === "hi" ? "जोड़ें" : "ಸೇರಿಸಿ"} ${m[1]}`],
+    [/^Only (\d+) left$/, m => language === "hi" ? `केवल ${m[1]} बचे` : `ಇನ್ನೂ ${m[1]} ಮಾತ್ರ`],
+    [/^Collect ₹(\d+) at counter$/, m => language === "hi" ? `काउंटर पर ₹${m[1]} लें` : `ಕೌಂಟರ್‌ನಲ್ಲಿ ₹${m[1]} ಸಂಗ್ರಹಿಸಿ`],
+    [/^(.+) hasn't published its menu yet\. It will appear here live as soon as it does\.$/, m => language === "hi" ? `${m[1]} ने अभी मेन्यू प्रकाशित नहीं किया है। प्रकाशित होते ही यह यहां दिखेगा।` : `${m[1]} ಇನ್ನೂ ಮೆನು ಪ್ರಕಟಿಸಿಲ್ಲ. ಪ್ರಕಟಿಸಿದ ತಕ್ಷಣ ಇಲ್ಲಿ ಕಾಣುತ್ತದೆ.`],
+    [/^Remove (.+)\?$/, m => language === "hi" ? `${m[1]} हटाएं?` : `${m[1]} ತೆಗೆದುಹಾಕಬೇಕೇ?`],
+    [/^(.+) cancelled — refund started\.$/, m => language === "hi" ? `${m[1]} रद्द — रिफंड शुरू हुआ।` : `${m[1]} ರದ್ದು — ಮರುಪಾವತಿ ಪ್ರಾರಂಭವಾಗಿದೆ.`],
+    [/^Hi, (.+) 👋$/, m => language === "hi" ? `नमस्ते, ${m[1]} 👋` : `ನಮಸ್ಕಾರ, ${m[1]} 👋`],
+    [/^(.+) is under maintenance and isn't accepting orders right now\.$/, m => language === "hi" ? `${m[1]} रखरखाव में है और अभी ऑर्डर नहीं ले रही।` : `${m[1]} ನಿರ್ವಹಣೆಯಲ್ಲಿದೆ ಮತ್ತು ಈಗ ಆರ್ಡರ್ ಸ್ವೀಕರಿಸುತ್ತಿಲ್ಲ.`],
+    [/^(\d+) items?$/, m => language === "hi" ? `${m[1]} आइटम` : `${m[1]} ಐಟಂ`],
+    [/^View cart · ₹(\d+)$/, m => language === "hi" ? `टोकरी देखें · ₹${m[1]}` : `ಕಾರ್ಟ್ ನೋಡಿ · ₹${m[1]}`],
+    [/^Pay ₹(\d+) now$/, m => language === "hi" ? `₹${m[1]} अभी भुगतान करें` : `₹${m[1]} ಈಗ ಪಾವತಿಸಿ`],
+    [/^Pay ₹(\d+)$/, m => language === "hi" ? `₹${m[1]} भुगतान करें` : `₹${m[1]} ಪಾವತಿಸಿ`],
+    [/^Place order · ₹(\d+)$/, m => language === "hi" ? `ऑर्डर करें · ₹${m[1]}` : `ಆರ್ಡರ್ ಮಾಡಿ · ₹${m[1]}`],
+  ];
+  for (const [pattern, render] of patterns) { const found = input.match(pattern); if (found) return render(found); }
+  return input;
+}
+
+const originalText = new WeakMap<Node, string>();
+const lastText = new WeakMap<Node, string>();
+const originalAttributes = new WeakMap<Element, Map<string, string>>();
+const lastAttributes = new WeakMap<Element, Map<string, string>>();
+
+/** Translates visible dashboard copy while keeping dynamic food and canteen content intact. */
+export function localizeDashboard(root: HTMLElement, language: DashboardLanguage) {
+  const visit = (node: Node) => {
+    if (node.nodeType === Node.TEXT_NODE) {
+      if (node.parentElement?.closest("[data-no-translate],script,style")) return;
+      const current = node.nodeValue ?? "";
+      const previous = lastText.get(node);
+      if (!originalText.has(node) || (previous !== undefined && current !== previous)) originalText.set(node, current);
+      const translated = translateDashboardText(originalText.get(node) ?? current, language);
+      lastText.set(node, translated);
+      if (current !== translated) node.nodeValue = translated;
+      return;
+    }
+    if (node.nodeType !== Node.ELEMENT_NODE) return;
+    const element = node as HTMLElement;
+    if (element.matches("[data-no-translate],script,style")) return;
+    let originals = originalAttributes.get(element);
+    if (!originals) { originals = new Map(); originalAttributes.set(element, originals); }
+    let translatedAttributes = lastAttributes.get(element);
+    if (!translatedAttributes) { translatedAttributes = new Map(); lastAttributes.set(element, translatedAttributes); }
+    for (const attribute of ["placeholder", "aria-label", "title", "alt"]) {
+      if (!element.hasAttribute(attribute)) continue;
+      const current = element.getAttribute(attribute) ?? "";
+      const previous = translatedAttributes.get(attribute);
+      if (!originals.has(attribute) || (previous !== undefined && current !== previous)) originals.set(attribute, current);
+      const translated = translateDashboardText(originals.get(attribute) ?? current, language);
+      translatedAttributes.set(attribute, translated);
+      if (current !== translated) element.setAttribute(attribute, translated);
+    }
+    Array.from(element.childNodes).forEach(visit);
+  };
+  visit(root);
+  const observer = new MutationObserver(records => records.forEach(record => {
+    if (record.type === "childList") record.addedNodes.forEach(visit);
+    else if (record.type === "characterData" || record.type === "attributes") visit(record.target);
+  }));
+  observer.observe(root, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ["placeholder", "aria-label", "title", "alt"] });
+  return () => observer.disconnect();
+}
+
+export function LanguageSelect({ language, onChange }: { language: DashboardLanguage; onChange: (value: DashboardLanguage) => void }) {
+  return <select value={language} onChange={event => onChange(event.target.value as DashboardLanguage)} aria-label="Language" className="w-[104px] shrink-0 rounded-full border border-border bg-background px-2 py-2 text-xs text-muted-foreground outline-none focus:border-primary sm:w-auto sm:max-w-[42vw] sm:px-3">
+    {DASHBOARD_LANGUAGES.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+  </select>;
+}
+
+export function useDashboardLanguage(userId: string | null | undefined) {
+  const [language, setLanguage] = useState<DashboardLanguage>("en");
+  const [loadedFor, setLoadedFor] = useState<string | null>(null);
+  useEffect(() => {
+    if (!userId) { setLanguage("en"); setLoadedFor(null); return; }
+    let alive = true;
+    setLanguage("en");
+    void (async () => {
+      try {
+        const { data } = await supabase.from("user_language_preferences").select("language").eq("user_id", userId).maybeSingle();
+        if (!alive) return;
+        if (data?.language === "en" || data?.language === "hi" || data?.language === "kn") setLanguage(data.language);
+      } catch (error) {
+        // Keep the dashboard usable with English if the preference query or client is unavailable.
+        console.error("Could not load dashboard language preference", error);
+      } finally {
+        if (alive) setLoadedFor(userId);
+      }
+    })();
+    return () => { alive = false; };
+  }, [userId]);
+  const saveLanguage = useCallback(async (value: DashboardLanguage) => {
+    setLanguage(value);
+    if (!userId) return;
+    const { error } = await supabase.from("user_language_preferences").upsert({ user_id: userId, language: value, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
+    if (error) console.error("Could not save dashboard language preference", error.message);
+  }, [userId]);
+  return { language, saveLanguage, ready: !userId || loadedFor === userId };
+}

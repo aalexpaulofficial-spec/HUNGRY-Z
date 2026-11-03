@@ -7,6 +7,15 @@
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
 export default defineConfig({
+  // worker-mailer targets Cloudflare and imports cloudflare:sockets. Vercel uses
+  // the nodemailer path, so leave worker-mailer external to its Node bundle.
+  vite: {
+    build: {
+      rolldownOptions: {
+        external: ["worker-mailer"],
+      },
+    },
+  },
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
     // nitro/vite builds from this

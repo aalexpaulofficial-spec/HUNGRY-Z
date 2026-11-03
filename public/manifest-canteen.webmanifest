@@ -1,0 +1,20 @@
+{
+  "id": "/?hungry_app=canteen",
+  "name": "HUNGRY Canteen Dashboard",
+  "short_name": "HUNGRY Canteen",
+  "description": "Register and manage your HUNGRY campus canteen.",
+  "start_url": "/register-canteen?hungry_app=canteen",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "background_color": "#050505",
+  "theme_color": "#050505",
+  "related_applications": [
+    { "platform": "webapp", "id": "/?hungry_app=canteen", "url": "/manifest-canteen.webmanifest" }
+  ],
+  "icons": [
+    { "src": "/pwa-owner-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/pwa-owner-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/pwa-owner-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
