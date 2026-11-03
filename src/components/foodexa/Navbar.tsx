@@ -35,10 +35,13 @@ export function Navbar() {
 
   const brand = (
     <>
-      <img src="/HUNGRY%20Z%20Q%20LOGO.png" alt="" className="h-7 w-7 shrink-0 rounded-full object-contain shadow-[0_0_24px_-4px_var(--primary)]" />
+      <img src="/HUNGRY%20Z%20Q%20LOGO.png" alt="HUNGRY Z" className="h-7 w-7 shrink-0 rounded-full object-contain shadow-[0_0_24px_-4px_var(--primary)]" />
       <span
+        aria-hidden={scrolled}
+        data-brand-text
         className={cn(
-          "display tracking-[0.3em] transition-all duration-500",
+          "display max-w-32 overflow-hidden whitespace-nowrap tracking-[0.3em] transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]",
+          scrolled ? "max-w-0 translate-x-1 opacity-0" : "translate-x-0 opacity-100",
           scrolled ? "text-[12px]" : "text-[14px]",
         )}
       >
@@ -61,11 +64,11 @@ export function Navbar() {
           <div className="flex min-w-0 items-center gap-3">
             {siteNavigationEnabled && <BackButton inline />}
             {siteNavigationEnabled ? (
-              <a href="#top" className="group flex min-w-0 items-center gap-2.5">
+              <a href="#top" aria-label="HUNGRY Z home" className={cn("group flex min-w-0 items-center transition-all duration-500", scrolled ? "gap-0" : "gap-2.5")}>
                 {brand}
               </a>
             ) : (
-              <span className="group flex min-w-0 items-center gap-2.5" aria-label="HUNGRY Z">
+              <span className={cn("group flex min-w-0 items-center transition-all duration-500", scrolled ? "gap-0" : "gap-2.5")} aria-label="HUNGRY Z">
                 {brand}
               </span>
             )}

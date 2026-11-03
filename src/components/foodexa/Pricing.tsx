@@ -53,13 +53,27 @@ export function Pricing() {
           <div className="mt-6 grid gap-4 md:grid-cols-3">
             {STUDENT_SCANNER_PLANS.map((p) => (
               <article key={p.version} className="scanner-card flex flex-col p-7">
+                {p.status === "coming_soon" ? (
+                  <>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="scanner-pill">COMING SOON</span>
+                    </div>
+                    <h3 className="mt-5 text-xl font-semibold tracking-tight">{p.brand}</h3>
+                    <p className="mt-2 text-sm text-muted-foreground">Version {Number.parseInt(p.version, 10)}</p>
+                    <p className="mt-4 flex items-end gap-2">
+                      <span className="display text-5xl leading-none text-primary-bright">{"\u20B9"}{SCANNER_PRICE_INR}</span>
+                      <span className="pb-1 text-xs font-semibold tracking-[0.18em] text-muted-foreground">FREE</span>
+                    </p>
+                  </>
+                ) : (
+                  <>
                 <div className="flex items-center justify-between gap-2">
                   <span className="scanner-pill">{p.status === "live" ? "AVAILABLE NOW" : "COMING SOON"}</span>
                   
                 </div>
                 <h3 className="mt-5 text-xl font-semibold tracking-tight">{p.brand} — {p.name}</h3>
                 <p className="mt-4 flex items-end gap-2">
-                  <span className="display text-5xl leading-none text-primary-bright">₹{SCANNER_PRICE_INR}</span>
+                  <span className="display text-5xl leading-none text-primary-bright">{"\u20B9"}{SCANNER_PRICE_INR}</span>
                   <span className="pb-1 text-xs font-semibold tracking-[0.18em] text-muted-foreground">FREE</span>
                 </p>
                 <ul className="mt-6 flex flex-col gap-2.5 text-sm text-muted-foreground">
@@ -71,6 +85,8 @@ export function Pricing() {
                   ))}
                 </ul>
                 <p className="mt-auto pt-6 text-[11px] text-muted-foreground">For students only</p>
+                  </>
+                )}
               </article>
             ))}
           </div>
