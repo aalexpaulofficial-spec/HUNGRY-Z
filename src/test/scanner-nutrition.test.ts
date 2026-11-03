@@ -156,7 +156,7 @@ describe("scanner food recognition and nutrition safety", () => {
     await expect(lookupUsdaNutrition("Sushi", 250)).rejects.toThrow(/No reliable USDA nutrition match/);
   });
 
-  it("does not treat generic meatless fried rice as a verified vegetable fried rice match", async () => {
+  it("labels USDA meatless fried rice as a closest match instead of an exact vegetable recipe", async () => {
     vi.stubEnv("USDA_FDC_API_KEY", "test-usda-key");
     vi.stubGlobal("fetch", vi.fn()
       .mockResolvedValueOnce(new Response(JSON.stringify({ foods: [
@@ -164,6 +164,25 @@ describe("scanner food recognition and nutrition safety", () => {
       ] }), { status: 200 }))
       .mockResolvedValueOnce(new Response(JSON.stringify({ foods: [
         { fdcId: 2708951, description: "Rice, fried, meatless", dataType: "Survey (FNDDS)" },
+      ] }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        fdcId: 2708951, description: "Rice, fried, meatless", dataType: "Survey (FNDDS)",
+        foodNutrients: [{ nutrient: { number: "208" }, amount: 180 }],
+      }), { status: 200 })));
+    const match = await lookupUsdaNutrition("Vegetable Fried Rice", 350);
+    expect(match.values.calories).toBe(630);
+    expect(match.reference).toContain("closest USDA fried-rice entry");
+    expect(match.reference).toContain("Rice, fried, meatless");
+  });
+
+  it("rejects a vegetable rice-paper roll as a fried-rice nutrition match", async () => {
+    vi.stubEnv("USDA_FDC_API_KEY", "test-usda-key");
+    vi.stubGlobal("fetch", vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ foods: [
+        { fdcId: 2708704, description: "Roll with meat and/or shrimp, vegetables and rice paper, not fried", dataType: "Survey (FNDDS)" },
+      ] }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ foods: [
+        { fdcId: 2708704, description: "Roll with meat and/or shrimp, vegetables and rice paper, not fried", dataType: "Survey (FNDDS)" },
       ] }), { status: 200 })));
     await expect(lookupUsdaNutrition("Vegetable Fried Rice", 350)).rejects.toThrow(/No reliable USDA nutrition match/);
   });

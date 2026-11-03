@@ -50,16 +50,32 @@ const normalizeFoodName = (value: string) => value.toLowerCase()
 
 function foodSimilarity(query: string, label: string): number {
   const q = normalizeFoodName(query).split(" ").filter((word) => word.length > 2);
-  const l = normalizeFoodName(label).split(" ").filter((word) => word.length > 2);
+  const normalizedLabel = normalizeFoodName(label);
+  const l = normalizedLabel.split(" ").filter((word) => word.length > 2);
   if (!q.length || !l.length) return 0;
   if (q.join(" ") === l.join(" ")) return 1;
   const overlap = q.filter((word) => l.includes(word)).length;
   const coverage = overlap / q.length;
   const precision = overlap / l.length;
   // Every distinctive word in the scanned food name must appear in the USDA
-  // record. A generic meatless/fried dish is not a verified vegetable dish.
-  if (coverage < 1) return 0;
+  // record, except that FDC's meatless fried-rice record is a disclosed close
+  // match for vegetable fried rice when an exact vegetable entry is absent.
+  const isVegetableFriedRice = q.includes("vegetable") && q.includes("fried") && q.includes("rice");
+  const isMeatlessFriedRice =
+    (normalizedLabel.includes("fried rice meatless") || normalizedLabel.includes("rice fried meatless")) ||
+    normalizedLabel.includes("fried rice without meat");
+  if (coverage < 1) return isVegetableFriedRice && isMeatlessFriedRice ? 0.67 : 0;
   return (2 * coverage * precision) / (coverage + precision || 1);
+}
+
+function isDisclosedVegetableFriedRiceClosestMatch(query: string, label: string): boolean {
+  const normalizedQuery = normalizeFoodName(query);
+  const normalizedLabel = normalizeFoodName(label);
+  return (
+    normalizedQuery.includes("vegetable fried rice") &&
+    ((normalizedLabel.includes("fried rice meatless") || normalizedLabel.includes("rice fried meatless")) ||
+      normalizedLabel.includes("fried rice without meat"))
+  );
 }
 
 async function usdaRequest(url: URL, init?: RequestInit): Promise<any> {
@@ -118,10 +134,13 @@ export async function lookupUsdaNutrition(foodName: string, portionG: number): P
     fat_g: nutrient("204"), fibre_g: nutrient("291"), sugar_g: nutrient("269"),
   };
   const servingValues = scaleNutrition(per100g, portionG);
+  const closeMatchNote = isDisclosedVegetableFriedRiceClosestMatch(foodName, details.description ?? selected.description)
+    ? " · closest USDA fried-rice entry; vegetable recipe may differ"
+    : "";
   return {
     values: servingValues,
     source: "USDA FoodData Central",
-    reference: `${details.description ?? selected.description} · FDC ${selected.fdcId} · ${details.dataType ?? selected.dataType} · per 100 g scaled to ${portionG} g`,
+    reference: `${details.description ?? selected.description} · FDC ${selected.fdcId} · ${details.dataType ?? selected.dataType} · per 100 g scaled to ${portionG} g${closeMatchNote}`,
   };
 }
 
