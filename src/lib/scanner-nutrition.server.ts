@@ -118,7 +118,7 @@ export async function lookupUsdaNutrition(foodName: string, portionG: number): P
   };
 }
 
-const prompt = `Inspect the food photo and identify up to ${MAX_DETECTED_FOODS} distinct edible foods that are visibly present. Do not identify background objects, plates, cutlery, packaging, or ingredients that cannot be seen. Treat a mixed dish such as fried rice or biryani as one dish; list separate foods such as idli and sambar separately. For every item give a concise common food name, estimate only its edible portion weight in grams, choose confidence, and provide a short visual note. Do not estimate nutrients. If no food is visible, return an empty foods array. Return only JSON.`;
+const prompt = `Inspect the food photo and identify up to ${MAX_DETECTED_FOODS} distinct edible foods that are visibly present. Do not identify background objects, plates, cutlery, packaging, or ingredients that cannot be seen. Recognize ingredients only when they are visibly identifiable; mention these in the visual note and do not create duplicate nutrition lines for ingredients already included in a mixed dish. Treat a mixed dish such as fried rice or biryani as one dish; list separate servings such as idli and sambar separately. For every item give a concise common food name, estimate only its edible portion weight in grams, choose confidence, and provide a short visual note. Do not estimate nutrients. If no food is visible, return an empty foods array. Return only JSON.`;
 
 function parseGeminiJson(text: string): FoodIdentification[] {
   const cleaned = text
