@@ -1,29 +1,28 @@
-# Welcome to your Lovable project
+# HUNGRY — Smart Campus Food Ordering
 
-This project was built with [Lovable](https://lovable.dev).
+Students, faculty and guests order from their campus canteen, skip the queue and pick up with a code. Canteens manage menus and live orders; HUNGRY admins approve canteens, coupons and refunds.
 
-## Build with Lovable
+## Features
+- Accounts (student / faculty / guest), 7-character canteen codes, live menus and orders
+- Canteen owners receive a separate 7-character Owner ID and Owner Password Code; customer canteen codes cannot open owner dashboards
+- Dine-in or Parcel orders; pay online with **Razorpay** (dine-in) or **at the counter** (parcel is counter-only)
+- Server-validated coupons (expiry, eligibility, usage limits, minimum order), stock tracking, duplicate-order protection
+- Refund requests and processing through Razorpay
+- Emails via Gmail SMTP: welcome, order confirmation, payment failure, refund updates, canteen approval/rejection, admin alerts to hungryofficialx@gmail.com — all logged
 
-Open your project in the [Lovable editor](https://lovable.dev) and keep building.
+## Setup
+Everything you need to configure (Supabase SQL, keys, Razorpay webhook, Gmail App Password, test checklist, go-live) is in **[docs/SETUP.md](docs/SETUP.md)**. Variable names are listed in **[.env.example](.env.example)**.
 
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: connect the project to GitHub and every change made in Lovable is committed straight to your repository.
-- **Full ownership**: this code is yours. Push to your repository and your changes sync back into Lovable, ready for your next prompt.
+Database scripts (run in order in the Supabase SQL Editor):
+1. `database/001_hungry_core.sql`
+2. `database/002_payments_coupons_refunds.sql`
+3. `database/003_canteen_owner_credentials.sql`
+4. `database/004_canteen_owner_credential_guard.sql`
+5. `database/005_canteen_menu_images.sql`
 
 ## Development
-
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
-
-```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
-npm run dev
+```bash
+bun install
+bun run dev      # local preview
+bunx vitest run  # rules + database tests
 ```
-
-## Built with
-
-- TanStack Start
-- TypeScript
-- React
-- Tailwind CSS
