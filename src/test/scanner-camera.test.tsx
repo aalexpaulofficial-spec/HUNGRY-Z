@@ -75,12 +75,14 @@ describe("scanner camera and photo input", () => {
     );
   });
 
-  it("keeps future scanner version details off the student scan screen", async () => {
+  it("shows future scanner versions as coming soon", async () => {
     render(<ScannerTab />);
     await screen.findByRole("button", { name: /Scan Food/i });
-    expect(screen.queryByText("COMING SOON")).not.toBeInTheDocument();
-    expect(screen.queryByText(/AI Nutrition Assistant|Nutrition Intelligence/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/Daily nutrition tracking|Advanced food recognition/)).not.toBeInTheDocument();
+    expect(screen.getByText("COMING SOON")).toBeInTheDocument();
+    expect(screen.getByText(/AI Nutrition Assistant/)).toBeInTheDocument();
+    expect(screen.getByText(/Nutrition Intelligence/)).toBeInTheDocument();
+    expect(screen.getByText(/Daily nutrition tracking/)).toBeInTheDocument();
+    expect(screen.getByText(/Advanced food recognition/)).toBeInTheDocument();
   });
 
   it("opens a live preview, switches camera and captures food", async () => {
