@@ -13,6 +13,7 @@ describe("food scan nutrition migration", () => {
         CREATE ROLE service_role;
         CREATE SCHEMA auth;
         CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT NULL::uuid $$;
+        CREATE TABLE public.profiles (id uuid PRIMARY KEY, role text NOT NULL);
         CREATE TABLE public.scanner_access (user_id uuid PRIMARY KEY, expires_at timestamptz NOT NULL);
         CREATE TABLE public.food_scans (
           id uuid PRIMARY KEY,
@@ -47,10 +48,47 @@ describe("food scan nutrition migration", () => {
         "SELECT has_column_privilege('authenticated', 'public.food_scans', 'portion_g', 'UPDATE') AS allowed",
       );
       expect(grant.rows[0].allowed).toBe(true);
+      const deniedGrant = await db.query<{ allowed: boolean }>(
+        "SELECT has_column_privilege('authenticated', 'public.food_scans', 'notes', 'UPDATE') AS allowed",
+      );
+      expect(deniedGrant.rows[0].allowed).toBe(false);
       const policy = await db.query<{ count: number }>(
         "SELECT count(*)::int AS count FROM pg_policies WHERE tablename = 'food_scans' AND policyname = 'Active students update own scans'",
       );
       expect(policy.rows[0].count).toBe(1);
+    } finally {
+      await db.close();
+    }
+  }, 20000);
+
+  it("creates missing scanner tables safely when the core profile schema exists", async () => {
+    const db = new PGlite();
+    try {
+      await db.exec(`
+        CREATE ROLE anon;
+        CREATE ROLE authenticated;
+        CREATE ROLE service_role;
+        CREATE SCHEMA auth;
+        CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT NULL::uuid $$;
+        CREATE TABLE public.profiles (id uuid PRIMARY KEY, role text NOT NULL);
+      `);
+      const migration = await readFile(
+        "drizzle/migrations/0002_food_scan_nutrition_sources.sql",
+        "utf8",
+      );
+      await db.exec(migration);
+      await db.exec(migration);
+      const tables = await db.query<{ scanner_access: string | null; food_scans: string | null }>(
+        "SELECT to_regclass('public.scanner_access')::text AS scanner_access, to_regclass('public.food_scans')::text AS food_scans",
+      );
+      expect(tables.rows[0]).toEqual({
+        scanner_access: "scanner_access",
+        food_scans: "food_scans",
+      });
+      const policies = await db.query<{ scan_policies: number }>(
+        "SELECT count(*)::int AS scan_policies FROM pg_policies WHERE tablename = 'food_scans'",
+      );
+      expect(policies.rows[0].scan_policies).toBe(4);
     } finally {
       await db.close();
     }
