@@ -1,11 +1,11 @@
 /**
- * HUNGRY — content & information source of truth (Prompt 1).
+ * HUNGRY Z — content & information source of truth (Prompt 1).
  * Copy, field definitions and status enums only. No UI, no backend.
  * Narrative doc: docs/foodexa-content-spec.md
  */
 
 export const brand = {
-  name: "HUNGRY",
+  name: "HUNGRY Z",
   tagline: "Smart Campus Food Ordering",
   currency: "INR",
   currencySymbol: "₹",
@@ -14,10 +14,10 @@ export const brand = {
 } as const;
 
 export const hero = {
-  title: "HUNGRY",
+  title: "HUNGRY Z",
   tagline: brand.tagline,
   description:
-    "HUNGRY is a smart campus food ordering platform. Discover campus food, order from your canteen, pay securely, track preparation live and collect from the correct counter — with ₹0 platform fee.",
+    "HUNGRY Z is a smart campus food ordering platform. Discover campus food, order from your canteen, pay securely, track preparation live and collect from the correct counter — with ₹0 platform fee.",
   actions: [
     { label: "User Login", href: "#login" },
     { label: "Canteen Registration", href: "#canteen-registration" },
@@ -26,8 +26,8 @@ export const hero = {
 } as const;
 
 export const about = {
-  heading: "What is HUNGRY?",
-  body: "HUNGRY is a campus food-ordering platform built for institutions, canteens, students, faculty and guests.",
+  heading: "What is HUNGRY Z?",
+  body: "HUNGRY Z is a campus food-ordering platform built for institutions, canteens, students, faculty and guests.",
   capabilities: [
     "Discover campus food",
     "View live menus",
@@ -40,7 +40,7 @@ export const about = {
 } as const;
 
 export const howItWorks = [
-  { step: 1, title: "LOGIN", description: "User logs into HUNGRY." },
+  { step: 1, title: "LOGIN", description: "User logs into HUNGRY Z." },
   { step: 2, title: "SELECT / ACCESS CANTEEN", description: "User enters their authorized Canteen Code." },
   { step: 3, title: "DISCOVER FOOD", description: "User views available food and categories." },
   { step: 4, title: "ADD TO CART", description: "User selects food, quantity and options." },
@@ -84,7 +84,7 @@ export const termsTopics = [
 ] as const;
 
 export const legal = {
-  heading: "HUNGRY TERMS & SERVICE",
+  heading: "HUNGRY Z TERMS & SERVICE",
   gate: "The NEXT action stays disabled until the user scrolls to the bottom.",
   policies: ["Privacy Policy", "Refund Policy", "Payment Policy"],
 } as const;
@@ -93,7 +93,7 @@ export const legal = {
 
 export const canteenRegistration = {
   heading: "REGISTER YOUR CANTEEN",
-  intro: "Institutions and canteens can join HUNGRY and run ordering, counters and payouts in one place.",
+  intro: "Institutions and canteens can join HUNGRY Z and run ordering, counters and payouts in one place.",
   sections: [
     {
       key: "institution",
@@ -328,7 +328,7 @@ export const addMenuOptions = [
     key: "image-assisted",
     title: "OPTION 2 — IMAGE-ASSISTED MENU",
     description:
-      "Canteen uploads a food/menu image. HUNGRY may later use AI to suggest details, which the canteen must review before publishing.",
+      "Canteen uploads a food/menu image. HUNGRY Z may later use AI to suggest details, which the canteen must review before publishing.",
     suggested: ["Food Name", "Description", "Category", "Veg/Non-Veg", "Estimated Time"],
   },
 ] as const;
@@ -477,7 +477,7 @@ export const notifications = {
 /* -------------------------------- download -------------------------------- */
 
 export const download = {
-  heading: "DOWNLOAD HUNGRY",
+  heading: "DOWNLOAD HUNGRY Z",
   platforms: [
     { platform: "Android", status: "COMING SOON", href: null },
     { platform: "iOS", status: "COMING SOON", href: null },
@@ -488,22 +488,22 @@ export const download = {
 /* ----------------------------------- faq ---------------------------------- */
 
 export const faqs = [
-  ["What is HUNGRY?", "HUNGRY is a smart campus food ordering platform for institutions, canteens, students, faculty and guests."],
-  ["Who can use HUNGRY?", "Students, faculty and approved guests of an institution running HUNGRY, plus the canteen teams themselves."],
+  ["What is HUNGRY Z?", "HUNGRY Z is a smart campus food ordering platform for institutions, canteens, students, faculty and guests."],
+  ["Who can use HUNGRY Z?", "Students, faculty and approved guests of an institution running HUNGRY Z, plus the canteen teams themselves."],
   ["How do I create an account or log in?", "Choose Create Account / Login and follow the account form. Use your own email and accurate account details. Google sign-in is optional when offered."],
   ["What is a Canteen Code?", "A code issued to an approved canteen. It links you to the right institution, campus and menu."],
   ["How do I place an order?", "Choose food and quantities, then select Dine In or Parcel. Review your canteen, items, counter, total and payment option before placing the order."],
   ["What is the difference between Dine In and Parcel?", "Dine In is for eating at the canteen. Parcel is packed to take away. Parcel orders currently require Pay at Counter; available payment options are shown during checkout."],
   ["How can I pay?", "Choose Pay at Counter or an available online checkout option. Online checkout is provided through Razorpay and may show UPI, card or other methods. Payment options can depend on the order type and current payment availability."],
-  ["When is an order marked Paid?", "Online payments are marked Paid after HUNGRY verifies confirmation from the payment provider. Pay at Counter orders remain Pending until canteen staff confirm payment. Printing a bill does not confirm payment."],
+  ["When is an order marked Paid?", "Online payments are marked Paid after HUNGRY Z verifies confirmation from the payment provider. Pay at Counter orders remain Pending until canteen staff confirm payment. Printing a bill does not confirm payment."],
   ["Money was deducted, but my order or payment is not confirmed. What should I do?", "First check the order's latest status and avoid paying again until it is resolved. Email hungryofficialx@gmail.com with your Order ID and payment reference or UPI transaction ID. Never send an OTP, password or full card number."],
-  ["How do I cancel an order?", "An online order awaiting payment can be cancelled from its order details when the Cancel option is available. For an accepted order, contact the canteen or HUNGRY support; cancellation depends on the order status and payment method."],
+  ["How do I cancel an order?", "An online order awaiting payment can be cancelled from its order details when the Cancel option is available. For an accepted order, contact the canteen or HUNGRY Z support; cancellation depends on the order status and payment method."],
   ["How do refunds work?", "Eligible online-paid orders may show Request a refund in order details. The request is reviewed and, if approved, returned through the original payment method. The order page shows refund status. For help, email hungryofficialx@gmail.com with your Order ID."],
   ["How do I track and collect an order?", "The order page updates as the canteen moves it through preparation and ready status. When collecting, show the 4-digit code at the counter listed on your order. The order becomes Collected when canteen staff update it."],
   ["Can I dine in with an online payment or pay at the counter?", "For Dine In, checkout displays the currently available payment choices, which can include Pay at Counter and online payment. Parcel orders are currently paid at the counter."],
   ["How can a canteen register?", "Use Register Your Canteen and submit institution, canteen, administrator, operations, business, payout and document details."],
   ["How does approval work?", "The submission goes UNDER REVIEW. Our team verifies it and emails the outcome; approved canteens receive a Canteen ID, Canteen Code and login details."],
   ["How does a canteen receive payments?", "Order payments are collected through Razorpay and settled to the canteen's verified bank account."],
-  ["How do I contact HUNGRY?", "For account, order, payment, refund, privacy or operational support, email hungryofficialx@gmail.com. For payment issues, include your Order ID and payment reference."],
+  ["How do I contact HUNGRY Z?", "For account, order, payment, refund, privacy or operational support, email hungryofficialx@gmail.com. For payment issues, include your Order ID and payment reference."],
   ["Where can I read the Privacy Policy and Terms?", "Open the separate Privacy Policy and Terms & Conditions pages from the website footer or your dashboard profile."],
 ] as const;

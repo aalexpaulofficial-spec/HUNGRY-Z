@@ -18,9 +18,9 @@ import { Footer } from "@/components/foodexa/Footer";
 
 export const landingManifestHref = "/manifest-student.webmanifest";
 
-const title = "HUNGRY — Smart Campus Food Ordering, ₹0 Platform Fee";
+const title = "HUNGRY Z — Smart Campus Food Ordering, ₹0 Platform Fee";
 const description =
-  "HUNGRY is smart campus food ordering. Order faster, skip the queue, track your food live and pay ₹0 platform fee on every order.";
+  "HUNGRY Z is smart campus food ordering. Order faster, skip the queue, track your food live and pay ₹0 platform fee on every order.";
 
 export const Route = createFileRoute("/")({
   head: () => ({

@@ -16,11 +16,11 @@ export const Route = createFileRoute("/admin")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "HUNGRY Admin" },
-      { name: "description", content: "HUNGRY administration." },
+      { title: "HUNGRY Z Admin" },
+      { name: "description", content: "HUNGRY Z administration." },
       { name: "robots", content: "noindex, nofollow" },
-      { property: "og:title", content: "HUNGRY Admin" },
-      { property: "og:description", content: "HUNGRY administration." },
+      { property: "og:title", content: "HUNGRY Z Admin" },
+      { property: "og:description", content: "HUNGRY Z administration." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -47,7 +47,7 @@ function AdminPage() {
       const { data: isAdmin, error: roleError } = await supabase.rpc("has_role", { _user_id: data.user.id, _role: "admin" });
       if (roleError) throw new Error("Could not verify your Admin role in Supabase. Please try again.");
       setState(isAdmin ? "ok" : "login");
-      if (!isAdmin) setGateError("This account does not have HUNGRY Admin access.");
+      if (!isAdmin) setGateError("This account does not have HUNGRY Z Admin access.");
     } catch (error) {
       setState("login");
       setGateError(error instanceof Error ? error.message : "Could not connect to the Admin backend. Please try again.");
@@ -99,7 +99,7 @@ function AdminLogin({ onDone, initialError = "" }: { onDone: () => Promise<void>
         <input name="password" type="password" placeholder="Password" aria-label="Admin Password" autoComplete="current-password" className={field} />
         {err && <p className="text-center text-xs text-primary-bright">{err}</p>}
         <button disabled={busy} className="w-full rounded-full bg-primary py-4 text-sm font-semibold text-primary-foreground disabled:opacity-60">{busy ? "Verifying…" : "Login"}</button>
-        <a href="/" className="block text-center text-xs text-muted-foreground hover:text-foreground">← Back to HUNGRY</a>
+        <a href="/" className="block text-center text-xs text-muted-foreground hover:text-foreground">← Back to HUNGRY Z</a>
       </form>
     </div>
   );
@@ -154,7 +154,7 @@ function Dashboard({ onSignOut }: { onSignOut: () => void }) {
           <div className="flex min-w-0 items-start gap-3">
           <BackButton inline />
           <div className="min-w-0">
-            <p className="text-[10px] tracking-[0.3em] text-primary-bright">HUNGRY ADMIN</p>
+            <p className="text-[10px] tracking-[0.3em] text-primary-bright">HUNGRY Z ADMIN</p>
             <h1 className="display text-3xl">Canteen applications</h1>
           </div>
           </div>

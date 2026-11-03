@@ -8,14 +8,14 @@ export function LegalPage({ title, intro, sections }: { title: string; intro: st
     <div aria-hidden="true" className="ember pointer-events-none absolute -top-44 left-1/2 h-[520px] w-[520px] -translate-x-1/2 opacity-40" />
     <div className="relative mx-auto max-w-4xl">
       <header className="flex flex-wrap items-center justify-between gap-4">
-        <Link to="/" className="display text-[15px] tracking-[0.3em]" aria-label="HUNGRY home">HUNGRY</Link>
+        <Link to="/" className="display text-[15px] tracking-[0.3em]" aria-label="HUNGRY Z home">HUNGRY Z</Link>
         <div className="inline-flex items-center gap-2 rounded-full border border-border px-3 py-1.5">
           <BackButton inline />
           <span className="pr-1 text-xs font-semibold text-muted-foreground">Back</span>
         </div>
       </header>
       <section className="glass-red mt-10 rounded-[2rem] p-6 sm:mt-14 sm:p-10">
-        <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary-bright">HUNGRY · Legal</p>
+        <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary-bright">HUNGRY Z · Legal</p>
         <h1 className="display mt-3 text-3xl sm:text-4xl">{title}</h1>
         <p className="mt-3 text-xs text-muted-foreground">Last updated: November 2, 2026</p>
         <p className="mt-6 max-w-3xl text-sm leading-relaxed text-foreground/80">{intro}</p>

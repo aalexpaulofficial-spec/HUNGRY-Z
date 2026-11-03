@@ -43,7 +43,7 @@ function setManifest(name: "student" | "canteen") {
   document.head.append(manifest);
 }
 
-describe("independent HUNGRY PWA install flows", () => {
+describe("independent HUNGRY Z PWA install flows", () => {
   beforeEach(() => {
     localStorage.clear();
     window.history.replaceState({}, "", "/");
@@ -60,16 +60,18 @@ describe("independent HUNGRY PWA install flows", () => {
 
   it("keeps separate student and owner PWA identities and launch pages", () => {
     expect(studentManifest.id).not.toBe(canteenManifest.id);
-    expect(studentManifest.name).toBe("HUNGRY");
+    expect(studentManifest.name).toBe("HUNGRY Z");
     expect(studentManifest.start_url).toBe("/auth?hungry_app=student");
-    expect(canteenManifest.name).toBe("HUNGRY Canteen Dashboard");
+    expect(canteenManifest.name).toBe("HUNGRY Z Canteen Dashboard");
     expect(canteenManifest.start_url).toBe("/register-canteen?hungry_app=canteen");
     expect(studentManifest.scope).toBe("/");
     expect(canteenManifest.scope).toBe("/");
     expect(studentManifest.icons.map((icon) => icon.src)).not.toEqual(canteenManifest.icons.map((icon) => icon.src));
+    expect(studentManifest.icons[0]?.src).toBe("/HUNGRY%20Z%20Q%20LOGO.png");
+    expect(canteenManifest.icons[0]?.src).toBe("/HUNGRY%20Z%20CANTEEN%20DAHSBOARD%20LOGO.png");
   });
 
-  it("uses the HUNGRY manifest on the landing page so the student prompt is captured", () => {
+  it("uses the HUNGRY Z manifest on the landing page so the student prompt is captured", () => {
     expect(landingManifestHref).toBe("/manifest-student.webmanifest");
   });
 
@@ -173,30 +175,30 @@ describe("independent HUNGRY PWA install flows", () => {
     window.dispatchEvent(event);
     render(<HeroInstallButton app="student" />);
     await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: "Download HUNGRY for Students, Faculty and Guests" }));
+      fireEvent.click(screen.getByRole("button", { name: "Download HUNGRY Z for Students, Faculty and Guests" }));
       await Promise.resolve();
       await Promise.resolve();
     });
     expect(prompt).toHaveBeenCalledOnce();
     expect(window.location.pathname).toBe("/");
-    expect(screen.getByRole("button", { name: "Show the HUNGRY installation guide" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Show the HUNGRY Z installation guide" })).toBeInTheDocument();
     await act(async () => { window.dispatchEvent(new Event("appinstalled")); });
     expect(screen.getByRole("button", { name: "Already Installed" })).toHaveTextContent("Already Installed");
     expect(window.location.pathname).toBe("/");
   });
 
-  it("opens a HUNGRY-branded guide instead of ignoring clicks when Chrome offers no prompt", async () => {
+  it("opens a HUNGRY Z-branded guide instead of ignoring clicks when Chrome offers no prompt", async () => {
     Object.defineProperty(navigator, "getInstalledRelatedApps", { configurable: true, value: undefined });
     render(<HeroInstallButton app="student" />);
-    const guideButton = await screen.findByRole("button", { name: "Show the HUNGRY installation guide" });
+    const guideButton = await screen.findByRole("button", { name: "Show the HUNGRY Z installation guide" });
     fireEvent.click(guideButton);
-    expect(screen.getByRole("dialog", { name: "Install HUNGRY" })).toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: "Install HUNGRY Z" })).toBeInTheDocument();
     expect(screen.getByText(/Chrome has not offered its install prompt yet/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Got it" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Already Installed" })).not.toBeInTheDocument();
   });
 
-  it("shows the existing HUNGRY installed popup and login destination", async () => {
+  it("shows the existing HUNGRY Z installed popup and login destination", async () => {
     Object.defineProperty(navigator, "getInstalledRelatedApps", {
       configurable: true,
       value: vi.fn().mockResolvedValue([{ platform: "webapp", id: `${window.location.origin}/?hungry_app=student` }]),
@@ -205,8 +207,8 @@ describe("independent HUNGRY PWA install flows", () => {
     await act(async () => { await Promise.resolve(); await Promise.resolve(); });
     fireEvent.click(screen.getByRole("button", { name: "Already Installed" }));
     expect(screen.getByRole("heading", { name: "Already Installed" })).toBeInTheDocument();
-    expect(screen.getByRole("img", { name: "HUNGRY" })).toBeInTheDocument();
-    expect(screen.getByText("HUNGRY is already installed on your device. You can launch it anytime from your home screen or desktop, or start ordering right now!")).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "HUNGRY Z" })).toBeInTheDocument();
+    expect(screen.getByText("HUNGRY Z is already installed on your device. You can launch it anytime from your home screen or desktop, or start ordering right now!")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Start Ordering in App" })).toBeDisabled();
     expect(screen.queryByRole("link", { name: /Start Ordering/ })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Close" })).toBeInTheDocument();
@@ -214,7 +216,7 @@ describe("independent HUNGRY PWA install flows", () => {
 
   it("opens the dedicated canteen installation page from the landing action", () => {
     render(<HeroInstallButton app="canteen" />);
-    expect(screen.getByRole("link", { name: "Download the Canteen Dashboard for Canteen Owners" })).toHaveAttribute("href", "/install/canteen");
+    expect(screen.getByRole("link", { name: "Download HUNGRY Z Canteen Dashboard for Canteen Owners" })).toHaveAttribute("href", "/install/canteen");
   });
 
   it("does not claim the Canteen app installed until Chrome confirms it", async () => {

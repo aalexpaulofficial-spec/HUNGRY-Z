@@ -66,7 +66,7 @@ export function HowItWorks() {
             <h2 className="display mt-6 text-[clamp(2.4rem,8vw,6rem)]">
               FIVE MOVES
               <br />
-              <span className="text-primary-bright">FROM HUNGRY</span>
+              <span className="text-primary-bright">FROM HUNGRY Z</span>
               <br />
               TO DONE.
             </h2>

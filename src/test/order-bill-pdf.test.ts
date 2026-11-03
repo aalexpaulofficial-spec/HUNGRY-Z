@@ -101,9 +101,9 @@ describe("order bill PDF", () => {
     }) as typeof window.setTimeout);
 
     const blob = new Blob(["%PDF-1.4"], { type: "application/pdf" });
-    expect(downloadPdfBlob(blob, "HUNGRY-HG-1024-Bill.pdf")).toBe(true);
+    expect(downloadPdfBlob(blob, "HUNGRY Z-HG-1024-Bill.pdf")).toBe(true);
     expect(createObjectURL).toHaveBeenCalledWith(blob);
-    expect(filename).toBe("HUNGRY-HG-1024-Bill.pdf");
+    expect(filename).toBe("HUNGRY Z-HG-1024-Bill.pdf");
     expect(href).toContain("blob:h-ungry-bill");
   });
 });

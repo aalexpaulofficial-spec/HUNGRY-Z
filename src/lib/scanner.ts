@@ -1,4 +1,4 @@
-// Client-safe HUNGRY SCANNER rules and plan content (shared by landing page, dashboard and server).
+// Client-safe HUNGRY Z SCANNER rules and plan content (shared by landing page, dashboard and server).
 import { z } from "zod";
 
 export const SCANNER_TRIAL_MONTHS = 1;
@@ -16,7 +16,7 @@ export type ScannerPlan = {
 export const STUDENT_SCANNER_PLANS: ScannerPlan[] = [
   {
     version: "1.0",
-    brand: "HUNGRYZ SCAN",
+    brand: "HUNGRY AI",
     name: "AI Food Scanner",
     status: "live",
     features: [

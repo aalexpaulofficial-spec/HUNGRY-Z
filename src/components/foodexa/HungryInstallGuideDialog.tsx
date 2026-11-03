@@ -9,7 +9,7 @@ export function HungryInstallGuideDialog({ onClose }: { onClose: () => void }) {
   const instructions = isAndroid
     ? "In Chrome, open the ⋮ menu and choose Install app. If that option is not shown, choose Add to Home screen."
     : isChrome
-      ? "In Chrome, select the install icon in the address bar, or open the ⋮ menu and choose Install HUNGRY."
+      ? "In Chrome, select the install icon in the address bar, or open the ⋮ menu and choose Install HUNGRY Z."
       : "Open this page in Chrome, then choose Install app or Add to Home screen from the browser menu.";
 
   useEffect(() => {
@@ -27,14 +27,14 @@ export function HungryInstallGuideDialog({ onClose }: { onClose: () => void }) {
     <div className="pwa-installed-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
       <section aria-modal="true" aria-labelledby="pwa-install-guide-title" className="pwa-installed-dialog" role="dialog">
         <button aria-label="Close install guide" className="pwa-installed-close" onClick={onClose} type="button"><X aria-hidden="true" className="h-5 w-5" /></button>
-        <div aria-label="HUNGRY" className="pwa-installed-logo-wrap" role="img">
+        <div aria-label="HUNGRY Z" className="pwa-installed-logo-wrap" role="img">
           <LogoMark className="pwa-installed-logo" />
         </div>
-        <h2 className="pwa-installed-title" id="pwa-install-guide-title">Install HUNGRY</h2>
-        <p className="pwa-installed-message">Chrome has not offered its install prompt yet. You can install HUNGRY from your browser menu.</p>
+        <h2 className="pwa-installed-title" id="pwa-install-guide-title">Install HUNGRY Z</h2>
+        <p className="pwa-installed-message">Chrome has not offered its install prompt yet. You can install HUNGRY Z from your browser menu.</p>
         <div className="rounded-2xl border border-primary/25 bg-black/35 px-4 py-4 text-left text-sm leading-relaxed text-white/80">
           <p className="font-semibold text-white">{instructions}</p>
-          <p className="mt-2 text-xs text-white/55">After installation, open HUNGRY from your Home Screen or app launcher.</p>
+          <p className="mt-2 text-xs text-white/55">After installation, open HUNGRY Z from your Home Screen or app launcher.</p>
         </div>
         <button className="pwa-installed-secondary" onClick={onClose} type="button">Got it</button>
       </section>

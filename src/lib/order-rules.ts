@@ -99,8 +99,8 @@ const SQL_ERRORS: Record<string, string> = {
   coupon_already_used: "You've already used this coupon.",
 };
 
-/** Turns a database rule violation ("HUNGRY:code") into a friendly message. */
+/** Turns a database rule violation ("HUNGRY Z:code") into a friendly message. */
 export function friendlyOrderError(message: string | undefined | null): string | null {
-  const m = /HUNGRY:([a-z_]+)/.exec(message ?? "");
+  const m = /HUNGRY Z:([a-z_]+)/.exec(message ?? "");
   return m ? (SQL_ERRORS[m[1]!] ?? "Could not place order.") : null;
 }

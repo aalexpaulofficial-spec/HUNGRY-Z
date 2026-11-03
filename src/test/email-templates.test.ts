@@ -17,7 +17,7 @@ const order = {
   prepMinutes: 8,
 };
 
-describe("HUNGRY order email content", () => {
+describe("HUNGRY Z order email content", () => {
   it("clearly states Dine In and pending Pay at Counter in the student confirmation", () => {
     const email = orderConfirmationEmail(order);
     expect(email.text).toContain("Type: Dine In");

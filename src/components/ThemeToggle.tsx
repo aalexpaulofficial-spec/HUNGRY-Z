@@ -38,13 +38,13 @@ export function ThemeToggle({ className = "" }: { className?: string }) {
         applyHungryTheme(nextTheme);
         setTheme(nextTheme);
       }}
-      aria-label={`Switch to ${nextTheme === "light" ? "White" : "HUNGRY"} Theme`}
-      title={`Switch to ${nextTheme === "light" ? "White" : "HUNGRY"} Theme`}
+      aria-label={`Switch to ${nextTheme === "light" ? "White" : "HUNGRY Z"} Theme`}
+      title={`Switch to ${nextTheme === "light" ? "White" : "HUNGRY Z"} Theme`}
       aria-pressed={theme === "light"}
       className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-sm transition hover:border-primary/50 hover:text-primary ${className}`}
     >
       <Icon aria-hidden="true" className="h-4 w-4" />
-      <span className="sr-only">{theme === "light" ? "White Theme" : "HUNGRY Theme"}</span>
+      <span className="sr-only">{theme === "light" ? "White Theme" : "HUNGRY Z Theme"}</span>
     </button>
   );
 }

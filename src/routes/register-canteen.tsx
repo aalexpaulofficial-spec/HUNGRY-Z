@@ -10,13 +10,13 @@ import { getCanteenOwnerAccess } from "@/lib/hungry.functions";
 import { isStandaloneApp } from "@/lib/pwa-install";
 import { useBackNavigationEnabled } from "@/lib/back-nav";
 
-const title = "Register Your Canteen — HUNGRY";
+const title = "Register Your Canteen — HUNGRY Z";
 const description =
-  "Apply to bring your campus canteen onto HUNGRY, or log in to your approved canteen dashboard with your 7-character code.";
+  "Apply to bring your campus canteen onto HUNGRY Z, or log in to your approved canteen dashboard with your 7-character code.";
 
 export const Route = createFileRoute("/register-canteen")({
   head: () => ({
-    links: [{ rel: "manifest", href: "/manifest-canteen.webmanifest" }],
+    links: [{ rel: "manifest", href: "/manifest-canteen.webmanifest" }, { rel: "icon", href: "/HUNGRY%20Z%20CANTEEN%20DAHSBOARD%20LOGO.png", type: "image/png" }],
     meta: [
       { title },
       { name: "description", content: description },

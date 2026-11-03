@@ -76,7 +76,7 @@ export function FinalCTA() {
 
       <div className="mx-auto w-full max-w-6xl px-5 text-center">
         <h2 data-headline className="display text-[clamp(2.3rem,8vw,6.6rem)]">
-          {["YOUR CAMPUS.", "YOUR FOOD.", "YOUR HUNGRY."].map((l, i) => (
+          {["YOUR CAMPUS.", "YOUR FOOD.", "YOUR HUNGRY Z."].map((l, i) => (
             <span key={l} className="block overflow-hidden pb-[0.06em]">
               <span className={i === 2 ? "block text-primary-bright text-glow" : "block"}>{l}</span>
             </span>
@@ -111,7 +111,7 @@ export function FinalCTA() {
             </span>
           </a>
           <a
-            href="#institutions"
+            href="/register-canteen"
             className="inline-flex items-center gap-2 rounded-full border border-border px-7 py-4 text-sm font-medium text-foreground/85 transition-colors duration-300 hover:border-primary/50"
           >
             Talk to your institution

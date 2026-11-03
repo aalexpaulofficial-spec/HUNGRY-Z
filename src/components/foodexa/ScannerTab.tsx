@@ -107,7 +107,7 @@ export function ScannerTab() {
   const days = trialDaysLeft(access.expiresAt);
   return <div className="scanner-shell mx-auto flex w-full max-w-3xl flex-col gap-5 pb-6">
     <section className="scanner-card relative overflow-hidden p-5 sm:p-7">
-      <div className="flex items-center justify-end gap-3"><span className="scanner-pill scanner-pill-accent">AI FOOD SCAN</span></div>
+      <div className="flex items-center justify-end gap-3"><span className="scanner-pill scanner-pill-accent">HUNGRY AI</span></div>
       <h2 className="mt-7 text-center text-2xl font-semibold tracking-tight sm:text-3xl">Scan Any Food,<br /><span className="text-primary">Know Its Nutrition</span></h2>
       <p className="mx-auto mt-2 max-w-sm text-center text-sm text-muted-foreground">Use your camera or upload a photo to see food details and verified nutrition.</p>
       <p className={cn("mt-4 text-center text-xs font-medium", access.active ? "text-muted-foreground" : "text-destructive")}>{access.active ? `Free access active · ${days} ${days === 1 ? "day" : "days"} left` : "Your free month has ended."}</p>
@@ -131,7 +131,7 @@ export function ScannerTab() {
 
     {(preview || busy || error || results.length > 0) && <section className="scanner-card overflow-hidden">
       {preview && <div className={cn("scanner-image-frame", busy && "scanner-image-frame-active")}><img src={preview} alt="Your captured or uploaded food" className="aspect-[4/3] w-full rounded-[1.15rem] object-cover" />{busy && <div className="scanner-sweep" aria-hidden="true" />}</div>}
-      {busy && <div className="px-5 pb-5 pt-4 text-center"><h3 className="text-xl font-semibold">{stage === "calculating" ? "Calculating nutrition…" : "Identifying food…"}</h3><p className="mt-1 text-sm text-muted-foreground">Analysing with Gemini AI</p>
+      {busy && <div className="px-5 pb-5 pt-4 text-center"><h3 className="text-xl font-semibold">{stage === "calculating" ? "Calculating nutrition..." : "Identifying your food..."}</h3><p className="mt-1 text-sm text-muted-foreground">Analysing with HUNGRY AI...</p>
         <div className="scanner-progress mt-5"><span style={{ width: `${(stages.findIndex((item) => item.id === stage) + 1) * 25}%` }} /></div>
         <ol className="mx-auto mt-4 flex max-w-sm flex-col gap-2 text-left">{stages.map((item, index) => { const current = stages.findIndex((entry) => entry.id === stage); const done = index < current; const active = index === current; return <li key={item.id} className={cn("flex items-center gap-3 text-xs transition-colors", done || active ? "text-foreground" : "text-muted-foreground/60")}>{done ? <span className="scanner-step-done"><Check className="h-3 w-3" /></span> : active ? <Loader2 className="h-4 w-4 animate-spin text-primary" /> : <span className="scanner-step-idle" />}{item.label}</li>; })}</ol>
       </div>}

@@ -32,14 +32,17 @@ export const Route = createFileRoute("/canteen")({
   validateSearch: z.object({ code: z.string().optional() }),
   head: () => ({
     meta: [
-      { title: "Canteen Dashboard — HUNGRY" },
-      { name: "description", content: "Manage your HUNGRY canteen menu and live orders." },
-      { property: "og:title", content: "Canteen Dashboard — HUNGRY" },
-      { property: "og:description", content: "Manage your canteen menu and orders on HUNGRY." },
+      { title: "HUNGRY Z Canteen Dashboard" },
+      { name: "description", content: "Manage your HUNGRY Z canteen menu and live orders." },
+      { property: "og:title", content: "HUNGRY Z Canteen Dashboard" },
+      { property: "og:description", content: "Manage your canteen menu and orders on HUNGRY Z." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
-    links: [{ rel: "manifest", href: "/manifest-canteen.webmanifest" }],
+    links: [
+      { rel: "manifest", href: "/manifest-canteen.webmanifest" },
+      { rel: "icon", href: "/HUNGRY%20Z%20CANTEEN%20DAHSBOARD%20LOGO.png", type: "image/png", sizes: "1254x1254" },
+    ],
   }),
   component: CanteenPage,
 });
@@ -125,9 +128,9 @@ function CanteenPage() {
       <div className="ember anim-pulse-glow pointer-events-none absolute -top-40 left-1/2 h-[520px] w-[520px] -translate-x-1/2" />
       <div className="relative mx-auto w-full max-w-md">
         {siteNavigationEnabled ? (
-          <Link to="/" className="mb-8 block text-center display text-[15px] tracking-[0.3em]" aria-label="HUNGRY home">HUNGRY</Link>
+          <Link to="/" className="mb-8 flex items-center justify-center gap-2 display text-[15px] tracking-[0.3em]" aria-label="HUNGRY Z home"><img src="/HUNGRY%20Z%20CANTEEN%20DAHSBOARD%20LOGO.png" alt="" className="h-10 w-10 rounded-full object-contain" />HUNGRY Z</Link>
         ) : (
-          <span className="mb-8 block text-center display text-[15px] tracking-[0.3em]" aria-label="HUNGRY">HUNGRY</span>
+          <span className="mb-8 flex items-center justify-center gap-2 display text-[15px] tracking-[0.3em]" aria-label="HUNGRY Z"><img src="/HUNGRY%20Z%20CANTEEN%20DAHSBOARD%20LOGO.png" alt="" className="h-10 w-10 rounded-full object-contain" />HUNGRY Z</span>
         )}
         {state !== "ok" && state !== "error" && <div className="mb-5 flex justify-center"><HeroInstallButton app="canteen" /></div>}
         <div className="glass-red anim-rise rounded-[2rem] p-6 sm:p-8">
@@ -148,7 +151,7 @@ function CanteenPage() {
                 {state === "pending"
                   ? "Your canteen application is under review. We'll email you when it has been reviewed."
                   : state === "rejected"
-                    ? "Your canteen application was rejected. No rejection reason is available here; contact HUNGRY support for details."
+                    ? "Your canteen application was rejected. No rejection reason is available here; contact HUNGRY Z support for details."
                     : "No approved canteen is linked to this account. Sign in with your 7-character Canteen Owner ID and Owner Password Code."}
               </p>
               {state === "missing" && <a href="/register-canteen" className="block text-xs font-semibold text-primary-bright underline">Register your canteen</a>}
@@ -191,9 +194,10 @@ function ThermalReceipt({ job, paperWidth }: { job: ReceiptPrintJob; paperWidth:
   const collectionCode = job.kind === "test" ? "1234" : job.order.pickup_code;
 
   return (
-    <section id="hungry-thermal-print" className={`hungry-print-only hungry-receipt-paper-${paperWidth}`} aria-label="HUNGRY receipt">
+    <section id="hungry-thermal-print" className={`hungry-print-only hungry-receipt-paper-${paperWidth}`} aria-label="HUNGRY Z receipt">
       <header className="hungry-receipt-header">
-        <h1>HUNGRY</h1>
+        <img src="/HUNGRY%20Z%20Q%20LOGO.png" alt="HUNGRY Z" />
+        <h1>HUNGRY Z</h1>
         <p>NO QUEUES. SAVE FOOD.</p>
         <p>SMART CAMPUS FOOD ORDERING</p>
       </header>
@@ -549,6 +553,7 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
         <header className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex min-w-0 items-start gap-3">
           <BackButton inline />
+          <img src="/HUNGRY%20Z%20CANTEEN%20DAHSBOARD%20LOGO.png" alt="HUNGRY Z Canteen Dashboard" className="h-12 w-12 shrink-0 rounded-full object-contain" />
           <div className="min-w-0">
             <p className="text-[10px] tracking-[0.3em] text-primary-bright">CANTEEN DASHBOARD · {canteen.code}</p>
             <h1 data-no-translate className="display text-3xl">{canteen.name}</h1>

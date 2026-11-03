@@ -107,11 +107,9 @@ export function InstitutionsSection() {
           >
             <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2.5">
-                <span className="grid h-6 w-6 place-items-center rounded-md bg-primary text-[10px] font-black text-primary-foreground">
-                  H
-                </span>
+                <img src="/HUNGRY%20Z%20Q%20LOGO.png" alt="" className="h-6 w-6 rounded-md object-contain" />
                 <span className="display text-[11px] tracking-[0.24em]">
-                  HUNGRY CAMPUS CONSOLE
+                  HUNGRY Z CAMPUS CONSOLE
                 </span>
               </div>
               <span className="rounded-full border border-border px-2.5 py-1 text-[9px] tracking-[0.16em] text-muted-foreground">

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { SCANNER_PRICE_INR, STUDENT_SCANNER_PLANS, isTrialActive, trialDaysLeft, trialEndsAt } from "@/lib/scanner";
 
-describe("HUNGRY SCANNER student plans", () => {
+describe("HUNGRY Z SCANNER student plans", () => {
   it("all three versions are ₹0", () => {
     expect(SCANNER_PRICE_INR).toBe(0);
     expect(STUDENT_SCANNER_PLANS.map((p) => p.version)).toEqual(["1.0", "2.0", "3.0"]);

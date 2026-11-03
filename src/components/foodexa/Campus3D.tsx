@@ -51,7 +51,7 @@ export function Campus3D() {
       />
       <div className="mx-auto max-w-7xl px-5">
         <p className="mb-8 text-[10px] tracking-[0.34em] text-muted-foreground">
-          THE HUNGRY LOOP
+          THE HUNGRY Z LOOP
         </p>
         <h2 className="display max-w-3xl text-[clamp(2.2rem,6.6vw,5rem)]">
           ONE CAMPUS, <span className="text-primary-bright">RENDERED END TO END.</span>
@@ -96,7 +96,7 @@ export function Campus3D() {
                 { t: "translateZ(80px)", label: "QR" },
                 { t: "rotateY(180deg) translateZ(80px)", label: "FX" },
                 { t: "rotateY(90deg) translateZ(80px)", label: "₹0" },
-                { t: "rotateY(-90deg) translateZ(80px)", label: "HUNGRY" },
+                { t: "rotateY(-90deg) translateZ(80px)", label: "HUNGRY Z" },
                 { t: "rotateX(90deg) translateZ(80px)", label: "PICKUP" },
                 { t: "rotateX(-90deg) translateZ(80px)", label: "ORDER" },
               ].map((f) => (

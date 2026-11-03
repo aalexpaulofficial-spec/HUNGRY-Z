@@ -41,7 +41,7 @@ describe("shared back navigation", () => {
     expect(getBackFallbackPath(pathname)).toBe(expected);
   });
 
-  it("uses tracked HUNGRY router history rather than arbitrary browser history", async () => {
+  it("uses tracked HUNGRY Z router history rather than arbitrary browser history", async () => {
     vi.spyOn(window.history, "length", "get").mockReturnValue(1);
     const router = { stores: { location: { get: () => ({ state: { __TSR_index: 2 } }) } }, history: { back: vi.fn() }, navigate: vi.fn() };
 
@@ -51,7 +51,7 @@ describe("shared back navigation", () => {
     expect(router.navigate).not.toHaveBeenCalled();
   });
 
-  it("does not leave HUNGRY for unrelated browser history", async () => {
+  it("does not leave HUNGRY Z for unrelated browser history", async () => {
     vi.spyOn(window.history, "length", "get").mockReturnValue(4);
     const router = { stores: { location: { get: () => ({ state: { __TSR_index: 0 } }) } }, history: { back: vi.fn() }, navigate: vi.fn() };
 

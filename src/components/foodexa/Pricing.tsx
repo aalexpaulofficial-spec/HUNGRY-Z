@@ -2,7 +2,7 @@ import { useGsap } from "./use-gsap";
 import { Phone } from "./Phone";
 import { SCANNER_PRICE_INR, STUDENT_SCANNER_PLANS } from "@/lib/scanner";
 
-export const GENERAL_ENQUIRY_HREF = `mailto:hungryofficialx@gmail.com?subject=${encodeURIComponent("HUNGRY — General Enquiry")}`;
+export const GENERAL_ENQUIRY_HREF = "/register-canteen";
 
 export function Pricing() {
   const ref = useGsap(({ gsap, root }) => {
@@ -143,10 +143,10 @@ export function Pricing() {
             </div>
             <a
               href={GENERAL_ENQUIRY_HREF}
-              aria-label="Talk to HUNGRY by email"
+              aria-label="Talk to HUNGRY Z about canteen registration"
               className="inline-flex items-center justify-center gap-2 rounded-full border border-primary/40 px-6 py-3.5 text-sm font-semibold text-foreground transition-all duration-300 hover:bg-primary/12"
             >
-              Talk to HUNGRY
+              Talk to HUNGRY Z
             </a>
           </div>
         </div>

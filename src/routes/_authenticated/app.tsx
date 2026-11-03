@@ -55,10 +55,14 @@ import { z } from "zod";
 export const Route = createFileRoute("/_authenticated/app")({
   validateSearch: z.object({ orderId: z.string().uuid().optional() }),
   head: () => ({
+    links: [
+      { rel: "manifest", href: "/manifest-student.webmanifest" },
+      { rel: "icon", href: "/HUNGRY%20Z%20Q%20LOGO.png", type: "image/png", sizes: "1254x1254" },
+    ],
     meta: [
-      { title: "HUNGRY — Order Food on Campus" },
+      { title: "HUNGRY Z — Order Food on Campus" },
       { name: "description", content: "Browse your canteen menu, order, track and pick up with a QR code." },
-      { property: "og:title", content: "HUNGRY — Order Food on Campus" },
+      { property: "og:title", content: "HUNGRY Z — Order Food on Campus" },
       { property: "og:description", content: "Browse, order, track and pick up campus food." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -313,6 +317,7 @@ function OrderingApp() {
         <header className="sticky top-0 z-30 flex flex-wrap items-center gap-x-3 gap-y-2 bg-background/80 px-4 py-3 backdrop-blur-xl sm:flex-nowrap sm:justify-between sm:gap-3 sm:px-5 sm:py-4">
           <div className="flex min-w-0 basis-full items-center gap-2 sm:basis-auto sm:gap-3">
             <BackButton inline />
+            <img src="/HUNGRY%20Z%20Q%20LOGO.png" alt="HUNGRY Z" className="h-8 w-8 shrink-0 rounded-full object-contain" />
             <div className="min-w-0 flex-1">
               <p className="truncate whitespace-nowrap text-xs text-muted-foreground">{`Hi, ${profile.full_name} 👋`}</p>
               <p className="display truncate whitespace-nowrap text-lg tracking-[0.2em]">HUNGRY?</p>
@@ -349,9 +354,9 @@ function OrderingApp() {
           </motion.button>
         )}
 
-        <nav className="glass fixed inset-x-0 bottom-0 z-40 mx-auto flex max-w-3xl justify-around rounded-t-3xl px-2 pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-3">
-          {([["home", "HOME", Home], ["menu", "MENU", UtensilsCrossed], ["orders", "ORDERS", Receipt], ["you", "YOU", User], ...(profile.role === "student" ? [["scan", "SCAN", ScanLine] as const] : [])] as const).map(([k, label, Icon]) => (
-            <button key={k} onClick={() => setTab(k)} className={cn("flex min-w-0 flex-1 flex-col items-center gap-1 py-1 text-[9px] font-bold tracking-normal transition sm:text-[10px] sm:tracking-widest", tab === k ? "text-primary-bright" : "text-muted-foreground")}>
+        <nav className="glass fixed inset-x-0 bottom-0 z-40 mx-auto flex max-w-3xl justify-around rounded-t-3xl px-1.5 pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-3 sm:px-2">
+          {(profile.role === "student" ? [["home", "HOME", Home], ["menu", "MENU", UtensilsCrossed], ["scan", "HUNGRY AI", ScanLine], ["orders", "ORDERS", Receipt], ["you", "YOU", User]] as const : [["home", "HOME", Home], ["menu", "MENU", UtensilsCrossed], ["orders", "ORDERS", Receipt], ["you", "YOU", User]] as const).map(([k, label, Icon]) => (
+            <button key={k} onClick={() => setTab(k)} className={cn("flex min-w-0 flex-1 flex-col items-center gap-1 whitespace-nowrap py-1 text-[8px] font-bold tracking-normal transition sm:text-[10px] sm:tracking-widest", tab === k ? "text-primary-bright" : "text-muted-foreground")}>
               <Icon className={cn("h-5 w-5 transition", tab === k && "scale-110")} />
               {label}
             </button>
@@ -443,11 +448,14 @@ function CodeGate({ name, onJoined, onSignOut }: { name: string; onJoined: () =>
     <div className="grain relative min-h-screen overflow-hidden bg-background px-4 py-10">
       <div className="ember anim-pulse-glow pointer-events-none absolute -top-40 left-1/2 h-[520px] w-[520px] -translate-x-1/2" />
       <div className="relative mx-auto w-full max-w-md">
-        <p className="mb-8 text-center display text-[15px] tracking-[0.3em]">HUNGRY</p>
+        <div className="mb-8 flex items-center justify-center gap-2">
+          <img src="/HUNGRY%20Z%20Q%20LOGO.png" alt="" className="h-8 w-8 rounded-full object-contain" />
+          <p className="display text-[15px] tracking-[0.3em]">HUNGRY Z</p>
+        </div>
         <div className="glass-red anim-rise rounded-[2rem] p-6 sm:p-8">
           <p className="text-xs font-semibold uppercase tracking-widest text-primary-bright">Welcome, {name.split(" ")[0]}</p>
           <h1 className="display mt-2 text-3xl">Enter your campus code</h1>
-          <p className="mb-6 mt-2 text-sm text-muted-foreground">Your university or canteen shares a verified 7-character HUNGRY code. It opens that canteen's live menu.</p>
+          <p className="mb-6 mt-2 text-sm text-muted-foreground">Your university or canteen shares a verified 7-character HUNGRY Z code. It opens that canteen's live menu.</p>
           <CodeEntry onJoined={onJoined} />
         </div>
         <button onClick={onSignOut} className="mx-auto mt-6 flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground"><LogOut className="h-3.5 w-3.5" /> Log out</button>
@@ -601,7 +609,7 @@ function MenuTab({ menu, onOpen, onAdd }: { menu: MenuItem[]; onOpen: (i: MenuIt
   const [q, setQ] = useState("");
   const cats = useMemo(() => ["All", ...Array.from(new Set(menu.map((m) => m.category)))], [menu]);
   const list = useMemo(() => menu.filter((m) => (cat === "All" || m.category === cat) && m.name.toLowerCase().includes(q.toLowerCase())), [menu, cat, q]);
-  if (!menu.length) return <Empty title="No menu yet" text="Your canteen hasn't published its menu on HUNGRY yet." />;
+  if (!menu.length) return <Empty title="No menu yet" text="Your canteen hasn't published its menu on HUNGRY Z yet." />;
   return (
     <div className="pt-2">
       <input value={q} onChange={(e) => setQ(e.target.value)} maxLength={50} placeholder="Search dishes…" className="w-full rounded-full border border-input bg-card px-5 py-3 text-sm outline-none focus:border-primary" />
@@ -936,7 +944,7 @@ function CollectionCelebration({ onContinue }: { onContinue: () => void }) {
           <LogoMark className="h-16 w-16 text-2xl animate-none transition-none transform-none" />
         </div>
         <p className="relative mt-6 text-[10px] font-bold tracking-[0.32em] text-primary-bright">ORDER COLLECTED</p>
-        <h2 id="collection-celebration-title" className="display relative mt-3 text-2xl leading-tight sm:text-3xl">THANK YOU FOR USING HUNGRY!</h2>
+        <h2 id="collection-celebration-title" className="display relative mt-3 text-2xl leading-tight sm:text-3xl">THANK YOU FOR USING HUNGRY Z!</h2>
         <p className="relative mt-4 text-sm text-muted-foreground">Great food. Zero queues. See you hungry again!</p>
         <button onClick={onContinue} className="relative mt-8 w-full rounded-full bg-primary px-6 py-4 text-sm font-semibold text-primary-foreground transition hover:shadow-[0_0_40px_-6px_var(--primary-bright)]">
           Continue Exploring
@@ -968,7 +976,7 @@ function QrOrderPage({ orderId, order, message }: { orderId: string; order: Orde
     <div className="min-h-screen bg-background px-3 pb-8 pt-3 sm:px-5 sm:pt-5">
       <div className="mx-auto w-full max-w-xl">
         <header className="mb-4 flex items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3">
-          <button type="button" onClick={() => navigate({ to: "/app", replace: true })} className="rounded-full border border-border px-4 py-2 text-xs font-semibold">Back to HUNGRY</button>
+          <button type="button" onClick={() => navigate({ to: "/app", replace: true })} className="rounded-full border border-border px-4 py-2 text-xs font-semibold">Back to HUNGRY Z</button>
           <h1 className="display min-w-0 truncate text-lg">Order Details</h1>
         </header>
         <div className="overflow-hidden rounded-3xl border border-border bg-card shadow-[var(--shadow-cinema)]">
@@ -995,8 +1003,8 @@ function OrderDetail({ order, canteenName, refund, notice, onNotice }: { order: 
   const awaiting = order.status === "pending_payment";
   const placedAt = new Intl.DateTimeFormat("en-IN", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kolkata" }).format(new Date(order.created_at));
 
-  function downloadBill() {
-    const downloaded = downloadOrderBillPdf({
+  async function downloadBill() {
+    const downloaded = await downloadOrderBillPdf({
       orderNumber: order.order_number,
       customerName: order.customer_name,
       canteenName,
@@ -1092,7 +1100,7 @@ function OrderDetail({ order, canteenName, refund, notice, onNotice }: { order: 
       {!awaiting && order.status !== "cancelled" && (
         <div className="mt-7 flex w-full flex-col items-center rounded-3xl border border-primary/30 bg-ink p-3 sm:p-4">
           <div className="w-fit max-w-full rounded-xl bg-white p-2">
-            <QRCodeCanvas value={createOrderQrUrl(window.location.origin, order.id)} size={512} level="M" bgColor="#ffffff" fgColor="#050505" marginSize={4} title="Scan to view secure HUNGRY order details" className="block aspect-square h-auto w-32 max-w-full object-contain sm:w-36 md:w-40" />
+            <QRCodeCanvas value={createOrderQrUrl(window.location.origin, order.id)} size={512} level="M" bgColor="#ffffff" fgColor="#050505" marginSize={4} title="Scan to view secure HUNGRY Z order details" className="block aspect-square h-auto w-32 max-w-full object-contain sm:w-36 md:w-40" />
           </div>
           <p className="mt-4 text-xs uppercase tracking-widest text-muted-foreground">Pickup code</p>
           <p className="display text-3xl tracking-[0.3em]">{order.pickup_code}</p>
@@ -1143,7 +1151,7 @@ function YouTab({ profile, canteen, onSwitch, onSignOut }: { profile: Profile; c
         <p className="text-xs uppercase tracking-widest text-muted-foreground">Current canteen</p>
         <p data-no-translate className="mt-1 font-semibold">{canteen.name}</p>
         <p className="text-xs text-muted-foreground">{canteen.university_name} · {canteen.campus_location}</p>
-        <p className="mt-1 text-xs text-chart-4">Verified HUNGRY canteen</p>
+        <p className="mt-1 text-xs text-chart-4">Verified HUNGRY Z canteen</p>
       </div>
       <button onClick={onSwitch} className="group flex w-full items-center gap-4 rounded-3xl border border-primary/40 bg-gradient-to-r from-primary/20 to-transparent p-5 text-left transition hover:border-primary">
         <span className="grid h-11 w-11 place-items-center rounded-full bg-primary text-primary-foreground transition group-hover:rotate-180"><Repeat className="h-5 w-5" /></span>

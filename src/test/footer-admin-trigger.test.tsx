@@ -22,7 +22,7 @@ describe("footer admin login trigger", () => {
   ])("opens admin login after exactly three footer logo clicks on %s", (_label, width) => {
     Object.defineProperty(window, "innerWidth", { configurable: true, value: width });
     render(<Footer />);
-    const footerLogo = screen.getByRole("button", { name: "HUNGRY" });
+    const footerLogo = screen.getByRole("button", { name: "HUNGRY Z" });
 
     fireEvent.click(footerLogo);
     fireEvent.click(footerLogo);
@@ -35,7 +35,7 @@ describe("footer admin login trigger", () => {
 
   it("resets the sequence when the clicks are too far apart", () => {
     render(<Footer />);
-    const footerLogo = screen.getByRole("button", { name: "HUNGRY" });
+    const footerLogo = screen.getByRole("button", { name: "HUNGRY Z" });
 
     fireEvent.click(footerLogo);
     fireEvent.click(footerLogo);

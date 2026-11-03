@@ -1,4 +1,4 @@
-// Sends HUNGRY emails from the Gmail account over SMTP (TLS, port 465) and logs every
+// Sends HUNGRY Z emails from the Gmail account over SMTP (TLS, port 465) and logs every
 // attempt to public.email_logs. The App Password lives only in the GMAIL_APP_PASSWORD secret.
 // Email failures never undo a confirmed order, payment or refund — they are logged for the admin.
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
@@ -16,12 +16,12 @@ async function deliver(to: string, msg: EmailContent, user: string, pass: string
     const { WorkerMailer } = await import("worker-mailer");
     await WorkerMailer.send(
       { host: "smtp.gmail.com", port: 465, secure: true, credentials: { username: user, password: pass }, authType: "plain" },
-      { from: { name: "HUNGRY", email: user }, to: { email: to }, subject: msg.subject, text: msg.text, html: msg.html },
+      { from: { name: "HUNGRY Z", email: user }, to: { email: to }, subject: msg.subject, text: msg.text, html: msg.html },
     );
   } else {
     const nodemailer = await import("nodemailer");
     const t = nodemailer.default.createTransport({ host: "smtp.gmail.com", port: 465, secure: true, auth: { user, pass } });
-    await t.sendMail({ from: `"HUNGRY" <${user}>`, to, subject: msg.subject, text: msg.text, html: msg.html });
+    await t.sendMail({ from: `"HUNGRY Z" <${user}>`, to, subject: msg.subject, text: msg.text, html: msg.html });
   }
 }
 

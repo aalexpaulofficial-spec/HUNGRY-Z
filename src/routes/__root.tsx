@@ -81,13 +81,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "HUNGRY — Smart Campus Food Ordering" },
+      { title: "HUNGRY Z — Smart Campus Food Ordering" },
       {
         name: "description",
         content:
-          "HUNGRY — smart campus food ordering with ₹0 platform fee on every order.",
+          "HUNGRY Z — smart campus food ordering with ₹0 platform fee on every order.",
       },
-      { name: "author", content: "HUNGRY" },
+      { name: "author", content: "HUNGRY Z" },
       { name: "theme-color", content: "#050505" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -103,7 +103,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: appCss,
       },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "icon", href: "/HUNGRY%20Z%20Q%20LOGO.png", type: "image/png", sizes: "1254x1254" },
+      { rel: "apple-touch-icon", href: "/HUNGRY%20Z%20Q%20LOGO.png" },
     ],
   }),
 

@@ -177,7 +177,7 @@ export async function isAppInstalled(app: HungryApp): Promise<boolean> {
 
 export function getInstallFallback(app: HungryApp) {
   const ua = typeof navigator === "undefined" ? "" : navigator.userAgent;
-  const appName = app === "canteen" ? "HUNGRY Canteen Dashboard" : "HUNGRY";
+  const appName = app === "canteen" ? "HUNGRY Z Canteen Dashboard" : "HUNGRY Z";
   const isAppleMobile = /iphone|ipad|ipod/i.test(ua) ||
     (typeof navigator !== "undefined" && navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
   if (isAppleMobile) {

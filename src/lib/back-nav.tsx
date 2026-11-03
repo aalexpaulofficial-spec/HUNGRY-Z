@@ -60,7 +60,7 @@ function hasPreviousAppPage(router: BackRouter) {
   if (typeof stateIndex === "number" && stateIndex > 0) return true;
 
   // A normal same-origin <a> navigation starts a new document and resets TanStack's
-  // index. Trust the browser entry only when its referrer proves it came from HUNGRY.
+  // index. Trust the browser entry only when its referrer proves it came from HUNGRY Z.
   if (typeof window === "undefined" || window.history.length <= 1 || !document.referrer) return false;
   try {
     return new URL(document.referrer).origin === window.location.origin;

@@ -49,7 +49,7 @@ describe("dashboard support and legal dialogs", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "4 stars" }));
     fireEvent.change(screen.getByLabelText("Comments"), { target: { value: "Fast and easy ordering." } });
-    fireEvent.click(screen.getByRole("button", { name: "Send to HUNGRY Support" }));
+    fireEvent.click(screen.getByRole("button", { name: "Send to HUNGRY Z Support" }));
 
     await waitFor(() => expect(support.send).toHaveBeenCalledWith({ data: expect.objectContaining({
       category: "Rate Us",
@@ -65,7 +65,7 @@ describe("dashboard support and legal dialogs", () => {
 
     fireEvent.change(screen.getByLabelText(/What is this about/), { target: { value: "Feedback" } });
     fireEvent.change(screen.getByLabelText("Details"), { target: { value: "Please add more vegetarian options." } });
-    fireEvent.click(screen.getByRole("button", { name: "Send to HUNGRY Support" }));
+    fireEvent.click(screen.getByRole("button", { name: "Send to HUNGRY Z Support" }));
 
     await waitFor(() => expect(support.send).toHaveBeenCalledWith({ data: expect.objectContaining({
       category: "Feedback",

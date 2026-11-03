@@ -1,7 +1,7 @@
 {
   "id": "/?hungry_app=student",
-  "name": "HUNGRY",
-  "short_name": "HUNGRY",
+  "name": "HUNGRY Z",
+  "short_name": "HUNGRY Z",
   "description": "Order campus food as a student, faculty member, or guest.",
   "start_url": "/auth?hungry_app=student",
   "scope": "/",
@@ -14,8 +14,6 @@
     { "platform": "webapp", "id": "/?hungry_app=canteen", "url": "/manifest-canteen.webmanifest" }
   ],
   "icons": [
-    { "src": "/pwa-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "/pwa-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "/pwa-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+    { "src": "/HUNGRY%20Z%20Q%20LOGO.png", "sizes": "1254x1254", "type": "image/png", "purpose": "any" }
   ]
 }

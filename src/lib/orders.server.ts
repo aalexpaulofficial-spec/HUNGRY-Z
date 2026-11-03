@@ -217,7 +217,7 @@ export type PaymentOutcome = { state: "paid" | "processing" | "failed" | "refund
  */
 export async function confirmOnlinePayment(p: { razorpayOrderId: string; razorpayPaymentId: string; signatureVerified: boolean }): Promise<PaymentOutcome> {
   const { data: order } = await db.from("orders").select("*").eq("razorpay_order_id", p.razorpayOrderId).maybeSingle();
-  if (!order) throw new Error("No HUNGRY order matches this payment.");
+  if (!order) throw new Error("No HUNGRY Z order matches this payment.");
   let pay = await fetchRazorpayPayment(p.razorpayPaymentId);
   if (pay.order_id !== p.razorpayOrderId) throw new Error("This payment does not belong to the order.");
 
@@ -274,7 +274,7 @@ export async function recordFailedPayment(p: { razorpayOrderId: string; razorpay
   }
   if (pay.status !== "failed") return { state: "processing" as const };
   const { data: order } = await db.from("orders").select("*").eq("razorpay_order_id", p.razorpayOrderId).maybeSingle();
-  if (!order) throw new Error("No HUNGRY order matches this payment.");
+  if (!order) throw new Error("No HUNGRY Z order matches this payment.");
 
   const row = {
     order_id: order.id,

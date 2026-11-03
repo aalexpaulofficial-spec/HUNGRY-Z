@@ -1,8 +1,8 @@
 {
   "id": "/?hungry_app=canteen",
-  "name": "HUNGRY Canteen Dashboard",
-  "short_name": "HUNGRY Canteen",
-  "description": "Register and manage your HUNGRY campus canteen.",
+  "name": "HUNGRY Z Canteen Dashboard",
+  "short_name": "HUNGRY Z Canteen",
+  "description": "Register and manage your HUNGRY Z campus canteen.",
   "start_url": "/register-canteen?hungry_app=canteen",
   "scope": "/",
   "display": "standalone",
@@ -13,8 +13,6 @@
     { "platform": "webapp", "id": "/?hungry_app=canteen", "url": "/manifest-canteen.webmanifest" }
   ],
   "icons": [
-    { "src": "/pwa-owner-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "/pwa-owner-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "/pwa-owner-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+    { "src": "/HUNGRY%20Z%20CANTEEN%20DAHSBOARD%20LOGO.png", "sizes": "1254x1254", "type": "image/png", "purpose": "any" }
   ]
 }

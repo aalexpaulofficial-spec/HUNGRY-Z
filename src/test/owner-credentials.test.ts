@@ -60,6 +60,7 @@ describe("canteen owner approval credentials", () => {
       code: "CSTM123",
       ownerLoginId: "ABCDEFG",
       ownerLoginCode: "WNR2223",
+      installUrl: "https://app.example/install/canteen",
     });
 
     expect(email.text).toContain("Canteen Owner ID (7 characters): ABCDEFG");
@@ -67,6 +68,10 @@ describe("canteen owner approval credentials", () => {
     expect(email.text).toContain("Student/Faculty/Guest Canteen Code (7 characters): CSTM123");
     expect(email.text).toContain("Students, faculty, and guests enter this shared code");
     expect(email.text).toContain("It cannot access the owner dashboard.");
+    expect(email.text).toContain("Download HUNGRY Z Canteen Dashboard: https://app.example/install/canteen");
+    expect(email.html).toContain('href="https://app.example/install/canteen"');
+    expect(email.html).toContain("Download HUNGRY Z Canteen Dashboard");
+    expect(email.html).toContain("HUNGRY%20Z%20Q%20LOGO.png");
     expect(email.text).not.toContain("sent to that registered email");
   });
 });

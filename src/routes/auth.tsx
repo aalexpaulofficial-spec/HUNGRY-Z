@@ -17,13 +17,14 @@ export const Route = createFileRoute("/auth")({
   validateSearch: z.object({ mode: z.enum(["login", "signup"]).optional(), orderId: z.string().uuid().optional() }),
   head: () => ({
     meta: [
-      { title: "Sign in to HUNGRY — Campus Food Ordering" },
-      { name: "description", content: "Create your HUNGRY account as a student, faculty member or guest, or log in." },
-      { property: "og:title", content: "Sign in to HUNGRY" },
-      { property: "og:description", content: "Create your HUNGRY account or log in to order campus food." },
+      { title: "Sign in to HUNGRY Z — Campus Food Ordering" },
+      { name: "description", content: "Create your HUNGRY Z account as a student, faculty member or guest, or log in." },
+      { property: "og:title", content: "Sign in to HUNGRY Z" },
+      { property: "og:description", content: "Create your HUNGRY Z account or log in to order campus food." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
+    links: [{ rel: "manifest", href: "/manifest-student.webmanifest" }, { rel: "icon", href: "/HUNGRY%20Z%20Q%20LOGO.png", type: "image/png" }],
   }),
   component: AuthPage,
 });
@@ -48,8 +49,8 @@ function AuthPage() {
 
   const brand = (
     <>
-      <span className="grid h-8 w-8 place-items-center rounded-lg bg-primary text-[13px] font-black text-primary-foreground">H</span>
-      <span className="display text-[15px] tracking-[0.3em]">HUNGRY</span>
+      <img src="/HUNGRY%20Z%20Q%20LOGO.png" alt="" className="h-8 w-8 rounded-lg object-contain" />
+      <span className="display text-[15px] tracking-[0.3em]">HUNGRY Z</span>
     </>
   );
 
@@ -59,7 +60,7 @@ function AuthPage() {
       <div className="ember anim-pulse-glow pointer-events-none absolute -top-40 left-1/2 h-[520px] w-[520px] -translate-x-1/2" />
       <div className="relative mx-auto w-full max-w-md">
         {standaloneApp ? (
-          <div aria-label="HUNGRY" className="mb-8 flex items-center justify-center gap-2.5">{brand}</div>
+          <div aria-label="HUNGRY Z" className="mb-8 flex items-center justify-center gap-2.5">{brand}</div>
         ) : (
           <a href="/" className="mb-8 flex items-center justify-center gap-2.5">{brand}</a>
         )}

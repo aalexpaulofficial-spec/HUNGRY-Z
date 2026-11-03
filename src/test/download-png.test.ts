@@ -13,9 +13,9 @@ describe("PNG canvas download", () => {
     });
     const canvas = { toDataURL: vi.fn(() => "data:image/png;base64,cXItbWF0cml4") } as unknown as HTMLCanvasElement;
 
-    expect(downloadCanvasPng(canvas, "HUNGRY-HG-1024-QR.png")).toBe(true);
+    expect(downloadCanvasPng(canvas, "HUNGRY Z-HG-1024-QR.png")).toBe(true);
     expect(canvas.toDataURL).toHaveBeenCalledWith("image/png");
-    expect(downloadedName).toBe("HUNGRY-HG-1024-QR.png");
+    expect(downloadedName).toBe("HUNGRY Z-HG-1024-QR.png");
     expect(downloadedSource).toContain("data:image/png;base64,");
   });
 
@@ -23,6 +23,6 @@ describe("PNG canvas download", () => {
     vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => undefined);
     const canvas = { toDataURL: vi.fn(() => { throw new Error("Canvas export unavailable"); }) } as unknown as HTMLCanvasElement;
 
-    expect(downloadCanvasPng(canvas, "HUNGRY-HG-1024-QR.png")).toBe(false);
+    expect(downloadCanvasPng(canvas, "HUNGRY Z-HG-1024-QR.png")).toBe(false);
   });
 });

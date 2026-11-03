@@ -42,7 +42,7 @@ export function CanteenSection() {
         <p className="text-[10px] tracking-[0.3em] text-primary-bright">FOR CANTEENS</p>
         <h2 className="display mt-3 text-4xl sm:text-6xl">Register your canteen.</h2>
         <p className="mt-4 max-w-xl text-sm text-muted-foreground">
-          Bring your campus canteen to HUNGRY. Every canteen is verified by our team before it can accept orders.
+          Bring your campus canteen to HUNGRY Z. Every canteen is verified by our team before it can accept orders.
         </p>
         <div className="mt-10 grid max-w-md grid-cols-2 rounded-full bg-ink p-1">
           {([["register", "Register a Canteen", Store], ["login", "Canteen Login", KeyRound]] as const).map(([k, l, Icon]) => (
@@ -77,7 +77,7 @@ function RegisterForm() {
       return setErrors(errs);
     }
     setErrors({});
-    if (!backendConfigured) return setFormErr("Canteen registration opens once the HUNGRY database is connected. Please try again soon.");
+    if (!backendConfigured) return setFormErr("Canteen registration opens once the HUNGRY Z database is connected. Please try again soon.");
     setBusy(true);
     try {
       await submitCanteenApplication({ data: parsed.data });

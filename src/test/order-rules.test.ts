@@ -31,7 +31,7 @@ describe("order & payment rules", () => {
     expect(mergeLines([{ id: "a", qty: 1 }, { id: "a", qty: 2 }, { id: "b", qty: 1 }])).toEqual([{ id: "a", qty: 3 }, { id: "b", qty: 1 }]);
   });
   it("database rule errors become friendly messages", () => {
-    expect(friendlyOrderError("HUNGRY:parcel_counter_only")).toBe("Parcel orders are paid at the counter.");
+    expect(friendlyOrderError("HUNGRY Z:parcel_counter_only")).toBe("Parcel orders are paid at the counter.");
     expect(friendlyOrderError("something else")).toBeNull();
   });
 });

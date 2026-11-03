@@ -35,16 +35,14 @@ export function Navbar() {
 
   const brand = (
     <>
-      <span className="grid h-7 w-7 place-items-center rounded-lg bg-primary text-[12px] font-black text-primary-foreground shadow-[0_0_24px_-4px_var(--primary)]">
-        H
-      </span>
+      <img src="/HUNGRY%20Z%20Q%20LOGO.png" alt="" className="h-7 w-7 shrink-0 rounded-full object-contain shadow-[0_0_24px_-4px_var(--primary)]" />
       <span
         className={cn(
           "display tracking-[0.3em] transition-all duration-500",
           scrolled ? "text-[12px]" : "text-[14px]",
         )}
       >
-        HUNGRY
+        HUNGRY Z
       </span>
     </>
   );
@@ -67,7 +65,7 @@ export function Navbar() {
                 {brand}
               </a>
             ) : (
-              <span className="group flex min-w-0 items-center gap-2.5" aria-label="HUNGRY">
+              <span className="group flex min-w-0 items-center gap-2.5" aria-label="HUNGRY Z">
                 {brand}
               </span>
             )}
@@ -132,7 +130,7 @@ export function Navbar() {
           >
             <div aria-hidden className="pointer-events-none absolute inset-x-0 top-1/3 h-72 ember" />
             <div className="relative flex items-center justify-between">
-              <span className="display text-[13px] tracking-[0.3em]">HUNGRY</span>
+              <span className="display text-[13px] tracking-[0.3em]">HUNGRY Z</span>
               <button
                 type="button"
                 aria-label="Close menu"

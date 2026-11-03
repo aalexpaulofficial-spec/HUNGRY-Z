@@ -3,7 +3,7 @@ import { LegalPage } from "@/components/foodexa/LegalPage";
 import { termsConditions } from "@/content/legal";
 
 export const Route = createFileRoute("/terms")({
-  head: () => ({ meta: [{ title: "Terms & Conditions — HUNGRY" }, { name: "description", content: "Terms for using HUNGRY campus food ordering and canteen services." }] }),
+  head: () => ({ meta: [{ title: "Terms & Conditions — HUNGRY Z" }, { name: "description", content: "Terms for using HUNGRY Z campus food ordering and canteen services." }] }),
   component: TermsPage,
 });
 

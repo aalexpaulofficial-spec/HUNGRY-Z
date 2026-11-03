@@ -49,7 +49,7 @@ export async function openRazorpay(
     amount: p.amount,
     currency: p.currency,
     order_id: p.razorpayOrderId,
-    name: "HUNGRY",
+    name: "HUNGRY Z",
     description: `Order ${p.orderNumber}`,
     prefill: { name: p.prefill.name, email: p.prefill.email },
     notes: { hungry_order_id: p.orderId },

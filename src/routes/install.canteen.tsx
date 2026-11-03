@@ -15,10 +15,13 @@ import {
 
 export const Route = createFileRoute("/install/canteen")({
   head: () => ({
-    links: [{ rel: "manifest", href: "/manifest-canteen.webmanifest" }],
+    links: [
+      { rel: "manifest", href: "/manifest-canteen.webmanifest" },
+      { rel: "icon", href: "/HUNGRY%20Z%20CANTEEN%20DAHSBOARD%20LOGO.png", type: "image/png", sizes: "1254x1254" },
+    ],
     meta: [
-      { title: "Hungry - Canteen Dashboard Installation" },
-      { name: "description", content: "Install the HUNGRY Canteen Dashboard to manage your canteen." },
+      { title: "Install HUNGRY Z Canteen Dashboard" },
+      { name: "description", content: "Install HUNGRY Z Canteen Dashboard to manage your canteen." },
       { name: "theme-color", content: "#050505" },
     ],
   }),
@@ -173,18 +176,19 @@ export function CanteenInstallPage() {
       <div className="relative mx-auto w-full max-w-5xl">
         <nav className="mb-5 sm:mb-7">
           <a className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/25 px-4 py-2.5 text-sm font-medium text-white/70 transition hover:border-primary/45 hover:text-white" href="/">
-            <ArrowLeft aria-hidden="true" className="h-4 w-4" /> Back to HUNGRY Website
+            <ArrowLeft aria-hidden="true" className="h-4 w-4" /> Back to HUNGRY Z Website
           </a>
         </nav>
         <section className="hungry-install-card relative overflow-hidden rounded-[1.6rem] border border-primary/35 bg-[linear-gradient(140deg,rgba(25,10,11,0.95),rgba(7,7,7,0.98)_54%,rgba(18,7,8,0.96))] px-5 py-7 shadow-[0_24px_90px_rgba(0,0,0,0.5),0_0_55px_rgba(230,0,18,0.13)] sm:rounded-[2rem] sm:px-10 sm:py-10 lg:px-14 lg:py-12">
           <div aria-hidden="true" className="pointer-events-none absolute -right-24 -top-28 h-72 w-72 rounded-full bg-primary/10 blur-[90px]" />
           <div className="relative mx-auto max-w-3xl text-center">
+            <img src="/HUNGRY%20Z%20CANTEEN%20DAHSBOARD%20LOGO.png" alt="HUNGRY Z Canteen Dashboard" className="mx-auto mb-5 h-24 w-24 rounded-full object-contain sm:h-28 sm:w-28" />
             <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.24em] text-primary-bright sm:text-xs">ARE YOU A CANTEEN OWNER?</p>
             <h1 className="display text-[clamp(2.1rem,7vw,4.25rem)] font-extrabold leading-[1.02] tracking-[-0.055em]">
-              <span className="block text-white">Hungry -</span>
+              <span className="block text-white">HUNGRY Z</span>
               <span className="mt-1 block bg-gradient-to-r from-white via-white to-primary-bright bg-clip-text text-transparent">Canteen Dashboard</span>
             </h1>
-            <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-white/65 sm:mt-5 sm:text-base">Manage your canteen menu, orders and daily operations with HUNGRY.</p>
+            <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-white/65 sm:mt-5 sm:text-base">Manage your canteen menu, orders and daily operations with HUNGRY Z.</p>
 
             <div className="mt-7 grid grid-cols-3 gap-2.5 text-left sm:mt-9 sm:gap-4">
               <div className="min-w-0 rounded-2xl border border-white/10 bg-black/25 px-2.5 py-3.5 sm:px-4 sm:py-4">

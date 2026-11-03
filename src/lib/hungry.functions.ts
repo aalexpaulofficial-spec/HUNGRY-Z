@@ -30,6 +30,12 @@ async function admin() {
   return supabaseAdmin;
 }
 
+function canteenDashboardInstallUrl() {
+  const configuredHost = process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.VERCEL_URL || "hungry-campus-canteens.vercel.app";
+  const origin = configuredHost.startsWith("https://") ? configuredHost : `https://${configuredHost}`;
+  return new URL("/install/canteen", origin).toString();
+}
+
 function safeEqual(a: string, b: string) {
   if (a.length !== b.length) return false;
   let r = 0;
@@ -400,6 +406,7 @@ export const approveApplication = createServerFn({ method: "POST" })
       code,
       ownerLoginId,
       ownerLoginCode,
+      installUrl: canteenDashboardInstallUrl(),
     }, app.id);
     return { code, ownerLoginId, ownerLoginCode, emailSent: email.sent };
   });
@@ -444,6 +451,7 @@ export const issueCanteenOwnerCredentials = createServerFn({ method: "POST" })
       code: canteen.code,
       ownerLoginId: loginId,
       ownerLoginCode: loginCode,
+      installUrl: canteenDashboardInstallUrl(),
     }, canteen.application_id);
     return { ownerLoginId: loginId, ownerLoginCode: loginCode, emailSent: email.sent };
   });
@@ -598,7 +606,7 @@ export const submitSupportRequest = createServerFn({ method: "POST" })
       db.from("profiles").select("full_name,email,role,current_canteen_id").eq("id", context.userId).maybeSingle(),
       db.from("canteens").select("id,name,contact_email").eq("owner_user_id", context.userId).maybeSingle(),
     ]);
-    if (!profile && !canteen) throw new Error("Your HUNGRY account could not be verified. Please sign in again.");
+    if (!profile && !canteen) throw new Error("Your HUNGRY Z account could not be verified. Please sign in again.");
     const isOwner = !!canteen;
     const senderName = canteen ? canteen.name : profile!.full_name;
     const senderEmail = canteen ? canteen.contact_email : profile!.email;
@@ -660,7 +668,7 @@ export const submitSupportRequest = createServerFn({ method: "POST" })
     );
     if (!support.sent) {
       await db.from("support_requests").update({ email_status: "failed" }).eq("id", supportRequestId);
-      throw new Error("Your request was saved, but HUNGRY could not deliver it to support. Please try again or email hungryofficialx@gmail.com directly.");
+      throw new Error("Your request was saved, but HUNGRY Z could not deliver it to support. Please try again or email hungryofficialx@gmail.com directly.");
     }
     const { error: savedStatusError } = await db.from("support_requests").update({ email_status: "sent", email_sent_at: submittedAt }).eq("id", supportRequestId);
     if (savedStatusError) console.error("[support] request email sent but status update failed", savedStatusError.message);
@@ -681,7 +689,7 @@ export const joinCanteenByCode = createServerFn({ method: "POST" })
       .select("id, name, university_name, visibility, is_active")
       .eq("code", data.code)
       .maybeSingle();
-    if (!c || !c.is_active) throw new Error("This code isn't an approved HUNGRY canteen code.");
+    if (!c || !c.is_active) throw new Error("This code isn't an approved HUNGRY Z canteen code.");
     if (c.visibility === "maintenance") throw new Error("This canteen is in maintenance mode right now. Try again later.");
     await setCurrentCanteen(context.userId, c.id);
     return { name: c.name, university: c.university_name, visibility: c.visibility };

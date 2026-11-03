@@ -8,14 +8,14 @@ import {
   type ScannerFoodResult,
 } from "@/lib/scanner-nutrition.server";
 
-/** Starts (once) and returns the student's free month of HUNGRY SCANNER v1.0. */
+/** Starts (once) and returns the student's free month of HUNGRY Z SCANNER v1.0. */
 export const getScannerAccess = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { data, error } = await context.supabase.rpc("hungry_start_scanner_trial");
     if (error) {
       if (error.message.includes("students_only"))
-        return { ok: false as const, message: "HUNGRY SCANNER is available to student accounts only." };
+        return { ok: false as const, message: "HUNGRY Z SCANNER is available to student accounts only." };
       throw new Error("Could not load your scanner access. Please try again.");
     }
     const row = data as { started_at: string; expires_at: string; version: string };
@@ -53,11 +53,11 @@ export const scanFood = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     const { data: access, error } = await context.supabase.rpc("hungry_start_scanner_trial");
     if (error) {
-      if (error.message.includes("students_only")) return { ok: false as const, message: "HUNGRY SCANNER is available to student accounts only." };
+      if (error.message.includes("students_only")) return { ok: false as const, message: "HUNGRY Z SCANNER is available to student accounts only." };
       return { ok: false as const, message: "We couldn't verify scanner access. Please retry." };
     }
     if (!isTrialActive((access as { expires_at: string }).expires_at))
-      return { ok: false as const, message: "Your free month of HUNGRY SCANNER has ended." };
+      return { ok: false as const, message: "Your free month of HUNGRY Z SCANNER has ended." };
     try {
       const identified = await identifyFoodsWithGemini(data.image);
       if (!identified.length) return { ok: false as const, message: "No food was detected. Try a clearer food photo." };

@@ -173,7 +173,7 @@ describe("scanner food recognition and nutrition safety", () => {
     vi.stubEnv("GEMINI_API_KEY", "test-key");
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ error: { status: "QUOTA_EXCEEDED", message: "daily quota exceeded" } }), { status: 429 }));
     vi.stubGlobal("fetch", fetchMock);
-    await expect(identifyFoodsWithGemini("data:image/jpeg;base64,Zm9vZA==")).rejects.toThrow(/quota or billing limit/);
+    await expect(identifyFoodsWithGemini("data:image/jpeg;base64,Zm9vZA==")).rejects.toThrow(/HUNGRY AI is temporarily unavailable/);
     expect(fetchMock).toHaveBeenCalledOnce();
   });
 

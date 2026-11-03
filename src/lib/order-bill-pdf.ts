@@ -74,10 +74,11 @@ function createCanvas(factory: () => HTMLCanvasElement) {
   return { canvas, context };
 }
 
-function drawPageHeading(context: CanvasRenderingContext2D, continuation: boolean) {
+function drawPageHeading(context: CanvasRenderingContext2D, continuation: boolean, logo?: HTMLImageElement) {
+  if (logo) context.drawImage(logo, MARGIN, 48, 52, 52);
   context.fillStyle = "#d92332";
   context.font = "700 54px Arial, sans-serif";
-  context.fillText("HUNGRY", MARGIN, 100);
+  context.fillText("HUNGRY Z", MARGIN + (logo ? 64 : 0), 100);
   context.fillStyle = "#242424";
   context.font = "700 32px Arial, sans-serif";
   context.fillText(continuation ? "ORDER BILL - CONTINUED" : "ORDER BILL", MARGIN, 160);
@@ -102,11 +103,11 @@ function drawTableHeading(context: CanvasRenderingContext2D, y: number) {
   return y + 34;
 }
 
-function renderBillPages(order: OrderBill, canvasFactory: () => HTMLCanvasElement) {
+function renderBillPages(order: OrderBill, canvasFactory: () => HTMLCanvasElement, logo?: HTMLImageElement) {
   const pages: HTMLCanvasElement[] = [];
   let { canvas, context } = createCanvas(canvasFactory);
   pages.push(canvas);
-  drawPageHeading(context, false);
+  drawPageHeading(context, false, logo);
   let y = 252;
 
   const meta = [
@@ -157,7 +158,7 @@ function renderBillPages(order: OrderBill, canvasFactory: () => HTMLCanvasElemen
     if (y + rowHeight > PAGE_HEIGHT - 150) {
       ({ canvas, context } = createCanvas(canvasFactory));
       pages.push(canvas);
-      drawPageHeading(context, true);
+      drawPageHeading(context, true, logo);
       y = drawTableHeading(context, 280);
     }
     if (index % 2 === 0) {
@@ -181,7 +182,7 @@ function renderBillPages(order: OrderBill, canvasFactory: () => HTMLCanvasElemen
   if (y + totalsHeight > PAGE_HEIGHT - 150) {
     ({ canvas, context } = createCanvas(canvasFactory));
     pages.push(canvas);
-    drawPageHeading(context, true);
+    drawPageHeading(context, true, logo);
     y = 280;
   }
   y += 30;
@@ -210,7 +211,7 @@ function renderBillPages(order: OrderBill, canvasFactory: () => HTMLCanvasElemen
     context.fillStyle = "#777777";
     context.font = "16px Arial, sans-serif";
     context.textAlign = "center";
-    context.fillText(`HUNGRY - Order ${order.orderNumber} - Page ${index + 1} of ${pages.length}`, PAGE_WIDTH / 2, PAGE_HEIGHT - 44);
+    context.fillText(`HUNGRY Z - Order ${order.orderNumber} - Page ${index + 1} of ${pages.length}`, PAGE_WIDTH / 2, PAGE_HEIGHT - 44);
     context.textAlign = "left";
   }
   return pages;
@@ -229,8 +230,8 @@ function pdfObject(id: number, body: Uint8Array[]) {
 }
 
 /** Render the complete bill as paginated PDF pages without invoking print. */
-export function generateOrderBillPdf(order: OrderBill, canvasFactory: () => HTMLCanvasElement = () => document.createElement("canvas")) {
-  const pages = renderBillPages(order, canvasFactory);
+export function generateOrderBillPdf(order: OrderBill, canvasFactory: () => HTMLCanvasElement = () => document.createElement("canvas"), logo?: HTMLImageElement) {
+  const pages = renderBillPages(order, canvasFactory, logo);
   const objects: { id: number; body: Uint8Array }[] = [];
   const kids: string[] = [];
   objects.push({ id: 1, body: bytes("<< /Type /Catalog /Pages 2 0 R >>") });
@@ -284,10 +285,13 @@ export function downloadPdfBlob(blob: Blob, filename: string) {
   }
 }
 
-export function downloadOrderBillPdf(order: OrderBill) {
+export async function downloadOrderBillPdf(order: OrderBill) {
   try {
-    const pdf = generateOrderBillPdf(order);
-    return downloadPdfBlob(pdf, `HUNGRY-${order.orderNumber}-Bill.pdf`);
+    const logo = new Image();
+    logo.src = "/HUNGRY%20Z%20Q%20LOGO.png";
+    await logo.decode();
+    const pdf = generateOrderBillPdf(order, () => document.createElement("canvas"), logo);
+    return downloadPdfBlob(pdf, `HUNGRYZ-${order.orderNumber}-Bill.pdf`);
   } catch {
     return false;
   }

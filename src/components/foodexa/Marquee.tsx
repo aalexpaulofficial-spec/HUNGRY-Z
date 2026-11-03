@@ -3,7 +3,7 @@ import { useEffect, useRef } from "react";
 const rows: { items: string[]; speed: number; accentIndex?: number }[] = [
   { items: ["SMART CAMPUS FOOD", "₹0 PLATFORM FEE", "FAST ORDERS"], speed: -1, accentIndex: 1 },
   { items: ["NO QUEUES", "LIVE TRACKING", "SMART CAMPUS"], speed: 0.6 },
-  { items: ["HUNGRY", "₹0 PLATFORM FEE", "HUNGRY"], speed: -0.35, accentIndex: 1 },
+  { items: ["HUNGRY Z", "₹0 PLATFORM FEE", "HUNGRY Z"], speed: -0.35, accentIndex: 1 },
 ];
 
 export function Marquee() {
@@ -69,7 +69,7 @@ export function Marquee() {
   return (
     <section
       ref={root}
-      aria-label="HUNGRY highlights"
+      aria-label="HUNGRY Z highlights"
       className="relative isolate overflow-hidden border-y border-border bg-ink py-10 grain sm:py-14"
     >
       <div

@@ -255,18 +255,18 @@ function retryDelay(failure: GeminiAttemptFailure, retryIndex: number): number {
 
 function geminiUserMessage(failure: GeminiAttemptFailure): string {
   if (isQuotaExhausted(failure))
-    return "Gemini API quota or billing limit has been reached. Check the API project's usage and billing settings, then retry.";
+    return "HUNGRY AI is temporarily unavailable. Please try again later.";
   if (failure.status === 401 || failure.status === 403)
-    return "Gemini rejected the server API key. Check GEMINI_API_KEY in Vercel Production settings.";
+    return "HUNGRY AI is unavailable right now. Please try again later.";
   if (failure.status === 400)
-    return "Gemini could not process this photo request. Try a smaller, clear JPG, PNG or WEBP food photo.";
+    return "HUNGRY AI couldn't process this photo. Try a smaller, clear JPG, PNG or WEBP food photo.";
   if (failure.networkFailure)
-    return "Food recognition could not reach Gemini after retrying. Check your connection and try again.";
+    return "HUNGRY AI couldn't connect after retrying. Check your connection and try again.";
   if (failure.status === 429 || failure.status === 503 || (failure.status !== null && failure.status >= 500))
     return "Food recognition is temporarily unavailable after retrying. Please try again shortly.";
   if (failure.status === 404)
-    return "Gemini recognition models are unavailable for this API project. Check model access and try again.";
-  return "Gemini could not identify food in this photo. Try a clear JPG, PNG or WEBP food photo.";
+    return "HUNGRY AI is temporarily unavailable. Please try again later.";
+  return "HUNGRY AI couldn't identify food in this photo. Try a clear JPG, PNG or WEBP food photo.";
 }
 
 export async function identifyFoodsWithGemini(dataUrl: string): Promise<FoodIdentification[]> {

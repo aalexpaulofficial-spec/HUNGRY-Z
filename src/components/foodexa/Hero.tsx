@@ -97,7 +97,7 @@ export function Hero() {
             className="mb-7 flex flex-wrap items-center gap-3 text-[10px] tracking-[0.34em] text-muted-foreground"
           >
             <span className="rounded-full border border-primary/40 px-3 py-1 text-primary-bright">
-              HUNGRY
+              HUNGRY Z
             </span>
             <span>SMART CAMPUS FOOD ORDERING</span>
           </div>
@@ -133,14 +133,19 @@ export function Hero() {
                   ↗
                 </span>
               </a>
+              <a
+                href="/register-canteen"
+                className="inline-flex min-w-0 shrink items-center justify-center whitespace-nowrap rounded-full border border-primary/60 bg-background px-4 py-3.5 text-center text-[13px] font-semibold text-foreground transition-all duration-300 hover:scale-[1.03] hover:border-primary sm:px-5 sm:text-sm"
+              >
+                Register &amp; Login Canteen
+              </a>
               <HeroInstallButton app="student" />
-              <HeroInstallButton app="canteen" />
             </div>
             <a
               href="#students"
               className="group inline-flex items-center gap-2 rounded-full border border-border px-6 py-3.5 text-sm font-medium text-foreground/80 transition-colors duration-300 hover:border-primary/50 hover:text-foreground"
             >
-              Explore HUNGRY
+              Explore HUNGRY Z
               <span className="transition-transform duration-300 group-hover:translate-y-1">↓</span>
             </a>
           </div>

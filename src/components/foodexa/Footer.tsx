@@ -1,6 +1,8 @@
 import { useNavigate } from "@tanstack/react-router";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { LogoMark } from "@/components/foodexa/LogoMark";
+import { LegalDialog } from "@/components/foodexa/LegalDialog";
+import { privacyPolicy, termsConditions } from "@/content/legal";
 
 const groups = [
   ["Platform", ["For Students", "For Faculty", "Institutions", "Analytics"]],
@@ -17,12 +19,11 @@ const hrefMap: Record<string, string> = {
   FAQ: "#faq",
   Login: "/auth?mode=login",
   Contact: "#start",
-  "Privacy Policy": "/privacy",
-  "Terms & Conditions": "/terms",
 };
 
 export function Footer() {
   const navigate = useNavigate();
+  const [legalPage, setLegalPage] = useState<"privacy" | "terms" | null>(null);
   const logoClicks = useRef(0);
   const clickReset = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -60,12 +61,12 @@ export function Footer() {
             <button
               type="button"
               onClick={onFooterLogoClick}
-              aria-label="HUNGRY"
+              aria-label="HUNGRY Z"
               className="grid h-9 w-9 place-items-center rounded-full border-0 bg-primary p-0 text-[12px] transition hover:scale-110"
             >
               <LogoMark className="h-9 w-9" />
             </button>
-            <span className="display text-[14px] tracking-[0.3em]">HUNGRY</span>
+            <span className="display text-[14px] tracking-[0.3em]">HUNGRY Z</span>
           </div>
           <p className="mt-4 text-[10px] tracking-[0.3em] text-muted-foreground">
             SMART CAMPUS FOOD ORDERING
@@ -81,12 +82,22 @@ export function Footer() {
             <ul className="mt-5 flex flex-col gap-3">
               {items.map((item) => (
                 <li key={item}>
-                  <a
-                    href={hrefMap[item] ?? "#top"}
-                    className="text-[13px] text-foreground/70 transition-colors duration-300 hover:text-primary-bright"
-                  >
-                    {item}
-                  </a>
+                  {item === "Privacy Policy" || item === "Terms & Conditions" ? (
+                    <button
+                      type="button"
+                      onClick={() => setLegalPage(item === "Privacy Policy" ? "privacy" : "terms")}
+                      className="text-left text-[13px] text-foreground/70 transition-colors duration-300 hover:text-primary-bright"
+                    >
+                      {item}
+                    </button>
+                  ) : (
+                    <a
+                      href={hrefMap[item] ?? "#top"}
+                      className="text-[13px] text-foreground/70 transition-colors duration-300 hover:text-primary-bright"
+                    >
+                      {item}
+                    </a>
+                  )}
                 </li>
               ))}
             </ul>
@@ -94,9 +105,15 @@ export function Footer() {
         ))}
       </div>
       <div className="mx-auto mt-14 flex max-w-7xl flex-col gap-2 px-5 text-[11px] text-muted-foreground/60 sm:flex-row sm:justify-between">
-        <span>© {new Date().getFullYear()} HUNGRY. All rights reserved.</span>
+        <span>© {new Date().getFullYear()} HUNGRY Z. All rights reserved.</span>
         
       </div>
+      {legalPage && (
+        <LegalDialog
+          legalDocument={legalPage === "privacy" ? privacyPolicy : termsConditions}
+          onClose={() => setLegalPage(null)}
+        />
+      )}
     </footer>
   );
 }

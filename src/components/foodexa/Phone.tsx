@@ -37,12 +37,10 @@ function StatusBar() {
   );
 }
 
-function Brand({ label = "HUNGRY" }: { label?: string }) {
+function Brand({ label = "HUNGRY Z" }: { label?: string }) {
   return (
     <div className="flex items-center gap-2">
-      <span className="grid h-5 w-5 place-items-center rounded-md bg-primary text-[9px] font-black text-primary-foreground">
-        H
-      </span>
+      <img src="/HUNGRY%20Z%20Q%20LOGO.png" alt="" className="h-5 w-5 rounded-md object-contain" />
       <span className="display text-[11px] tracking-[0.28em] text-foreground">{label}</span>
     </div>
   );

@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { ArrowRight, X } from "lucide-react";
 import { LogoMark } from "@/components/foodexa/LogoMark";
 
-const message = "HUNGRY is already installed on your device. You can launch it anytime from your home screen or desktop, or start ordering right now!";
+const message = "HUNGRY Z is already installed on your device. You can launch it anytime from your home screen or desktop, or start ordering right now!";
 
 export function AlreadyInstalledDialog({ onClose }: { onClose: () => void }) {
   useEffect(() => {
@@ -20,7 +20,7 @@ export function AlreadyInstalledDialog({ onClose }: { onClose: () => void }) {
     <div className="pwa-installed-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
       <section aria-modal="true" aria-labelledby="pwa-installed-title" className="pwa-installed-dialog" role="dialog">
         <button aria-label="Close dialog" className="pwa-installed-close" onClick={onClose} type="button"><X aria-hidden="true" className="h-5 w-5" /></button>
-        <div aria-label="HUNGRY" className="pwa-installed-logo-wrap" role="img">
+        <div aria-label="HUNGRY Z" className="pwa-installed-logo-wrap" role="img">
           <LogoMark className="pwa-installed-logo" />
         </div>
         <h2 className="pwa-installed-title" id="pwa-installed-title">Already Installed</h2>
