@@ -25,11 +25,23 @@ export type EmailKind =
 
 export type EmailContent = { subject: string; text: string; html: string };
 
+export function withEmailTextFooter(content: EmailContent): EmailContent {
+  const footer = [
+    "— Team HUNGRY Z",
+    "Instagram: https://www.instagram.com/hungryz___?obrf=MTBoOHp3ZjJzZW9tdg==",
+    "WhatsApp: https://chat.whatsapp.com/LlhEK43VNYE6zWZBX9hYqM",
+    "LinkedIn: https://www.linkedin.com/company/hungryz/",
+    "Privacy Policy: https://hungryzq.vercel.app/privacy",
+    "Terms & Conditions: https://hungryzq.vercel.app/terms",
+  ].join("\n");
+  return { ...content, text: content.text.includes("Instagram: https://www.instagram.com/hungryz___") ? content.text : `${content.text.trimEnd()}\n\n${footer}` };
+}
+
 export const esc = (s: string | number | null | undefined) =>
   String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 
 const wrap = (title: string, body: string) =>
-  `<div style="font-family:Arial,sans-serif;background:#ffffff;padding:24px;color:#111;max-width:560px"><img src="https://hungryzq.vercel.app/HUNGRY%20Z%20Q%20LOGO.png" alt="HUNGRY Z" width="64" height="64" style="display:block;object-fit:contain;margin:0 0 16px"><h2 style="color:#d1121b;margin:0 0 12px">${title}</h2>${body}<p style="margin-top:24px;color:#555">— Team HUNGRY Z</p></div>`;
+  `<div style="font-family:Arial,sans-serif;background:#ffffff;padding:24px;color:#111;max-width:560px"><h2 style="color:#d1121b;margin:0 0 12px">${title}</h2>${body}<table role="presentation" width="100%" style="border-collapse:collapse;border-top:1px solid #e7e7e7;margin-top:28px;padding-top:18px"><tr><td style="padding-top:18px"><img src="https://hungryzq.vercel.app/HUNGRY%20Z%20Q%20LOGO.png" alt="HUNGRY Z" width="48" height="48" style="display:block;width:48px;height:48px;object-fit:contain;margin:0 0 12px"><p style="margin:0 0 12px;color:#555;font-size:13px">— Team HUNGRY Z</p><table role="presentation" style="border-collapse:collapse"><tr><td style="padding-right:10px"><a href="https://www.instagram.com/hungryz___?obrf=MTBoOHp3ZjJzZW9tdg==" aria-label="Instagram" style="display:block;width:34px;height:34px;border-radius:17px;background:#c13584;color:#fff;text-align:center;text-decoration:none;font:bold 25px/32px Arial,sans-serif">◎</a></td><td style="padding-right:10px"><a href="https://chat.whatsapp.com/LlhEK43VNYE6zWZBX9hYqM" aria-label="WhatsApp" style="display:block;width:34px;height:34px;border-radius:17px;background:#25d366;color:#fff;text-align:center;text-decoration:none;font:bold 22px/34px Arial,sans-serif">☎</a></td><td><a href="https://www.linkedin.com/company/hungryz/" aria-label="LinkedIn" style="display:block;width:34px;height:34px;border-radius:5px;background:#0a66c2;color:#fff;text-align:center;text-decoration:none;font:bold 18px/34px Arial,sans-serif">in</a></td></tr></table><p style="margin:14px 0 0;font-size:12px"><a href="https://hungryzq.vercel.app/privacy" style="color:#555">Privacy Policy</a><span style="color:#999"> &nbsp;|&nbsp; </span><a href="https://hungryzq.vercel.app/terms" style="color:#555">Terms &amp; Conditions</a></p></td></tr></table></div>`;
 
 const rupee = (n: number) => `₹${n}`;
 

@@ -26,6 +26,7 @@ import { LegalDialog } from "@/components/foodexa/LegalDialog";
 import { useSessionState } from "@/lib/session-state";
 import { privacyPolicy, termsConditions } from "@/content/legal";
 import { CanteenAvailabilityPanel, type AvailabilitySettings } from "@/components/foodexa/CanteenAvailabilityPanel";
+import { SocialThankYouDialog } from "@/components/foodexa/SocialThankYouDialog";
 
 export const Route = createFileRoute("/canteen")({
   ssr: false,
@@ -269,6 +270,7 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
   const [printerSettingsMsg, setPrinterSettingsMsg] = useState("");
   const [printJob, setPrintJob] = useState<ReceiptPrintJob | null>(null);
   const [printing, setPrinting] = useState(false);
+  const [socialThankYouOpen, setSocialThankYouOpen] = useState(false);
   const [ownerFeedbackOpen, setOwnerFeedbackOpen] = useState(false);
   const [ownerLegalPage, setOwnerLegalPage] = useState<"privacy" | "terms" | null>(null);
   const [availability, setAvailability] = useState(canteen);
@@ -316,8 +318,10 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
       }
       if (!window.confirm(`Did ${job.order.order_number} print or save as PDF successfully? Choose Yes only if the bill was produced. This records a print audit only; it does not change payment or order status.`)) {
         setOrderMsg("Print was not confirmed. No print record or order/payment change was saved.");
+        setSocialThankYouOpen(true);
         return;
       }
+      setSocialThankYouOpen(true);
       setBusyOrder(job.order.id);
       void recordConfirmedPrint({ data: { orderId: job.order.id, paperWidth: printerPaperWidth } })
         .then(() => setOrderMsg(`${job.order.order_number} print details saved. Order and payment statuses were not changed.`))
@@ -327,11 +331,13 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
     const finishWithoutPrintConfirmation = () => {
       clearPrintState();
       setOrderMsg("Print dialog was not confirmed. The order and payment statuses were not changed.");
+      if (job.kind === "order") setSocialThankYouOpen(true);
     };
 
     if (typeof window.print !== "function") {
       setPrinting(false);
       setOrderMsg("Printing is not supported in this browser. The order was left unchanged.");
+      if (job.kind === "order") setSocialThankYouOpen(true);
       return;
     }
     window.addEventListener("afterprint", finishAfterPrint, { once: true });
@@ -342,6 +348,7 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
     } catch {
       clearPrintState();
       setOrderMsg("Could not open the browser print dialog.");
+      if (job.kind === "order") setSocialThankYouOpen(true);
     }
   }
 
@@ -727,6 +734,7 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
       </section>
       {ownerFeedbackOpen && <FeedbackDialog mode="canteen-report" onClose={() => setOwnerFeedbackOpen(false)} />}
       {ownerLegalPage && <LegalDialog legalDocument={ownerLegalPage === "privacy" ? privacyPolicy : termsConditions} onClose={() => setOwnerLegalPage(null)} />}
+      <SocialThankYouDialog open={socialThankYouOpen} onClose={() => setSocialThankYouOpen(false)} />
       {printJob && <ThermalReceipt job={printJob} paperWidth={printerPaperWidth} />}
     </div>
   );

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canteenOrderEmail, orderConfirmationEmail, orderStatusEmail, paymentPendingEmail, refundFailedEmail, refundProcessingEmail, supportRequestEmail } from "@/lib/email-templates";
+import { canteenDecisionEmail, canteenOrderEmail, orderConfirmationEmail, orderStatusEmail, paymentPendingEmail, refundFailedEmail, refundProcessingEmail, supportRequestEmail, withEmailTextFooter } from "@/lib/email-templates";
 
 const order = {
   customerName: "Asha Student",
@@ -67,5 +67,33 @@ describe("HUNGRY Z order email content", () => {
     expect(email.html).not.toContain("<script>");
     expect(email.html).toContain("&lt;script&gt;");
     expect(email.text).toContain("HG-123456");
+  });
+
+  it("adds the same logo, icon-only social links and legal footer to transactional emails", () => {
+    const emails = [
+      orderConfirmationEmail({ ...order, paymentMethod: "razorpay", paymentStatus: "paid" }),
+      paymentPendingEmail({ ...order, paymentMethod: "razorpay", paymentStatus: "pending" }),
+      supportRequestEmail({ senderName: "Asha", senderEmail: "asha@example.com", role: "student", canteen: "Campus Cafe", category: "General", orderId: "", description: "Help", submittedAt: "2026-11-04T10:00:00.000Z" }),
+      canteenDecisionEmail("approved", { canteenName: "Campus Cafe", university: "Campus University", code: "ABC1234", ownerLoginId: "OWNER01", ownerLoginCode: "PASS123" }),
+    ];
+    for (const email of emails) {
+      expect(email.html).toContain("https://hungryzq.vercel.app/HUNGRY%20Z%20Q%20LOGO.png");
+      expect(email.html).toContain('href="https://www.instagram.com/hungryz___?obrf=MTBoOHp3ZjJzZW9tdg=="');
+      expect(email.html).toContain('href="https://chat.whatsapp.com/LlhEK43VNYE6zWZBX9hYqM"');
+      expect(email.html).toContain('href="https://www.linkedin.com/company/hungryz/"');
+      expect(email.html).toContain('href="https://hungryzq.vercel.app/privacy"');
+      expect(email.html).toContain('href="https://hungryzq.vercel.app/terms"');
+      expect(email.html).toContain('aria-label="Instagram"');
+      expect(email.html).toContain('aria-label="WhatsApp"');
+      expect(email.html).toContain('aria-label="LinkedIn"');
+    }
+  });
+
+  it("adds social and legal destinations to plain-text email fallbacks only once", () => {
+    const email = withEmailTextFooter({ subject: "Order", text: "Order confirmed", html: "<p>Order confirmed</p>" });
+    expect(email.text).toContain("Instagram: https://www.instagram.com/hungryz___?obrf=MTBoOHp3ZjJzZW9tdg==");
+    expect(email.text).toContain("WhatsApp: https://chat.whatsapp.com/LlhEK43VNYE6zWZBX9hYqM");
+    expect(email.text).toContain("LinkedIn: https://www.linkedin.com/company/hungryz/");
+    expect(withEmailTextFooter(email).text).toBe(email.text);
   });
 });

@@ -15,6 +15,7 @@ import { bannerCropStyle } from "@/lib/banner-crop";
 import { ORDER_LABELS, ORDER_STATUSES, canAcceptOrders, type MenuItem } from "@/lib/access";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { ScannerTab } from "@/components/foodexa/ScannerTab";
+import { SocialThankYouDialog } from "@/components/foodexa/SocialThankYouDialog";
 import { OrderStatusBadge } from "@/components/foodexa/OrderStatusBadge";
 import { VerifiedCanteenLabel } from "@/components/foodexa/VerifiedCanteenLabel";
 import {
@@ -110,6 +111,7 @@ function OrderingApp() {
   const [switching, setSwitching] = useState(false);
   const [refunds, setRefunds] = useState<Refund[]>([]);
   const [notice, setNotice] = useState("");
+  const [socialThankYouOpen, setSocialThankYouOpen] = useState(false);
   const [qrOrderMessage, setQrOrderMessage] = useState("");
   const [qrOrder, setQrOrder] = useState<Order | null>(null);
   const [availabilityNow, setAvailabilityNow] = useState(() => new Date());
@@ -376,12 +378,13 @@ function OrderingApp() {
           ordering={ordering}
           closedMessage={canteen.availability_mode === "closed" ? "The owner has temporarily closed this canteen." : canteen.visibility === "maintenance" ? "The canteen is under maintenance." : `The canteen is outside its operating hours (${describeTodayHours(canteen, availabilityNow)} IST).`}
           onAdd={add}
-          onPlaced={(id, msg) => {
+          onPlaced={(id, msg, showThankYou) => {
             setCart([]);
             setCheckout(false);
             setNotice(msg ?? "");
             setTab("orders");
             setOpenOrderId(id);
+            if (showThankYou) setSocialThankYouOpen(true);
           }}
         />
       </Sheet>
@@ -405,6 +408,7 @@ function OrderingApp() {
       <AnimatePresence>
         {collectedOrder && <CollectionCelebration onContinue={() => { setCollectedOrder(null); setOpenOrderId(null); setNotice(""); setTab("menu"); }} />}
       </AnimatePresence>
+        <SocialThankYouDialog open={socialThankYouOpen} onClose={() => setSocialThankYouOpen(false)} />
     </div>
   );
 }
@@ -714,7 +718,7 @@ function useRazorpayPay() {
   );
 }
 
-function Checkout({ cart, subtotal, ordering, closedMessage, onAdd, onPlaced }: { cart: CartLine[]; subtotal: number; ordering: boolean; closedMessage: string; onAdd: (i: MenuItem, d: number) => void; onPlaced: (id: string, message?: string) => void }) {
+function Checkout({ cart, subtotal, ordering, closedMessage, onAdd, onPlaced }: { cart: CartLine[]; subtotal: number; ordering: boolean; closedMessage: string; onAdd: (i: MenuItem, d: number) => void; onPlaced: (id: string, message?: string, showThankYou?: boolean) => void }) {
   const place = useServerFn(placeOrder);
   const quote = useServerFn(quoteOrder);
   const cfgFn = useServerFn(getPaymentConfig);
@@ -799,7 +803,7 @@ function Checkout({ cart, subtotal, ordering, closedMessage, onAdd, onPlaced }: 
       const emailNotice = r.emailSent === false ? " The email update could not be delivered yet; contact hungryofficialx@gmail.com if you need help." : "";
       if (!r.payment) return onPlaced(r.orderId, `Order placed. Pay at the counter when you pick it up.${emailNotice}`);
       const res = await pay(r.payment);
-      onPlaced(r.orderId, `${res.message}${emailNotice}`);
+      onPlaced(r.orderId, `${res.message}${emailNotice}`, res.ok);
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Could not place order");
     } finally {

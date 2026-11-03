@@ -2,7 +2,7 @@
 // attempt to public.email_logs. The App Password lives only in the GMAIL_APP_PASSWORD secret.
 // Email failures never undo a confirmed order, payment or refund — they are logged for the admin.
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import type { EmailContent, EmailKind } from "@/lib/email-templates";
+import { withEmailTextFooter, type EmailContent, type EmailKind } from "@/lib/email-templates";
 
 export type SendResult = { sent: boolean; reason?: string };
 
@@ -34,6 +34,7 @@ async function log(row: { kind: string; recipient: string; subject: string; stat
 }
 
 export async function sendEmail(kind: EmailKind, to: string, msg: EmailContent, refId?: string): Promise<SendResult> {
+  const email = withEmailTextFooter(msg);
   const recipient = to.trim().toLowerCase();
   const pass = (process.env["GMAIL_APP_PASSWORD"] ?? "").replace(/\s+/g, "");
   if (!pass) {
@@ -45,8 +46,8 @@ export async function sendEmail(kind: EmailKind, to: string, msg: EmailContent, 
   let lastError = "";
   for (let attempt = 1; attempt <= 2; attempt++) {
     try {
-      await deliver(recipient, msg, user, pass);
-      await log({ kind, recipient, subject: msg.subject, status: "sent", attempts: attempt, ref_id: refId });
+      await deliver(recipient, email, user, pass);
+      await log({ kind, recipient, subject: email.subject, status: "sent", attempts: attempt, ref_id: refId });
       return { sent: true };
     } catch (e) {
       lastError = e instanceof Error ? e.message : String(e);
