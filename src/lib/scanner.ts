@@ -8,7 +8,7 @@ export const MAX_SCAN_IMAGE_BYTES = 6 * 1024 * 1024;
 export type ScannerPlan = {
   version: string;
   brand: string;
-  name: string;
+  description: string;
   features: string[];
   status: "live" | "coming_soon";
 };
@@ -16,38 +16,45 @@ export type ScannerPlan = {
 export const STUDENT_SCANNER_PLANS: ScannerPlan[] = [
   {
     version: "1.0",
-    brand: "HUNGRY AI",
-    name: "AI Food Scanner",
+    brand: "HUNGRY AI SCAN",
+    description: "AI-powered food recognition and nutrition analysis.",
     status: "live",
     features: [
-      "Camera scanning and image upload",
-      "AI food identification",
-      "Calories, protein, carbs, fats, fibre and sugar",
-      "Portion estimation with results kept only for the current scan",
+      "Camera scanning",
+      "Gallery upload",
+      "Food identification",
+      "Portion estimation",
+      "Calories",
+      "Protein",
+      "Carbohydrates",
+      "Fats",
+      "Fibre",
+      "Sugar",
     ],
   },
   {
     version: "2.0",
     brand: "HUNGRYZ NUTRI",
-    name: "AI Nutrition Assistant",
+    description: "Your personal AI nutrition coach.",
     status: "coming_soon",
     features: [
       "Daily nutrition tracking",
-      "Personalized food recommendations",
-      "Meal planning and nutrition reports",
+      "Personalised food recommendations",
+      "Meal planning",
+      "Nutrition reports",
       "AI nutrition chat",
     ],
   },
   {
     version: "3.0",
-    brand: "HUNGRYZ INTELLI",
-    name: "Nutrition Intelligence",
+    brand: "HUNGRYZ INSIGHT",
+    description: "Advanced AI-powered nutrition intelligence.",
     status: "coming_soon",
     features: [
-      "Advanced food recognition",
-      "Multiple food detection",
-      "Smart portion analysis",
-      "Advanced nutrition insights and integrations",
+      "Multiple food recognition",
+      "Advanced portion analysis",
+      "Detailed nutritional insights",
+      "Intelligent meal analysis",
     ],
   },
 ];

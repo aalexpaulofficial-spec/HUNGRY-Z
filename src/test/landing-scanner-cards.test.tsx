@@ -12,28 +12,34 @@ describe("public scanner pricing cards", () => {
   it.each([
     ["desktop", 1440],
     ["mobile", 390],
-  ])("shows all three versions with restricted coming-soon details on %s", (_label, width) => {
+  ])("shows official product names, descriptions, features and statuses on %s", (_label, width) => {
     Object.defineProperty(window, "innerWidth", { configurable: true, value: width });
     const { container } = render(<Pricing />);
     const cards = [...container.querySelectorAll("article")];
     expect(cards).toHaveLength(3);
 
     const [versionOne, versionTwo, versionThree] = cards.map((card) => within(card));
-    expect(versionOne!.getByRole("heading", { name: /HUNGRY AI.*AI Food Scanner/ })).toBeInTheDocument();
-    expect(versionOne!.getByText("Camera scanning and image upload")).toBeInTheDocument();
-    expect(versionOne!.getByText("AI food identification")).toBeInTheDocument();
+    expect(versionOne!.getByRole("heading", { name: "HUNGRY AI SCAN" })).toBeInTheDocument();
+    expect(versionOne!.getByText("Version 1.0")).toBeInTheDocument();
+    expect(versionOne!.getByText("AVAILABLE NOW")).toBeInTheDocument();
+    expect(versionOne!.getByText("AI-powered food recognition and nutrition analysis.")).toBeInTheDocument();
+    for (const feature of ["Camera scanning", "Gallery upload", "Food identification", "Portion estimation", "Calories", "Protein", "Carbohydrates", "Fats", "Fibre", "Sugar"]) {
+      expect(versionOne!.getByText(feature)).toBeInTheDocument();
+    }
 
-    for (const [card, product, version, hiddenCopy] of [
-      [versionTwo!, "HUNGRYZ NUTRI", "Version 2", ["AI Nutrition Assistant", "Daily nutrition tracking", "Meal planning and nutrition reports"]],
-      [versionThree!, "HUNGRYZ INTELLI", "Version 3", ["Nutrition Intelligence", "Advanced food recognition", "Advanced nutrition insights and integrations"]],
+    for (const [card, product, version, description, features] of [
+      [versionTwo!, "HUNGRYZ NUTRI", "Version 2.0", "Your personal AI nutrition coach.", ["Daily nutrition tracking", "Personalised food recommendations", "Meal planning", "Nutrition reports", "AI nutrition chat"]],
+      [versionThree!, "HUNGRYZ INSIGHT", "Version 3.0", "Advanced AI-powered nutrition intelligence.", ["Multiple food recognition", "Advanced portion analysis", "Detailed nutritional insights", "Intelligent meal analysis"]],
     ] as const) {
       expect(card.getByRole("heading", { name: product })).toBeInTheDocument();
       expect(card.getByText(version)).toBeInTheDocument();
       expect(card.getByText("COMING SOON")).toBeInTheDocument();
+      expect(card.getByText(description)).toBeInTheDocument();
+      for (const feature of features) expect(card.getByText(feature)).toBeInTheDocument();
       expect(card.getByText("FREE")).toBeInTheDocument();
       expect(card.getByText((_, element) => element?.classList.contains("text-primary-bright") ?? false).textContent).toBe("\u20B90");
-      for (const text of hiddenCopy) expect(card.queryByText(text)).not.toBeInTheDocument();
-      expect(card.queryByText("For students only")).not.toBeInTheDocument();
+      expect(card.queryByRole("button")).not.toBeInTheDocument();
+      expect(card.queryByRole("link")).not.toBeInTheDocument();
     }
 
     expect(screen.getAllByText("COMING SOON")).toHaveLength(2);

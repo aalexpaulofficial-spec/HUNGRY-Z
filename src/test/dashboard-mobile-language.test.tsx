@@ -72,6 +72,15 @@ describe("multilingual mobile dashboard layout", () => {
     expect(translateDashboardText("Upload Image", "kn")).toBe("ಚಿತ್ರ ಅಪ್‌ಲೋಡ್ ಮಾಡಿ");
     expect(translateDashboardText("HUNGRY AI", "hi")).toBe("HUNGRY AI");
     expect(translateDashboardText("HUNGRY AI", "kn")).toBe("HUNGRY AI");
+    const productCopy = [
+      "Version 1.0", "Version 2.0", "Version 3.0", "AVAILABLE NOW", "COMING SOON", "Features:",
+      "AI-powered food recognition and nutrition analysis.", "Camera scanning", "Gallery upload", "Food identification", "Portion estimation", "Calories", "Protein", "Carbohydrates", "Fats", "Fibre", "Sugar",
+      "Your personal AI nutrition coach.", "Daily nutrition tracking", "Personalised food recommendations", "Meal planning", "Nutrition reports", "AI nutrition chat",
+      "Advanced AI-powered nutrition intelligence.", "Multiple food recognition", "Advanced portion analysis", "Detailed nutritional insights", "Intelligent meal analysis",
+    ];
+    for (const language of ["hi", "kn"] as const) {
+      for (const copy of productCopy) expect(translateDashboardText(copy, language), `${language}: ${copy}`).not.toBe(copy);
+    }
   });
 
   it("keeps mobile food-card content constrained and the add button visible with long translated stock text", () => {

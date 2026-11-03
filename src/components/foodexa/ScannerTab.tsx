@@ -105,11 +105,13 @@ export function ScannerTab() {
   if (!access) return <div className="flex justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
   if (!access.ok) return <div className="scanner-card p-6 text-center text-sm text-muted-foreground">{access.message}</div>;
   const days = trialDaysLeft(access.expiresAt);
+  const livePlan = STUDENT_SCANNER_PLANS.find((plan) => plan.status === "live")!;
   return <div className="scanner-shell mx-auto flex w-full max-w-3xl flex-col gap-5 pb-6">
     <section className="scanner-card relative overflow-hidden p-5 sm:p-7">
-      <div className="flex items-center justify-end gap-3"><span className="scanner-pill scanner-pill-accent">HUNGRY AI</span></div>
+      <div className="flex flex-wrap items-center justify-between gap-2"><span className="scanner-pill scanner-pill-accent">{livePlan.brand}</span><span className="scanner-pill"><span>Version {livePlan.version}</span><span aria-hidden="true"> · </span><span>AVAILABLE NOW</span></span></div>
       <h2 className="mt-7 text-center text-2xl font-semibold tracking-tight sm:text-3xl">Scan Any Food,<br /><span className="text-primary">Know Its Nutrition</span></h2>
-      <p className="mx-auto mt-2 max-w-sm text-center text-sm text-muted-foreground">Use your camera or upload a photo to see food details and verified nutrition.</p>
+      <p className="mx-auto mt-2 max-w-sm text-center text-sm text-muted-foreground">{livePlan.description}</p>
+      <p className="mx-auto mt-3 flex max-w-2xl flex-wrap justify-center gap-x-1 text-center text-xs leading-relaxed text-muted-foreground"><span className="font-semibold text-foreground">Features:</span>{livePlan.features.map((feature, index) => <span key={feature}>{index > 0 && <span aria-hidden="true"> · </span>}{feature}</span>)}</p>
       <p className={cn("mt-4 text-center text-xs font-medium", access.active ? "text-muted-foreground" : "text-destructive")}>{access.active ? `Free access active · ${days} ${days === 1 ? "day" : "days"} left` : "Your free month has ended."}</p>
       {access.active && !preview && !cameraOpen && <div className="mx-auto mt-6 grid w-full max-w-md grid-cols-1 gap-3 sm:grid-cols-2">
         <button type="button" onClick={() => void openCamera()} className="scanner-action scanner-action-primary scanner-start"><Camera className="h-5 w-5" /><span><b>Scan Food</b><small>Capture with camera</small></span></button>
@@ -144,7 +146,7 @@ export function ScannerTab() {
       </div>}
     </section>}
 
-    <section className="flex flex-col gap-3"><h3 className="text-xs font-semibold tracking-[0.2em] text-muted-foreground">COMING SOON</h3>{STUDENT_SCANNER_PLANS.filter((plan) => plan.status === "coming_soon").map((plan) => <div key={plan.version} className="scanner-card p-5 opacity-80"><div className="flex items-center justify-between gap-2"><p className="text-sm font-semibold">Version {plan.version} — {plan.name}</p><span className="scanner-pill"><Lock className="mr-1 inline h-3 w-3" />Coming soon</span></div><ul className="mt-2 text-xs text-muted-foreground">{plan.features.map((feature) => <li key={feature}>· {feature}</li>)}</ul></div>)}</section>
+    <section className="flex flex-col gap-3"><h3 className="text-xs font-semibold tracking-[0.2em] text-muted-foreground">COMING SOON</h3>{STUDENT_SCANNER_PLANS.filter((plan) => plan.status === "coming_soon").map((plan) => <article key={plan.version} className="scanner-card p-5 opacity-90"><div className="flex flex-wrap items-center justify-between gap-2"><div><p className="text-sm font-semibold">{plan.brand}</p><p className="mt-1 text-xs text-muted-foreground">Version {plan.version}</p></div><span className="scanner-pill"><Lock className="mr-1 inline h-3 w-3" />COMING SOON</span></div><p className="mt-3 text-sm leading-relaxed text-muted-foreground">{plan.description}</p><ul className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-muted-foreground">{plan.features.map((feature) => <li key={feature} className="before:mr-1 before:text-primary before:content-['·']">{feature}</li>)}</ul></article>)}</section>
 
   </div>;
 }

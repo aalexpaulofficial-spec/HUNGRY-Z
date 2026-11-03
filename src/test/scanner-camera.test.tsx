@@ -78,11 +78,16 @@ describe("scanner camera and photo input", () => {
   it("shows future scanner versions as coming soon", async () => {
     render(<ScannerTab />);
     await screen.findByRole("button", { name: /Scan Food/i });
-    expect(screen.getByText("COMING SOON")).toBeInTheDocument();
-    expect(screen.getByText(/AI Nutrition Assistant/)).toBeInTheDocument();
-    expect(screen.getByText(/Nutrition Intelligence/)).toBeInTheDocument();
+    expect(screen.getAllByText("COMING SOON")).toHaveLength(3);
+    expect(screen.getByText("HUNGRY AI SCAN")).toBeInTheDocument();
+    expect(screen.getByText("AVAILABLE NOW")).toBeInTheDocument();
+    expect(screen.getByText("AI-powered food recognition and nutrition analysis.")).toBeInTheDocument();
+    expect(screen.getByText("HUNGRYZ NUTRI")).toBeInTheDocument();
+    expect(screen.getByText("Your personal AI nutrition coach.")).toBeInTheDocument();
+    expect(screen.getByText("HUNGRYZ INSIGHT")).toBeInTheDocument();
+    expect(screen.getByText("Advanced AI-powered nutrition intelligence.")).toBeInTheDocument();
     expect(screen.getByText(/Daily nutrition tracking/)).toBeInTheDocument();
-    expect(screen.getByText(/Advanced food recognition/)).toBeInTheDocument();
+    expect(screen.getByText(/Multiple food recognition/)).toBeInTheDocument();
   });
 
   it("opens a live preview, switches camera and captures food", async () => {

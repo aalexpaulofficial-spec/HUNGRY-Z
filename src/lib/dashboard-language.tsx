@@ -74,7 +74,22 @@ const studentDashboardTranslations: Record<Exclude<DashboardLanguage, "en">, Rec
   },
 };
 
-const dictionaries: Record<DashboardLanguage, Record<string, string>> = { en: {}, hi: { ...hi, ...hiExtra, ...scannerAndStatusTranslations.hi, ...studentDashboardTranslations.hi }, kn: { ...kn, ...knExtra, ...scannerAndStatusTranslations.kn, ...studentDashboardTranslations.kn } };
+const scannerProductTranslations: Record<Exclude<DashboardLanguage, "en">, Record<string, string>> = {
+  hi: {
+    "Version 1.0": "संस्करण 1.0", "Version 2.0": "संस्करण 2.0", "Version 3.0": "संस्करण 3.0", "AVAILABLE NOW": "अभी उपलब्ध", "COMING SOON": "जल्द आ रहा है", "Features:": "विशेषताएं:",
+    "AI-powered food recognition and nutrition analysis.": "AI से भोजन की पहचान और पोषण विश्लेषण।", "Camera scanning": "कैमरे से स्कैन", "Gallery upload": "गैलरी से अपलोड", "Food identification": "भोजन की पहचान", "Portion estimation": "मात्रा का अनुमान", Calories: "कैलोरी", Protein: "प्रोटीन", Carbohydrates: "कार्बोहाइड्रेट", Fats: "वसा", Fibre: "फाइबर", Sugar: "शुगर",
+    "Your personal AI nutrition coach.": "आपका व्यक्तिगत AI पोषण मार्गदर्शक।", "Daily nutrition tracking": "दैनिक पोषण ट्रैकिंग", "Personalised food recommendations": "आपके लिए भोजन सुझाव", "Meal planning": "भोजन की योजना", "Nutrition reports": "पोषण रिपोर्ट", "AI nutrition chat": "AI पोषण चैट",
+    "Advanced AI-powered nutrition intelligence.": "उन्नत AI-संचालित पोषण जानकारी।", "Multiple food recognition": "कई खाद्य पदार्थों की पहचान", "Advanced portion analysis": "उन्नत मात्रा विश्लेषण", "Detailed nutritional insights": "पोषण की विस्तृत जानकारी", "Intelligent meal analysis": "स्मार्ट भोजन विश्लेषण",
+  },
+  kn: {
+    "Version 1.0": "ಆವೃತ್ತಿ 1.0", "Version 2.0": "ಆವೃತ್ತಿ 2.0", "Version 3.0": "ಆವೃತ್ತಿ 3.0", "AVAILABLE NOW": "ಈಗ ಲಭ್ಯವಿದೆ", "COMING SOON": "ಶೀಘ್ರದಲ್ಲೇ ಬರಲಿದೆ", "Features:": "ವೈಶಿಷ್ಟ್ಯಗಳು:",
+    "AI-powered food recognition and nutrition analysis.": "AI ಆಧಾರಿತ ಆಹಾರ ಗುರುತಿಸುವಿಕೆ ಮತ್ತು ಪೌಷ್ಟಿಕಾಂಶ ವಿಶ್ಲೇಷಣೆ.", "Camera scanning": "ಕ್ಯಾಮೆರಾ ಸ್ಕ್ಯಾನಿಂಗ್", "Gallery upload": "ಗ್ಯಾಲರಿಯಿಂದ ಅಪ್‌ಲೋಡ್", "Food identification": "ಆಹಾರ ಗುರುತಿಸುವಿಕೆ", "Portion estimation": "ಪ್ರಮಾಣದ ಅಂದಾಜು", Calories: "ಕ್ಯಾಲೊರಿಗಳು", Protein: "ಪ್ರೋಟೀನ್", Carbohydrates: "ಕಾರ್ಬೊಹೈಡ್ರೇಟ್‌ಗಳು", Fats: "ಕೊಬ್ಬುಗಳು", Fibre: "ನಾರು", Sugar: "ಸಕ್ಕರೆ",
+    "Your personal AI nutrition coach.": "ನಿಮ್ಮ ವೈಯಕ್ತಿಕ AI ಪೌಷ್ಟಿಕಾಂಶ ಮಾರ್ಗದರ್ಶಿ.", "Daily nutrition tracking": "ದೈನಂದಿನ ಪೌಷ್ಟಿಕಾಂಶ ಟ್ರ್ಯಾಕಿಂಗ್", "Personalised food recommendations": "ನಿಮಗೆ ತಕ್ಕ ಆಹಾರ ಸಲಹೆಗಳು", "Meal planning": "ಊಟದ ಯೋಜನೆ", "Nutrition reports": "ಪೌಷ್ಟಿಕಾಂಶ ವರದಿಗಳು", "AI nutrition chat": "AI ಪೌಷ್ಟಿಕಾಂಶ ಚಾಟ್",
+    "Advanced AI-powered nutrition intelligence.": "ಸುಧಾರಿತ AI ಆಧಾರಿತ ಪೌಷ್ಟಿಕಾಂಶ ಬುದ್ಧಿಮತ್ತೆ.", "Multiple food recognition": "ಹಲವು ಆಹಾರಗಳ ಗುರುತಿಸುವಿಕೆ", "Advanced portion analysis": "ಸುಧಾರಿತ ಪ್ರಮಾಣ ವಿಶ್ಲೇಷಣೆ", "Detailed nutritional insights": "ವಿಸ್ತೃತ ಪೌಷ್ಟಿಕಾಂಶ ಮಾಹಿತಿ", "Intelligent meal analysis": "ಬುದ್ಧಿವಂತ ಊಟದ ವಿಶ್ಲೇಷಣೆ",
+  },
+};
+
+const dictionaries: Record<DashboardLanguage, Record<string, string>> = { en: {}, hi: { ...hi, ...hiExtra, ...scannerAndStatusTranslations.hi, ...studentDashboardTranslations.hi, ...scannerProductTranslations.hi }, kn: { ...kn, ...knExtra, ...scannerAndStatusTranslations.kn, ...studentDashboardTranslations.kn, ...scannerProductTranslations.kn } };
 
 export function translateDashboardText(input: string, language: DashboardLanguage): string {
   if (language === "en") return input;
