@@ -2,7 +2,6 @@ import { z } from "zod";
 
 const GEMINI_MODEL = "gemini-3.8-flash";
 const GEMINI_FALLBACK_MODEL = "gemini-3.6-flash";
-const FDC_BASE = "https://api.nal.usda.gov/fdc/v1";
 const MAX_DETECTED_FOODS = 6;
 
 const foodIdentificationSchema = z.object({
@@ -24,14 +23,11 @@ export type Nutrients = {
   fibre_g: number | null;
   sugar_g: number | null;
 };
-export type NutritionMatch = {
-  fdcId: number;
-  description: string;
-  dataType: string;
-  per100g: Nutrients;
-};
 
-const prompt = `Inspect the food photo and identify up to ${MAX_DETECTED_FOODS} distinct edible foods that are visibly present. Do not identify background objects, plates, cutlery, packaging, or ingredients that cannot be seen. Treat a mixed dish such as fried rice or biryani as one dish; list separate foods such as idli and sambar separately. For every item give a concise common food name suitable for a food-composition database, estimate only its edible portion weight in grams, choose confidence, and provide a short visual note. Do not estimate nutrients. If no food is visible, return an empty foods array. Return only JSON.`;
+export const NUTRITION_DATA_UNAVAILABLE_NOTE =
+  "Verified nutrition values are unavailable. IFCT 2017 data cannot be stored in this product until the National Institute of Nutrition grants written permission for electronic use.";
+
+const prompt = `Inspect the food photo and identify up to ${MAX_DETECTED_FOODS} distinct edible foods that are visibly present. Do not identify background objects, plates, cutlery, packaging, or ingredients that cannot be seen. Treat a mixed dish such as fried rice or biryani as one dish; list separate foods such as idli and sambar separately. For every item give a concise common food name, estimate only its edible portion weight in grams, choose confidence, and provide a short visual note. Do not estimate nutrients. If no food is visible, return an empty foods array. Return only JSON.`;
 
 function parseGeminiJson(text: string): FoodIdentification[] {
   const cleaned = text
@@ -142,110 +138,8 @@ export async function identifyFoodsWithGemini(dataUrl: string): Promise<FoodIden
   try {
     return parseGeminiJson(text);
   } catch {
-    throw new Error(
-      "We couldn't read the food recognition result. Please retry with another photo.",
-    );
+    throw new Error("We couldn't read the food recognition result. Please retry with another photo.");
   }
-}
-
-function normalizedWords(value: string): string[] {
-  return value
-    .toLowerCase()
-    .normalize("NFKD")
-    .replace(/\([^)]*\)/g, " ")
-    .replace(/\bveg\b/g, "vegetable")
-    .replace(/[^a-z0-9 ]/g, " ")
-    .split(/\s+/)
-    .filter((word) => word.length > 1 && !["indian", "style", "dish", "food"].includes(word));
-}
-
-function similarity(query: string, candidate: string): number {
-  const a = new Set(normalizedWords(query));
-  const b = new Set(normalizedWords(candidate));
-  if (!a.size || !b.size) return 0;
-  const overlap = [...a].filter((word) => b.has(word)).length;
-  const precision = overlap / b.size;
-  const recall = overlap / a.size;
-  const f1 = precision + recall === 0 ? 0 : (2 * precision * recall) / (precision + recall);
-  return a.size === b.size && overlap === a.size ? 1 : f1;
-}
-
-const QUERY_ALIASES: Array<{ matches: RegExp; queries: string[] }> = [
-  {
-    matches: /\b(vegetable|veg) fried rice\b|\bfried rice (with )?vegetables\b/i,
-    queries: [
-      "rice fried meatless",
-      "fried rice with vegetables",
-      "rice fried with vegetables",
-      "fried rice vegetable",
-    ],
-  },
-  { matches: /\bidli\b/i, queries: ["idli", "idli steamed"] },
-  { matches: /\bsambar\b/i, queries: ["sambar", "sambar vegetable stew"] },
-  { matches: /\bmasala dosa\b/i, queries: ["dosa with filling", "masala dosa", "dosa plain"] },
-  { matches: /\bchicken biryani\b/i, queries: ["biryani with chicken", "chicken biryani"] },
-  { matches: /\b(chapati|chapatti|roti)\b/i, queries: ["bread chapati or roti", "chapati roti"] },
-  { matches: /\bvegetable curry\b/i, queries: ["vegetable curry", "vegetable curry with rice"] },
-];
-
-function searchQueries(foodName: string): string[] {
-  const alias = QUERY_ALIASES.find(({ matches }) => matches.test(foodName))?.queries ?? [];
-  return [...new Set([foodName.trim(), ...alias])].slice(0, 3);
-}
-
-type FdcSearchFood = { fdcId: number; description: string; dataType?: string };
-type FdcNutrient = {
-  nutrient?: { number?: string; name?: string; unitName?: string };
-  nutrientNumber?: string;
-  nutrientName?: string;
-  unitName?: string;
-  amount?: number;
-  value?: number;
-};
-type FdcFoodDetails = {
-  fdcId: number;
-  description: string;
-  dataType?: string;
-  foodNutrients?: FdcNutrient[];
-};
-
-function nutrientNumber(row: FdcNutrient): string {
-  return row.nutrient?.number ?? row.nutrientNumber ?? "";
-}
-
-function nutrientValue(rows: FdcNutrient[], numbers: string[], names: string[]): number | null {
-  const row = rows.find(
-    (item) =>
-      numbers.includes(nutrientNumber(item)) ||
-      names.includes((item.nutrient?.name ?? item.nutrientName ?? "").toLowerCase()),
-  );
-  const value = row?.amount ?? row?.value;
-  return typeof value === "number" && Number.isFinite(value) ? value : null;
-}
-
-export function mapFdcNutrients(rows: FdcNutrient[]): Nutrients | null {
-  const energy = nutrientValue(rows, ["208", "1008"], []);
-  const energyKj = energy === null ? nutrientValue(rows, ["268"], []) : null;
-  const values: Nutrients = {
-    calories: energy ?? (energyKj === null ? null : Math.round((energyKj / 4.184) * 10) / 10),
-    protein_g: nutrientValue(rows, ["203"], ["protein"]),
-    carbs_g: nutrientValue(rows, ["205"], ["carbohydrate, by difference"]),
-    fat_g: nutrientValue(rows, ["204"], ["total lipid (fat)"]),
-    fibre_g: nutrientValue(rows, ["291"], ["fiber, total dietary", "fibre, total dietary"]),
-    sugar_g: nutrientValue(rows, ["269"], ["sugars, total including nlea"]),
-  };
-  const hasCoreNutrition =
-    values.calories !== null &&
-    values.protein_g !== null &&
-    values.carbs_g !== null &&
-    values.fat_g !== null;
-  if (!hasCoreNutrition) return null;
-  return Object.fromEntries(
-    Object.entries(values).map(([key, value]) => [
-      key,
-      value === null ? null : Math.round(value * 10) / 10,
-    ]),
-  ) as Nutrients;
 }
 
 export function scaleNutrition(per100g: Nutrients, portionG: number): Nutrients {
@@ -264,113 +158,4 @@ export function scaleNutrition(per100g: Nutrients, portionG: number): Nutrients 
     fibre_g: scale(per100g.fibre_g),
     sugar_g: scale(per100g.sugar_g),
   };
-}
-
-async function fdcFetch<T>(path: string, apiKey: string, init?: RequestInit): Promise<T> {
-  let response: Response;
-  try {
-    response = await fetch(
-      `${FDC_BASE}${path}${path.includes("?") ? "&" : "?"}api_key=${encodeURIComponent(apiKey)}`,
-      { ...init, signal: AbortSignal.timeout(15000) },
-    );
-  } catch {
-    throw new Error("USDA FoodData Central could not be reached. Please retry the scan.");
-  }
-  if (!response.ok) {
-    console.error("FoodData Central request failed", { path, status: response.status });
-    throw new Error(
-      response.status === 429
-        ? "USDA FoodData Central is busy. Please retry shortly."
-        : response.status === 401 || response.status === 403
-          ? "USDA FoodData Central rejected its server API key. Check USDA_FDC_API_KEY in Vercel settings."
-          : "USDA FoodData Central is temporarily unavailable. Please retry the scan.",
-    );
-  }
-  return response.json() as Promise<T>;
-}
-
-function dataTypeRank(dataType?: string): number {
-  if (dataType === "Survey (FNDDS)") return 3;
-  if (dataType === "SR Legacy") return 2;
-  if (dataType === "Foundation") return 1;
-  return 0;
-}
-
-export async function lookupFoodNutrition(foodName: string): Promise<NutritionMatch | null> {
-  const apiKey = process.env.USDA_FDC_API_KEY;
-  if (!apiKey) throw new Error("USDA FoodData Central is not configured on the server.");
-  const results = new Map<number, { food: FdcSearchFood; score: number }>();
-  const queries = searchQueries(foodName);
-  const searchResults = await Promise.allSettled(
-    queries.map((query) =>
-      fdcFetch<{ foods?: FdcSearchFood[] }>("/foods/search", apiKey, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          query,
-          pageSize: 25,
-          dataType: ["Survey (FNDDS)", "SR Legacy", "Foundation"],
-        }),
-      }),
-    ),
-  );
-  if (searchResults.every((result) => result.status === "rejected")) {
-    const failed = searchResults.find((result) => result.status === "rejected");
-    if (failed?.status === "rejected") throw failed.reason;
-  }
-  for (const [index, settled] of searchResults.entries()) {
-    if (settled.status === "rejected") continue;
-    const search = settled.value;
-    const query = queries[index];
-    for (const food of search.foods ?? []) {
-      const score = similarity(query, food.description);
-      const current = results.get(food.fdcId);
-      if (!current || score > current.score) results.set(food.fdcId, { food, score });
-    }
-  }
-  const candidates = [...results.values()]
-    .filter(
-      ({ food, score }) =>
-        // A low token overlap can select unrelated foods (for example, "vegetable chips"
-        // for a vegetable fried rice query). Keep only close lexical matches or exact aliases.
-        score >= 0.6 || queries.some((query) => similarity(query, food.description) === 1),
-    )
-    .sort(
-      (a, b) => b.score - a.score || dataTypeRank(b.food.dataType) - dataTypeRank(a.food.dataType),
-    );
-
-  const details = await Promise.allSettled(
-    candidates
-      .slice(0, 3)
-      .map(({ food }) => fdcFetch<FdcFoodDetails>(`/food/${food.fdcId}`, apiKey)),
-  );
-  for (const [index, settled] of details.entries()) {
-    if (settled.status === "rejected") continue;
-    const detail = settled.value;
-    const nutrients = mapFdcNutrients(detail.foodNutrients ?? []);
-    if (!nutrients) continue;
-    const candidate = candidates[index].food;
-    return {
-      fdcId: detail.fdcId,
-      description: detail.description,
-      dataType: detail.dataType ?? candidate.dataType ?? "USDA FoodData Central",
-      per100g: nutrients,
-    };
-  }
-  return null;
-}
-
-export async function lookupFoodNutritionById(fdcId: number): Promise<NutritionMatch | null> {
-  const apiKey = process.env.USDA_FDC_API_KEY;
-  if (!apiKey) throw new Error("USDA FoodData Central is not configured on the server.");
-  const detail = await fdcFetch<FdcFoodDetails>(`/food/${fdcId}`, apiKey);
-  const nutrients = mapFdcNutrients(detail.foodNutrients ?? []);
-  return nutrients
-    ? {
-        fdcId: detail.fdcId,
-        description: detail.description,
-        dataType: detail.dataType ?? "USDA FoodData Central",
-        per100g: nutrients,
-      }
-    : null;
 }

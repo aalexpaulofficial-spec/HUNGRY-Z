@@ -4,12 +4,11 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { imageDataUrlSchema, isTrialActive } from "@/lib/scanner";
 import {
   identifyFoodsWithGemini,
-  lookupFoodNutrition,
-  scaleNutrition,
+  NUTRITION_DATA_UNAVAILABLE_NOTE,
 } from "@/lib/scanner-nutrition.server";
 
 const SCAN_COLUMNS =
-  "id, user_id, food_name, portion, portion_g, calories, protein_g, carbs_g, fat_g, fibre_g, sugar_g, confidence, notes, created_at, fdc_id, nutrition_source, nutrition_reference, scan_group_id";
+  "id, user_id, food_name, portion, portion_g, calories, protein_g, carbs_g, fat_g, fibre_g, sugar_g, confidence, notes, created_at, nutrition_source, nutrition_reference, scan_group_id";
 
 /** Starts (once) and returns the student's free month of HUNGRY SCANNER v1.0. */
 export const getScannerAccess = createServerFn({ method: "POST" })
@@ -115,64 +114,23 @@ export const scanFood = createServerFn({ method: "POST" })
     const foodsToSave = [...uniqueFoods.values()];
 
     const scanGroupId = crypto.randomUUID();
-    const rows = await Promise.all(
-      foodsToSave.map(async (item) => {
-        let match = null;
-        let lookupError = "";
-        try {
-          match = await lookupFoodNutrition(item.food_name);
-        } catch (error) {
-          lookupError = error instanceof Error ? error.message : "Nutrition lookup failed.";
-          console.error("Food nutrition lookup failed", {
-            foodName: item.food_name,
-            message: lookupError,
-          });
-        }
-
-        const nutrients = match ? scaleNutrition(match.per100g, item.portion_g) : null;
-        const missingNutrients = nutrients
-          ? Object.entries(nutrients)
-              .filter(([, value]) => value === null)
-              .map(([name]) => name.replace(/_g$/, ""))
-          : [];
-        const exactRecord =
-          match?.description.trim().toLowerCase() === item.food_name.trim().toLowerCase();
-        const notes = [
-          item.notes,
-          lookupError,
-          !match && !lookupError
-            ? "No suitable verified USDA FoodData Central match was found; nutrition values are unavailable."
-            : "",
-          missingNutrients.length
-            ? `This USDA record does not report: ${missingNutrients.join(", ")}.`
-            : "",
-        ]
-          .filter(Boolean)
-          .join(" ")
-          .slice(0, 1000);
-
-        return {
-          user_id: context.userId,
-          scan_group_id: scanGroupId,
-          food_name: item.food_name,
-          portion: `${item.portion_g} g`,
-          portion_g: item.portion_g,
-          calories: nutrients?.calories ?? null,
-          protein_g: nutrients?.protein_g ?? null,
-          carbs_g: nutrients?.carbs_g ?? null,
-          fat_g: nutrients?.fat_g ?? null,
-          fibre_g: nutrients?.fibre_g ?? null,
-          sugar_g: nutrients?.sugar_g ?? null,
-          confidence: item.confidence,
-          notes,
-          fdc_id: match?.fdcId ?? null,
-          nutrition_source: match ? "USDA FoodData Central" : null,
-          nutrition_reference: match
-            ? `${exactRecord ? "Exact record" : "Closest verified record"}: ${match.description} (FDC ${match.fdcId}; ${match.dataType}; values per 100 g)`
-            : null,
-        };
-      }),
-    );
+    const rows = foodsToSave.map((item) => ({
+      user_id: context.userId,
+      scan_group_id: scanGroupId,
+      food_name: item.food_name,
+      portion: `${item.portion_g} g`,
+      portion_g: item.portion_g,
+      calories: null,
+      protein_g: null,
+      carbs_g: null,
+      fat_g: null,
+      fibre_g: null,
+      sugar_g: null,
+      confidence: item.confidence,
+      notes: [item.notes, NUTRITION_DATA_UNAVAILABLE_NOTE].filter(Boolean).join(" ").slice(0, 1000),
+      nutrition_source: null,
+      nutrition_reference: null,
+    }));
 
     const { data: savedRows, error } = await context.supabase
       .from("food_scans")
@@ -200,43 +158,26 @@ export const updateFoodScan = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ context, data }) => {
-    let match = null;
-    let lookupError = "";
-    try {
-      match = await lookupFoodNutrition(data.foodName);
-    } catch (error) {
-      lookupError = error instanceof Error ? error.message : "Nutrition lookup failed.";
-    }
-    const nutrients = match ? scaleNutrition(match.per100g, data.portionG) : null;
-    const exactRecord =
-      match?.description.trim().toLowerCase() === data.foodName.trim().toLowerCase();
-    const notes = [
-      match
-        ? "Food name and portion corrected by student; nutrition recalculated from the verified database record."
-        : "No suitable verified USDA FoodData Central match was found for the corrected food name; nutrition values are unavailable.",
-      lookupError,
-    ]
-      .filter(Boolean)
-      .join(" ")
-      .slice(0, 1000);
+    const notes = `Food name and serving corrected by student. ${NUTRITION_DATA_UNAVAILABLE_NOTE}`.slice(
+      0,
+      1000,
+    );
     const { data: row, error } = await context.supabase
       .from("food_scans")
       .update({
         food_name: data.foodName,
         portion_g: data.portionG,
         portion: `${data.portionG} g`,
-        calories: nutrients?.calories ?? null,
-        protein_g: nutrients?.protein_g ?? null,
-        carbs_g: nutrients?.carbs_g ?? null,
-        fat_g: nutrients?.fat_g ?? null,
-        fibre_g: nutrients?.fibre_g ?? null,
-        sugar_g: nutrients?.sugar_g ?? null,
+        calories: null,
+        protein_g: null,
+        carbs_g: null,
+        fat_g: null,
+        fibre_g: null,
+        sugar_g: null,
         notes,
-        fdc_id: match?.fdcId ?? null,
-        nutrition_source: match ? "USDA FoodData Central" : null,
-        nutrition_reference: match
-          ? `${exactRecord ? "Exact record" : "Closest verified record"}: ${match.description} (FDC ${match.fdcId}; ${match.dataType}; values per 100 g)`
-          : null,
+        fdc_id: null,
+        nutrition_source: null,
+        nutrition_reference: null,
       })
       .eq("id", data.id)
       .eq("user_id", context.userId)

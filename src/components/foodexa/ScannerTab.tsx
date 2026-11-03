@@ -36,7 +36,6 @@ type Scan = {
   confidence: string;
   notes: string;
   created_at: string;
-  fdc_id: number | null;
   nutrition_source: string | null;
   nutrition_reference: string | null;
   scan_group_id: string | null;
@@ -500,7 +499,7 @@ export function ScannerTab() {
                 >
                   <p className="truncate text-sm font-semibold">{scan.food_name}</p>
                   <p className="text-xs text-muted-foreground">
-                    {scan.fdc_id === null || scan.calories === null
+                    {scan.nutrition_source === null || scan.calories === null
                       ? "Nutrition unavailable"
                       : `${scan.calories} kcal · P ${scan.protein_g}g · C ${scan.carbs_g}g · F ${scan.fat_g}g`}{" "}
                     · {fmtDate(scan.created_at)}
@@ -564,7 +563,7 @@ function ScanResult({
   onCorrect: () => void;
   correctionBusy: boolean;
 }) {
-  const matched = scan.fdc_id !== null && scan.nutrition_source !== null;
+  const matched = scan.nutrition_source !== null;
   const stats: [string, string][] = [
     ["Protein", fmt(scan.protein_g)],
     ["Carbohydrates", fmt(scan.carbs_g)],
@@ -605,8 +604,9 @@ function ScanResult({
       </div>
       {!matched ? (
         <p className="mt-4 rounded-xl border border-border bg-background/60 p-3 text-sm text-muted-foreground">
-          Verified nutrition data is unavailable for this food. Values remain unavailable until a
-          verified database match is found.
+          {scan.notes.includes("IFCT 2017 data cannot be stored")
+            ? "Verified nutrition is unavailable until IFCT 2017 electronic-use permission is granted and its dataset is added. No nutrition values were estimated."
+            : "Verified nutrition data is unavailable for this food. Values remain unavailable until a verified database match is found."}
         </p>
       ) : (
         <p className="mt-3 text-xs text-muted-foreground">
