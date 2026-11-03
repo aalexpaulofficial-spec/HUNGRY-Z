@@ -6,8 +6,7 @@ const mocks = vi.hoisted(() => ({
   getAccess: vi.fn(),
   listScans: vi.fn(),
   scan: vi.fn(),
-  remove: vi.fn(),
-  saveFood: vi.fn(),
+  updateFood: vi.fn(),
 }));
 
 vi.mock("@tanstack/react-start", () => ({ useServerFn: (fn: unknown) => fn }));
@@ -15,8 +14,7 @@ vi.mock("@/lib/scanner.functions", () => ({
   getScannerAccess: mocks.getAccess,
   listFoodScans: mocks.listScans,
   scanFood: mocks.scan,
-  deleteFoodScan: mocks.remove,
-  updateFoodScan: mocks.saveFood,
+  updateFoodScan: mocks.updateFood,
 }));
 
 const row = {
@@ -32,10 +30,8 @@ const row = {
   sugar_g: null,
   confidence: "medium",
   notes: "",
-  created_at: "2026-01-01T00:00:00Z",
   nutrition_source: null,
   nutrition_reference: null,
-  scan_group_id: "22222222-2222-4222-8222-222222222222",
 };
 
 describe("scanner camera and photo input", () => {
@@ -50,8 +46,7 @@ describe("scanner camera and photo input", () => {
     });
     mocks.listScans.mockResolvedValue([]);
     mocks.scan.mockResolvedValue({ ok: true, scans: [row] });
-    mocks.remove.mockResolvedValue({ ok: true });
-    mocks.saveFood.mockResolvedValue({ ok: true, scan: row });
+    mocks.updateFood.mockResolvedValue({ ok: true, scan: row });
     vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue(undefined);
     vi.spyOn(HTMLVideoElement.prototype, "videoWidth", "get").mockReturnValue(640);
     vi.spyOn(HTMLVideoElement.prototype, "videoHeight", "get").mockReturnValue(480);
@@ -90,7 +85,7 @@ describe("scanner camera and photo input", () => {
     });
     render(<ScannerTab />);
 
-    fireEvent.click(await screen.findByRole("button", { name: /Scan with camera/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /Scan Food/i }));
     await waitFor(() =>
       expect(getUserMedia).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -115,6 +110,7 @@ describe("scanner camera and photo input", () => {
       }),
     );
     expect(track.stop).toHaveBeenCalled();
+    expect(mocks.listScans).not.toHaveBeenCalled();
   });
 
   it("shows a useful permission error and offers a device-camera fallback", async () => {
@@ -124,7 +120,7 @@ describe("scanner camera and photo input", () => {
       value: { getUserMedia },
     });
     render(<ScannerTab />);
-    fireEvent.click(await screen.findByRole("button", { name: /Scan with camera/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /Scan Food/i }));
     expect(await screen.findByRole("alert")).toHaveTextContent(/permission is blocked/i);
     expect(screen.getByRole("button", { name: /Open device camera/i })).toBeInTheDocument();
   });
@@ -140,5 +136,8 @@ describe("scanner camera and photo input", () => {
       }),
     );
     expect((await screen.findAllByText("plain dosa")).length).toBeGreaterThan(0);
+    expect(mocks.listScans).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: /^Close$/i }));
+    expect(screen.queryByText("plain dosa")).not.toBeInTheDocument();
   });
 });

@@ -627,4 +627,21 @@ html[data-theme="light"] .hungry-install-page svg path[stroke="rgba(255,255,255,
   .scanner-action:hover { transform: translateY(-1px); border-color: color-mix(in oklab, var(--primary) 50%, transparent); }
   .scanner-action:disabled { opacity: .5; transform: none; }
   .scanner-action-primary { border-color: transparent; background: var(--primary); color: var(--primary-foreground); }
+  .scanner-brand { display: inline-flex; align-items: center; gap: .55rem; font-size: .8rem; font-weight: 700; letter-spacing: .04em; }
+  .scanner-brand-mark { display: inline-grid; width: 1.5rem; height: 1.5rem; place-items: center; border-radius: .45rem; background: var(--primary); color: var(--primary-foreground); font-size: .9rem; box-shadow: 0 0 18px color-mix(in oklab, var(--primary) 48%, transparent); }
+  .scanner-start { min-height: 5.2rem; justify-content: flex-start; padding: 1rem 1.2rem; text-align: left; }
+  .scanner-start span { display: grid; gap: .15rem; }
+  .scanner-start small { font-size: .7rem; font-weight: 400; opacity: .78; }
+  .scanner-image-frame { position: relative; margin: .75rem; overflow: hidden; border-radius: 1.3rem; }
+  .scanner-image-frame-active { isolation: isolate; padding: 2px; background: conic-gradient(from var(--scan-angle, 0deg), #ff3535, #ff1010 18%, transparent 35%, transparent 55%, #9b101b 72%, #ff3535); animation: scanner-border-spin 2.8s linear infinite; box-shadow: 0 0 18px color-mix(in oklab, var(--primary) 45%, transparent); }
+  .scanner-image-frame-active img { position: relative; z-index: 1; }
+  .scanner-sweep { position: absolute; z-index: 2; left: 0; right: 0; top: 0; height: 3px; background: linear-gradient(90deg, transparent, #ff2020 15%, #ff4b4b 50%, #ff2020 85%, transparent); box-shadow: 0 0 17px 4px #f11; animation: scanner-sweep 2.4s ease-in-out infinite; pointer-events: none; }
+  .scanner-progress { height: .55rem; overflow: hidden; border-radius: 999px; background: color-mix(in oklab, var(--muted) 72%, transparent); }
+  .scanner-progress span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #ed101b, #ff4a4a); box-shadow: 0 0 12px #f33; transition: width .65s ease; }
+  .scanner-step-done { display: inline-grid; width: 1rem; height: 1rem; place-items: center; border-radius: 50%; background: var(--primary); color: var(--primary-foreground); }
+  .scanner-step-idle { width: 1rem; height: 1rem; border: 2px solid color-mix(in oklab, var(--muted-foreground) 45%, transparent); border-radius: 50%; }
+  .scanner-result-card { background: color-mix(in oklab, var(--card) 90%, transparent); }
+  @keyframes scanner-sweep { 0% { transform: translateY(0); opacity: .5; } 50% { opacity: 1; } 100% { transform: translateY(min(72vw, 28rem)); opacity: .5; } }
+  @keyframes scanner-border-spin { to { --scan-angle: 360deg; } }
+  @media (prefers-reduced-motion: reduce) { .scanner-image-frame-active, .scanner-sweep { animation-duration: 8s; } }
 }

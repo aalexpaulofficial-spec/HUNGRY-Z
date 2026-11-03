@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   identifyFoodsWithGemini,
-  NUTRITION_DATA_UNAVAILABLE_NOTE,
+  lookupUsdaNutrition,
   scaleNutrition,
 } from "@/lib/scanner-nutrition.server";
 
@@ -129,7 +129,30 @@ describe("scanner food recognition and nutrition safety", () => {
     });
   });
 
-  it("provides no nutrition values while there is no licensed dataset", () => {
-    expect(NUTRITION_DATA_UNAVAILABLE_NOTE).toContain("written permission");
+  it("retrieves USDA nutrients and scales per-100g values to the estimated portion", async () => {
+    vi.stubEnv("USDA_FDC_API_KEY", "test-usda-key");
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ foods: [{ fdcId: 123, description: "Rice, fried, with vegetables", dataType: "Survey (FNDDS)" }] }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ foods: [{ fdcId: 123, description: "Rice, fried, with vegetables", dataType: "Survey (FNDDS)" }] }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ fdcId: 123, description: "Rice, fried, with vegetables", dataType: "Survey (FNDDS)", foodNutrients: [
+        { nutrient: { number: "208" }, amount: 180 }, { nutrient: { number: "203" }, amount: 5 },
+        { nutrient: { number: "205" }, amount: 30 }, { nutrient: { number: "204" }, amount: 4 },
+        { nutrient: { number: "291" }, amount: 2 }, { nutrient: { number: "269" }, amount: 1 },
+      ] }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await lookupUsdaNutrition("Vegetable Fried Rice", 200);
+    expect(response.values).toEqual({ calories: 360, protein_g: 10, carbs_g: 60, fat_g: 8, fibre_g: 4, sugar_g: 2 });
+    expect(response.source).toBe("USDA FoodData Central");
+    expect(response.reference).toContain("FDC 123");
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(String(fetchMock.mock.calls[0][0])).toContain("/foods/search");
+    expect(String(fetchMock.mock.calls[2][0])).toContain("/food/123");
+  });
+
+  it("refuses unrelated USDA search results instead of inventing a match", async () => {
+    vi.stubEnv("USDA_FDC_API_KEY", "test-usda-key");
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ foods: [{ fdcId: 1, description: "Raw spinach", dataType: "Foundation" }] }), { status: 200 })));
+    await expect(lookupUsdaNutrition("Sushi", 250)).rejects.toThrow(/No reliable USDA nutrition match/);
   });
 });

@@ -25,7 +25,98 @@ export type Nutrients = {
 };
 
 export const NUTRITION_DATA_UNAVAILABLE_NOTE =
-  "Verified nutrition values are unavailable. IFCT 2017 data cannot be stored in this product until the National Institute of Nutrition grants written permission for electronic use.";
+  "No reliable matching record was found in the nutrition database. No nutrition values were estimated.";
+
+export type ScannerFoodResult = {
+  id: string;
+  food_name: string;
+  portion: string;
+  portion_g: number;
+  confidence: "low" | "medium" | "high";
+  notes: string;
+  nutrition_source: string | null;
+  nutrition_reference: string | null;
+} & Nutrients;
+
+const USDA_BASE = "https://api.nal.usda.gov/fdc/v1";
+const normalizeFoodName = (value: string) => value.toLowerCase()
+  .replace(/\b(veg|veggie)\b/g, "vegetable")
+  .replace(/\b(chips|fries)\b/g, "fries")
+  .replace(/[^a-z0-9]+/g, " ").trim();
+
+function foodSimilarity(query: string, label: string): number {
+  const q = normalizeFoodName(query).split(" ").filter((word) => word.length > 2);
+  const l = normalizeFoodName(label).split(" ").filter((word) => word.length > 2);
+  if (!q.length || !l.length) return 0;
+  if (q.join(" ") === l.join(" ")) return 1;
+  const overlap = q.filter((word) => l.includes(word)).length;
+  const coverage = overlap / q.length;
+  const precision = overlap / l.length;
+  return (2 * coverage * precision) / (coverage + precision || 1);
+}
+
+async function usdaRequest(url: URL, init?: RequestInit): Promise<any> {
+  const response = await fetch(url, { ...init, signal: AbortSignal.timeout(12000) });
+  const body = await response.json().catch(() => null);
+  if (!response.ok) {
+    console.error("USDA FoodData Central request failed", { status: response.status });
+    if (response.status === 401 || response.status === 403)
+      throw new Error("USDA rejected the server key. Check USDA_FDC_API_KEY in Vercel Production settings.");
+    if (response.status === 429) throw new Error("USDA FoodData Central rate limit reached. Please retry shortly.");
+    throw new Error("USDA FoodData Central is temporarily unavailable. Please retry.");
+  }
+  return body;
+}
+
+export async function lookupUsdaNutrition(foodName: string, portionG: number): Promise<{
+  values: Nutrients;
+  source: string;
+  reference: string;
+}> {
+  const apiKey = process.env.USDA_FDC_API_KEY;
+  if (!apiKey) throw new Error("USDA nutrition lookup is not configured. Add USDA_FDC_API_KEY as a Vercel backend secret.");
+
+  const queries = [...new Map([foodName, normalizeFoodName(foodName).replace(/\bvegetable\b/g, "veg")].map((query) => [query.toLowerCase(), query])).values()];
+  const candidates: any[] = [];
+  for (const query of queries) {
+    const url = new URL(`${USDA_BASE}/foods/search`);
+    url.searchParams.set("api_key", apiKey);
+    const result = await usdaRequest(url, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ query, pageSize: 25, dataType: ["Foundation", "SR Legacy", "Survey (FNDDS)"] }),
+    });
+    if (!Array.isArray(result?.foods))
+      throw new Error("USDA FoodData Central returned an unreadable search result. Please retry.");
+    candidates.push(...result.foods);
+  }
+  const unique = [...new Map(candidates.map((item) => [item.fdcId, item])).values()];
+  const ranked = unique
+    .map((item) => ({ item, score: foodSimilarity(foodName, item.description ?? "") }))
+    .sort((a, b) => b.score - a.score);
+  // Never take an unrelated first result just because it came back from a broad query.
+  const selected = ranked.find((candidate) => candidate.score >= 0.5)?.item;
+  if (!selected?.fdcId) throw new Error("No reliable USDA nutrition match was found for this food. Try correcting its name or description.");
+
+  const detailUrl = new URL(`${USDA_BASE}/food/${selected.fdcId}`);
+  detailUrl.searchParams.set("api_key", apiKey);
+  const details = await usdaRequest(detailUrl);
+  const nutrient = (number: string): number | null => {
+    const item = (details.foodNutrients ?? []).find((entry: any) => String(entry.nutrient?.number ?? entry.nutrientNumber) === number);
+    const amount = item?.amount ?? item?.value;
+    return typeof amount === "number" && Number.isFinite(amount) ? amount : null;
+  };
+  const per100g: Nutrients = {
+    calories: nutrient("208") ?? nutrient("1008"), protein_g: nutrient("203"), carbs_g: nutrient("205"),
+    fat_g: nutrient("204"), fibre_g: nutrient("291"), sugar_g: nutrient("269"),
+  };
+  const servingValues = scaleNutrition(per100g, portionG);
+  return {
+    values: servingValues,
+    source: "USDA FoodData Central",
+    reference: `${details.description ?? selected.description} · FDC ${selected.fdcId} · ${details.dataType ?? selected.dataType} · per 100 g scaled to ${portionG} g`,
+  };
+}
 
 const prompt = `Inspect the food photo and identify up to ${MAX_DETECTED_FOODS} distinct edible foods that are visibly present. Do not identify background objects, plates, cutlery, packaging, or ingredients that cannot be seen. Treat a mixed dish such as fried rice or biryani as one dish; list separate foods such as idli and sambar separately. For every item give a concise common food name, estimate only its edible portion weight in grams, choose confidence, and provide a short visual note. Do not estimate nutrients. If no food is visible, return an empty foods array. Return only JSON.`;
 

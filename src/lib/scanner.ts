@@ -23,7 +23,7 @@ export const STUDENT_SCANNER_PLANS: ScannerPlan[] = [
       "Camera scanning and image upload",
       "AI food identification",
       "Calories, protein, carbs, fats, fibre and sugar",
-      "Portion estimation and scan history",
+      "Portion estimation with results kept only for the current scan",
     ],
   },
   {
