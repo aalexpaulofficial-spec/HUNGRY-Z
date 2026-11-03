@@ -331,7 +331,9 @@ export async function lookupFoodNutrition(foodName: string): Promise<NutritionMa
   const candidates = [...results.values()]
     .filter(
       ({ food, score }) =>
-        score >= 0.28 || queries.some((query) => similarity(query, food.description) === 1),
+        // A low token overlap can select unrelated foods (for example, "vegetable chips"
+        // for a vegetable fried rice query). Keep only close lexical matches or exact aliases.
+        score >= 0.6 || queries.some((query) => similarity(query, food.description) === 1),
     )
     .sort(
       (a, b) => b.score - a.score || dataTypeRank(b.food.dataType) - dataTypeRank(a.food.dataType),
