@@ -5,7 +5,13 @@ export const SCANNER_TRIAL_MONTHS = 1;
 export const SCANNER_PRICE_INR = 0;
 export const MAX_SCAN_IMAGE_BYTES = 6 * 1024 * 1024;
 
-export type ScannerPlan = { version: string; brand: string; name: string; features: string[]; status: "live" | "coming_soon" };
+export type ScannerPlan = {
+  version: string;
+  brand: string;
+  name: string;
+  features: string[];
+  status: "live" | "coming_soon";
+};
 
 export const STUDENT_SCANNER_PLANS: ScannerPlan[] = [
   {
@@ -66,22 +72,13 @@ export function trialDaysLeft(expiresAt: string | Date, now: Date = new Date()):
   return ms <= 0 ? 0 : Math.ceil(ms / 86_400_000);
 }
 
-export const nutritionSchema = z.object({
-  is_food: z.boolean(),
-  food_name: z.string().min(1).max(120),
-  portion: z.string().max(120),
-  calories: z.number().min(0).max(10000),
-  protein_g: z.number().min(0).max(1000),
-  carbs_g: z.number().min(0).max(1000),
-  fat_g: z.number().min(0).max(1000),
-  fibre_g: z.number().min(0).max(1000),
-  sugar_g: z.number().min(0).max(1000),
-  confidence: z.enum(["low", "medium", "high"]),
-  notes: z.string().max(400),
-});
-export type NutritionResult = z.infer<typeof nutritionSchema>;
-
 export const imageDataUrlSchema = z
   .string()
-  .regex(/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/, "Please upload a JPG, PNG or WEBP photo.")
-  .refine((v) => Math.floor((v.length - v.indexOf(",") - 1) * 0.75) <= MAX_SCAN_IMAGE_BYTES, "Photo is too large (max 6 MB).");
+  .regex(
+    /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/,
+    "Please upload a JPG, PNG or WEBP photo.",
+  )
+  .refine(
+    (v) => Math.floor((v.length - v.indexOf(",") - 1) * 0.75) <= MAX_SCAN_IMAGE_BYTES,
+    "Photo is too large (max 6 MB).",
+  );

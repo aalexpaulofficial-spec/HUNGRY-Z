@@ -369,48 +369,60 @@ export type Database = {
       }
       food_scans: {
         Row: {
-          calories: number
-          carbs_g: number
+          calories: number | null
+          carbs_g: number | null
           confidence: string
           created_at: string
-          fat_g: number
-          fibre_g: number
+          fat_g: number | null
+          fibre_g: number | null
+          fdc_id: number | null
           food_name: string
           id: string
           notes: string
           portion: string
-          protein_g: number
-          sugar_g: number
+          portion_g: number | null
+          nutrition_reference: string | null
+          nutrition_source: string | null
+          protein_g: number | null
+          sugar_g: number | null
           user_id: string
         }
         Insert: {
-          calories?: number
-          carbs_g?: number
+          calories?: number | null
+          carbs_g?: number | null
           confidence?: string
           created_at?: string
-          fat_g?: number
-          fibre_g?: number
+          fat_g?: number | null
+          fibre_g?: number | null
+          fdc_id?: number | null
           food_name: string
           id?: string
           notes?: string
           portion?: string
-          protein_g?: number
-          sugar_g?: number
+          portion_g?: number | null
+          nutrition_reference?: string | null
+          nutrition_source?: string | null
+          protein_g?: number | null
+          sugar_g?: number | null
           user_id: string
         }
         Update: {
-          calories?: number
-          carbs_g?: number
+          calories?: number | null
+          carbs_g?: number | null
           confidence?: string
           created_at?: string
-          fat_g?: number
-          fibre_g?: number
+          fat_g?: number | null
+          fibre_g?: number | null
+          fdc_id?: number | null
           food_name?: string
           id?: string
           notes?: string
           portion?: string
-          protein_g?: number
-          sugar_g?: number
+          portion_g?: number | null
+          nutrition_reference?: string | null
+          nutrition_source?: string | null
+          protein_g?: number | null
+          sugar_g?: number | null
           user_id?: string
         }
         Relationships: []

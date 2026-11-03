@@ -15,6 +15,13 @@
       "when": 1793695279133,
       "tag": "0001_hungry_payments_to_scanner",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793700000000,
+      "tag": "0002_food_scan_nutrition_sources",
+      "breakpoints": true
     }
   ]
 }
