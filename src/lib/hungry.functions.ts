@@ -31,7 +31,7 @@ async function admin() {
 }
 
 function canteenDashboardInstallUrl() {
-  const configuredHost = process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.VERCEL_URL || "hungry-campus-canteens.vercel.app";
+  const configuredHost = process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.VERCEL_URL || "hungryzq.vercel.app";
   const origin = configuredHost.startsWith("https://") ? configuredHost : `https://${configuredHost}`;
   return new URL("/install/canteen", origin).toString();
 }
