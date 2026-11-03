@@ -68,7 +68,7 @@ export function AnalyticsSection() {
       },
     );
 
-    const area = q("[data-area]")[0] as SVGPathElement | undefined;
+    const area = q("[data-area]")[0] as unknown as SVGPathElement | undefined;
     if (area) {
       const len = area.getTotalLength();
       gsap.fromTo(

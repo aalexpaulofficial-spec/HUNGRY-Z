@@ -113,7 +113,7 @@ describe("shared back navigation", () => {
     render(
       createElement(
         BackProvider,
-        { disabled: true },
+        { disabled: true, children: null },
         createElement(BackButton),
         createElement(BackNavigationProbe),
       ),

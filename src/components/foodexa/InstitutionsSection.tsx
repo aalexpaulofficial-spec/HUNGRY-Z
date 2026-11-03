@@ -58,7 +58,7 @@ export function InstitutionsSection() {
     );
 
 
-    const path = q("[data-line-path]")[0] as SVGPathElement | undefined;
+    const path = q("[data-line-path]")[0] as unknown as SVGPathElement | undefined;
     if (path) {
       const len = path.getTotalLength();
       gsap.fromTo(
