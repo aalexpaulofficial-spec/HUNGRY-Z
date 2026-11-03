@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Camera, Check, ChevronDown, ImageUp, Loader2, Lock, ScanLine, Sparkles, SwitchCamera, Upload, X } from "lucide-react";
+import { Camera, Check, ChevronDown, ImageUp, Loader2, ScanLine, Sparkles, SwitchCamera, Upload, X } from "lucide-react";
 import { getScannerAccess, scanFood, updateFoodScan } from "@/lib/scanner.functions";
-import { STUDENT_SCANNER_PLANS, trialDaysLeft } from "@/lib/scanner";
+import { trialDaysLeft } from "@/lib/scanner";
 import { cn } from "@/lib/utils";
 
 type Scan = {
@@ -144,7 +144,6 @@ export function ScannerTab() {
       </div>}
     </section>}
 
-    <section className="flex flex-col gap-3"><h3 className="text-xs font-semibold tracking-[0.2em] text-muted-foreground">COMING SOON</h3>{STUDENT_SCANNER_PLANS.filter((plan) => plan.status === "coming_soon").map((plan) => <div key={plan.version} className="scanner-card p-5 opacity-80"><div className="flex items-center justify-between gap-2"><p className="text-sm font-semibold">Version {plan.version} — {plan.name}</p><span className="scanner-pill"><Lock className="mr-1 inline h-3 w-3" />Coming soon</span></div><ul className="mt-2 text-xs text-muted-foreground">{plan.features.map((feature) => <li key={feature}>· {feature}</li>)}</ul></div>)}</section>
   </div>;
 }
 
