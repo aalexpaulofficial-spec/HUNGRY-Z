@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { QRCodeCanvas } from "qrcode.react";
 import { useServerFn } from "@tanstack/react-start";
-import { Home, UtensilsCrossed, Receipt, User, ScanLine, Plus, Minus, ShoppingBag, Clock, X, Check, LogOut, Repeat, MapPin, Store, Download } from "lucide-react";
+import { Home, UtensilsCrossed, Receipt, User, ScanLine, Plus, Minus, ShoppingBag, Clock, X, Check, LogOut, Repeat, MapPin, Store, Download, Ticket } from "lucide-react";
 import { LogoMark } from "@/components/foodexa/LogoMark";
 import { CanteenTemplateBanner } from "@/components/foodexa/CanteenTemplateBanner";
 import { FeedbackDialog } from "@/components/foodexa/FeedbackDialog";
@@ -52,6 +52,8 @@ import { clearSessionState, useSessionState } from "@/lib/session-state";
 import { privacyPolicy, termsConditions } from "@/content/legal";
 import { downloadOrderBillPdf } from "@/lib/order-bill-pdf";
 import { describeTodayHours, formatCanteenTime, nextScheduledOpening, type WeeklyHours } from "@/lib/canteen-availability";
+import { EventCapacityPanel } from "@/components/foodexa/EventCapacityPanel";
+import { StudentEventsTab } from "@/components/foodexa/StudentEventsTab";
 import { createOrderQrUrl } from "@/lib/order-qr";
 import { z } from "zod";
 
@@ -84,7 +86,8 @@ type Order = {
   order_type: string; created_at: string; prep_minutes: number; counter: string; status: string; canteen_id: string;
 };
 type Refund = { id: string; order_id: string; amount: number; status: string; admin_note: string | null; created_at: string };
-type Tab = "home" | "menu" | "orders" | "you" | "scan";
+type Tab = "home" | "menu" | "events" | "orders" | "you" | "scan";
+type SelectedEvent = { id: string; name: string; event_code: string };
 
 const uid = () => Math.random().toString(36).slice(2);
 
@@ -114,6 +117,9 @@ function OrderingApp() {
   const [socialThankYouOpen, setSocialThankYouOpen] = useState(false);
   const [qrOrderMessage, setQrOrderMessage] = useState("");
   const [qrOrder, setQrOrder] = useState<Order | null>(null);
+  const [activeEvent, setActiveEvent] = useState<SelectedEvent | null>(null);
+  const [eventReceipt, setEventReceipt] = useState<{ token: string; eventName: string; canteenName: string; orderId: string; lines: { name: string; qty: number; price: number }[] } | null>(null);
+  const [publishedEventCount, setPublishedEventCount] = useState(0);
   const [availabilityNow, setAvailabilityNow] = useState(() => new Date());
   useBackStep(tab !== "home", () => setTab("home"));
   useBackStep(!!detail, () => setDetail(null));
@@ -195,6 +201,21 @@ function OrderingApp() {
       alive = false;
       supabase.removeChannel(ch);
     };
+  }, [canteenId]);
+
+  useEffect(() => {
+    if (!canteenId) { setPublishedEventCount(0); return; }
+    let alive = true;
+    const loadPublishedEvents = async () => {
+      const { count, error } = await supabase.from("faculty_events").select("id", { count: "exact", head: true }).eq("canteen_id", canteenId).eq("status", "published");
+      if (alive && !error) setPublishedEventCount(count ?? 0);
+    };
+    void loadPublishedEvents();
+    const channel = supabase.channel(`published-event-count-${canteenId}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "faculty_events", filter: `canteen_id=eq.${canteenId}` }, loadPublishedEvents)
+      .subscribe();
+    const retry = window.setInterval(() => void loadPublishedEvents(), 15000);
+    return () => { alive = false; window.clearInterval(retry); void supabase.removeChannel(channel); };
   }, [canteenId]);
 
   const userId = profile?.id;
@@ -314,6 +335,7 @@ function OrderingApp() {
 
   const ordering = canAcceptOrders(canteen, availabilityNow);
   const nextOpen = canteen.availability_mode === "open" ? null : nextScheduledOpening(canteen, availabilityNow);
+  const navTabs = [["home", "HOME", Home], ["menu", "MENU", UtensilsCrossed], ["scan", "HUNGRY AI", ScanLine], ["events", "EVENTS", Ticket], ["orders", "ORDERS", Receipt], ["you", "YOU", User]] as const;
 
   return (
     <div className="min-h-screen bg-background">
@@ -345,8 +367,12 @@ function OrderingApp() {
           <motion.main key={tab} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.25 }} className="px-5">
             {tab === "home" && <HomeTab menu={liveMenu} canteen={canteen} template={canteenTemplate} onOpen={setDetail} onAdd={add} goMenu={() => setTab("menu")} />}
             {tab === "menu" && <MenuTab menu={liveMenu} onOpen={setDetail} onAdd={add} />}
+            {tab === "events" && <div className="space-y-8">
+              {profile.role === "faculty" && <EventCapacityPanel mode="faculty" canteenId={canteen.id} canteenName={canteen.name} />}
+              <StudentEventsTab canteenId={canteen.id} canteenName={canteen.name} menu={liveMenu} cart={cart} userId={profile.id} onAdd={add} onGetToken={(event) => { setActiveEvent(event); setCheckout(true); }} />
+            </div>}
             {tab === "orders" && <OrdersTab orders={orders} onOpen={(o) => setOpenOrderId(o.id)} />}
-            {tab === "scan" && profile.role === "student" && <ScannerTab />}
+            {tab === "scan" && <ScannerTab />}
             {tab === "you" && <YouTab profile={profile} canteen={canteen} onSwitch={() => setSwitching(true)} onSignOut={signOut} />}
           </motion.main>
         </AnimatePresence>
@@ -359,9 +385,9 @@ function OrderingApp() {
         )}
 
         <nav className="glass fixed inset-x-0 bottom-0 z-40 mx-auto flex max-w-3xl justify-around rounded-t-3xl px-1.5 pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-3 sm:px-2">
-          {(profile.role === "student" ? [["home", "HOME", Home], ["menu", "MENU", UtensilsCrossed], ["scan", "HUNGRY AI", ScanLine], ["orders", "ORDERS", Receipt], ["you", "YOU", User]] as const : [["home", "HOME", Home], ["menu", "MENU", UtensilsCrossed], ["orders", "ORDERS", Receipt], ["you", "YOU", User]] as const).map(([k, label, Icon]) => (
+          {navTabs.map(([k, label, Icon]) => (
             <button key={k} onClick={() => setTab(k)} className={cn("flex min-w-0 flex-1 flex-col items-center gap-1 whitespace-nowrap py-1 text-[8px] font-bold tracking-normal transition sm:text-[10px] sm:tracking-widest", tab === k ? "text-primary-bright" : "text-muted-foreground")}>
-              <Icon className={cn("h-5 w-5 transition", tab === k && "scale-110")} />
+              <span className="relative"><Icon className={cn("h-5 w-5 transition", tab === k && "scale-110")} />{k === "events" && publishedEventCount > 0 && <span className="absolute -right-5 -top-2 whitespace-nowrap rounded-full bg-primary px-1.5 py-0.5 text-[7px] leading-none tracking-normal text-primary-foreground">NEW · {publishedEventCount}</span>}</span>
               {label}
             </button>
           ))}
@@ -374,19 +400,34 @@ function OrderingApp() {
       <Sheet open={checkout} onClose={() => setCheckout(false)}>
         <Checkout
           cart={cart}
+          event={activeEvent}
           subtotal={subtotal}
           ordering={ordering}
           closedMessage={canteen.availability_mode === "closed" ? "The owner has temporarily closed this canteen." : canteen.visibility === "maintenance" ? "The canteen is under maintenance." : `The canteen is outside its operating hours (${describeTodayHours(canteen, availabilityNow)} IST).`}
           onAdd={add}
-          onPlaced={(id, msg, showThankYou) => {
+          onPlaced={(id, msg, showThankYou, token) => {
+            if (token && activeEvent) setEventReceipt({ token, eventName: activeEvent.name, canteenName: canteen.name, orderId: id, lines: cart.map(({ item, qty }) => ({ name: item.name, qty, price: item.price })) });
             setCart([]);
             setCheckout(false);
+            setActiveEvent(null);
             setNotice(msg ?? "");
             setTab("orders");
             setOpenOrderId(id);
             if (showThankYou) setSocialThankYouOpen(true);
           }}
         />
+      </Sheet>
+      <Sheet open={!!eventReceipt} onClose={() => setEventReceipt(null)}>
+        {eventReceipt && <div className="p-6 text-center">
+          <div className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-primary/15 text-primary-bright"><Ticket className="h-6 w-6" /></div>
+          <p className="mt-4 text-xs font-bold uppercase tracking-[0.2em] text-primary-bright">Event token confirmed</p>
+          <h2 className="display mt-2 text-3xl">{eventReceipt.token}</h2>
+          <p className="mt-1 text-sm font-semibold">{eventReceipt.eventName}</p>
+          <p className="mt-1 text-xs text-muted-foreground">Show this token at {eventReceipt.canteenName}</p>
+          <div className="mx-auto mt-5 grid w-fit place-items-center rounded-2xl bg-white p-3"><QRCodeCanvas value={`${eventReceipt.orderId}:${eventReceipt.token}`} size={152} /></div>
+          <div className="mt-5 rounded-2xl bg-ink-soft p-4 text-left"><p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Food order</p>{eventReceipt.lines.map((line, index) => <p key={`${line.name}-${index}`} className="mt-2 text-sm">{line.qty}× {line.name} · ₹{line.price * line.qty}</p>)}<p className="mt-3 border-t border-border pt-3 text-sm font-semibold">{eventReceipt.canteenName}</p></div>
+          <button type="button" onClick={() => setEventReceipt(null)} className="mt-5 w-full rounded-full bg-primary py-3 text-sm font-semibold text-primary-foreground">Done</button>
+        </div>}
       </Sheet>
       <Sheet open={!!openOrderId} onClose={closeOrderDetails}>
         {openOrder ? <OrderDetail order={openOrder} canteenName={openOrder.canteen_name ?? (openOrder.canteen_id === canteen.id ? canteen.name : "Canteen")} refund={refunds.find((r) => r.order_id === openOrder.id) ?? null} notice={notice} onNotice={setNotice} /> : (
@@ -722,7 +763,7 @@ function useRazorpayPay() {
   );
 }
 
-function Checkout({ cart, subtotal, ordering, closedMessage, onAdd, onPlaced }: { cart: CartLine[]; subtotal: number; ordering: boolean; closedMessage: string; onAdd: (i: MenuItem, d: number) => void; onPlaced: (id: string, message?: string, showThankYou?: boolean) => void }) {
+function Checkout({ cart, subtotal, ordering, closedMessage, onAdd, onPlaced, event }: { cart: CartLine[]; subtotal: number; ordering: boolean; closedMessage: string; event: SelectedEvent | null; onAdd: (i: MenuItem, d: number) => void; onPlaced: (id: string, message?: string, showThankYou?: boolean, eventToken?: string) => void }) {
   const place = useServerFn(placeOrder);
   const quote = useServerFn(quoteOrder);
   const cfgFn = useServerFn(getPaymentConfig);
@@ -745,10 +786,11 @@ function Checkout({ cart, subtotal, ordering, closedMessage, onAdd, onPlaced }: 
     cfgFn()
       .then((c) => {
         setCfg(c);
-        if (c.onlineEnabled) setMethod("razorpay");
+        if (c.onlineEnabled && !event) setMethod("razorpay");
+        if (event) setMethod("counter");
       })
       .catch(() => setCfg({ onlineEnabled: false, testMode: false }));
-  }, [cfgFn]);
+  }, [cfgFn, event]);
 
   // Parcel orders are always paid at the counter.
   useEffect(() => {
@@ -779,7 +821,7 @@ function Checkout({ cart, subtotal, ordering, closedMessage, onAdd, onPlaced }: 
 
   const discount = applied?.discount ?? 0;
   const total = subtotal - discount;
-  const methods = allowedPaymentMethods(orderType).filter((m) => m !== "razorpay" || cfg?.onlineEnabled);
+  const methods = allowedPaymentMethods(orderType).filter((m) => event ? m === "counter" : m !== "razorpay" || cfg?.onlineEnabled);
 
   async function applyCoupon() {
     const code = couponInput.trim().toUpperCase();
@@ -803,9 +845,9 @@ function Checkout({ cart, subtotal, ordering, closedMessage, onAdd, onPlaced }: 
     setErr("");
     setBusy(true);
     try {
-      const r = await place({ data: { lines, orderType, paymentMethod: method, couponCode: applied?.code ?? null, idempotencyKey: idemKey } });
+      const r = await place({ data: { lines, orderType, paymentMethod: method, couponCode: applied?.code ?? null, idempotencyKey: idemKey, ...(event ? { eventId: event.id, eventCode: event.event_code } : {}) } });
       const emailNotice = r.emailSent === false ? " The email update could not be delivered yet; contact hungryofficialx@gmail.com if you need help." : "";
-      if (!r.payment) return onPlaced(r.orderId, `Order placed. Pay at the counter when you pick it up.${emailNotice}`);
+      if (!r.payment) return onPlaced(r.orderId, event ? `Event token ${r.eventToken ?? ""} confirmed. Pay at the counter at ${event.name}.${emailNotice}` : `Order placed. Pay at the counter when you pick it up.${emailNotice}`, false, r.eventToken ?? undefined);
       const res = await pay(r.payment);
       onPlaced(r.orderId, `${res.message}${emailNotice}`, res.ok);
     } catch (e) {
@@ -817,7 +859,7 @@ function Checkout({ cart, subtotal, ordering, closedMessage, onAdd, onPlaced }: 
 
   return (
     <div className="p-6">
-      <h3 className="display text-2xl">Your cart</h3>
+      <h3 className="display text-2xl">{event ? `Get token · ${event.name}` : "Your cart"}</h3>
       <div className="mt-5 space-y-3">
         {cart.map((l) => (
           <div key={l.item.id} className="flex items-center gap-3 rounded-2xl bg-ink-soft p-3">
@@ -877,7 +919,7 @@ function Checkout({ cart, subtotal, ordering, closedMessage, onAdd, onPlaced }: 
       {err && <p className="mt-3 text-center text-xs text-primary-bright">{err}</p>}
       {!ordering && <p role="status" className="mt-4 rounded-2xl border border-red-500/30 bg-red-500/10 p-3 text-center text-xs text-red-500">Orders are paused. {closedMessage}</p>}
       <button disabled={busy || !ordering || !cfg} onClick={submit} className="mt-5 w-full rounded-full bg-primary py-4 text-sm font-semibold text-primary-foreground hover:shadow-[0_0_40px_-6px_var(--primary-bright)] disabled:opacity-50">
-        {!ordering ? "Canteen not accepting orders" : busy ? (method === "razorpay" ? "Opening payment…" : "Placing order…") : method === "razorpay" ? `Pay ₹${total}` : `Place order · ₹${total}`}
+        {!ordering ? "Canteen not accepting orders" : busy ? (method === "razorpay" ? "Opening payment…" : "Placing order…") : event ? `GET TOKEN · ₹${total}` : method === "razorpay" ? `Pay ₹${total}` : `Place order · ₹${total}`}
       </button>
     </div>
   );

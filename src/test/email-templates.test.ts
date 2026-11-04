@@ -77,19 +77,24 @@ describe("HUNGRY Z order email content", () => {
       canteenDecisionEmail("approved", { canteenName: "Campus Cafe", university: "Campus University", code: "ABC1234", ownerLoginId: "OWNER01", ownerLoginCode: "PASS123" }),
     ];
     for (const email of emails) {
-      expect(email.html).toContain("https://hungryzq.vercel.app/HUNGRY%20Z%20Q%20LOGO.png");
+      expect(email.html.match(/alt="Official HUNGRY Z logo"/g)).toHaveLength(2);
+      expect(email.html.indexOf("Official HUNGRY Z logo")).toBeLessThan(email.html.indexOf("<h1"));
+      expect(email.html).toContain("HUNGRY Z</p>");
       expect(email.html).toContain('href="https://www.instagram.com/hungryz___?obrf=MTBoOHp3ZjJzZW9tdg=="');
       expect(email.html).toContain('href="https://chat.whatsapp.com/LlhEK43VNYE6zWZBX9hYqM"');
       expect(email.html).toContain('href="https://www.linkedin.com/company/hungryz/"');
-      expect(email.html).toContain('href="https://hungryzq.vercel.app/privacy"');
-      expect(email.html).toContain('href="https://hungryzq.vercel.app/terms"');
+      expect(email.html).toContain('href="https://hungryz.vercel.app/privacy"');
+      expect(email.html).toContain('href="https://hungryz.vercel.app/terms"');
       expect(email.html).toContain('aria-label="Instagram"');
       expect(email.html).toContain('aria-label="WhatsApp"');
       expect(email.html).toContain('aria-label="LinkedIn"');
-      expect(email.html.match(/Red%20Social%20Media%20Icons%20Trio\.png/g)).toHaveLength(3);
-      expect(email.html).toContain("background-position:0 0");
-      expect(email.html).toContain("background-position:-34px 0");
-      expect(email.html).toContain("background-position:-68px 0");
+      expect(email.html).toContain("https://hungryz.vercel.app/email-instagram.png");
+      expect(email.html).toContain("https://hungryz.vercel.app/email-whatsapp.png");
+      expect(email.html).toContain("https://hungryz.vercel.app/email-linkedin.png");
+      expect(email.html).not.toContain("background-image");
+      expect(email.html).toContain('width="32" height="32"');
+      expect(email.html).toContain('width="64" height="64"');
+      expect(email.html).toContain('width="42" height="42"');
     }
   });
 

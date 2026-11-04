@@ -20,6 +20,7 @@ import { LanguageSelect, localizeDashboard, useDashboardLanguage } from "@/lib/d
 import { isStandaloneApp } from "@/lib/pwa-install";
 import { HeroInstallButton } from "@/components/foodexa/HeroInstallButton";
 import { CanteenAnalytics } from "@/components/foodexa/CanteenAnalytics";
+import { EventCapacityPanel } from "@/components/foodexa/EventCapacityPanel";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { FeedbackDialog } from "@/components/foodexa/FeedbackDialog";
 import { LegalDialog } from "@/components/foodexa/LegalDialog";
@@ -246,7 +247,9 @@ const uid = () => Math.random().toString(36).slice(2);
 const NEXT: Record<string, string | undefined> = { placed: "preparing", preparing: "ready", ready: "collected" };
 const BANNER_IMAGE_TYPES: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/avif": "avif" };
 export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { canteen: Canteen; onSignOut: () => void; language: "en" | "hi" | "kn"; onLanguageChange: (language: "en" | "hi" | "kn") => void }) {
-  const [tab, setTab] = useSessionState<"menu" | "orders" | "template" | "analytics">(`hungry-canteen-dashboard-tab-${canteen.id}`, "menu");
+  const [tab, setTab] = useSessionState<"menu" | "orders" | "template" | "analytics" | "events">(`hungry-canteen-dashboard-tab-${canteen.id}`, "menu");
+  const [pendingEventRequests, setPendingEventRequests] = useState(0);
+  const [eventUpdateNotice, setEventUpdateNotice] = useState(false);
   const [menu, setMenu] = useState<MenuItem[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [editing, setEditing] = useState<Partial<MenuItem> | null>(null);
@@ -279,6 +282,23 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
   const move = useServerFn(ownerUpdateOrderStatus);
   const recordConfirmedPrint = useServerFn(ownerRecordConfirmedBillPrint);
   const saveAvailability = useServerFn(saveCanteenAvailability);
+
+  useEffect(() => {
+    const loadPendingEventRequests = async () => {
+      const [capacityRequests, facultyEvents] = await Promise.all([
+        supabase.from("faculty_event_capacity_requests").select("id", { count: "exact", head: true }).eq("status", "pending"),
+        supabase.from("faculty_events").select("id", { count: "exact", head: true }).eq("canteen_id", canteen.id).eq("status", "requested"),
+      ]);
+      if (!capacityRequests.error && !facultyEvents.error) setPendingEventRequests((capacityRequests.count ?? 0) + (facultyEvents.count ?? 0));
+    };
+    void loadPendingEventRequests();
+    const channel = supabase.channel(`canteen-event-notifications-${canteen.id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "faculty_event_capacity_requests" }, () => { setEventUpdateNotice(true); void loadPendingEventRequests(); })
+      .on("postgres_changes", { event: "*", schema: "public", table: "faculty_events", filter: `canteen_id=eq.${canteen.id}` }, () => { setEventUpdateNotice(true); void loadPendingEventRequests(); })
+      .subscribe();
+    const retry = window.setInterval(() => void loadPendingEventRequests(), 15000);
+    return () => { window.clearInterval(retry); void supabase.removeChannel(channel); };
+  }, [canteen.id]);
 
   useEffect(() => {
     setPrinterPaperWidth(readPrinterPaperWidth(canteen.id));
@@ -582,8 +602,8 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
           onSave={updateAvailability}
         />
         <div className="mt-6 flex flex-wrap items-center gap-2">
-          {([['menu', `Menu (${menu.length})`], ['orders', `Live Orders (${orders.filter((o) => o.status !== "collected" && o.status !== "cancelled").length})`], ['template', "Change Template"], ['analytics', "Analytics"]] as const).map(([k, l]) => (
-            <button key={k} type="button" onClick={() => setTab(k)} className={cn("rounded-full border px-4 py-2 text-xs font-semibold", tab === k ? "border-primary bg-primary text-primary-foreground" : "border-border text-muted-foreground")}>{l}</button>
+          {([['menu', `Menu (${menu.length})`], ['orders', `Live Orders (${orders.filter((o) => o.status !== "collected" && o.status !== "cancelled").length})`], ['events', `${eventUpdateNotice ? "• " : ""}${pendingEventRequests ? `Faculty Events (${pendingEventRequests} requests)` : "Faculty Events"}`], ['template', "Change Template"], ['analytics', "Analytics"]] as const).map(([k, l]) => (
+            <button key={k} type="button" onClick={() => { setTab(k); if (k === "events") setEventUpdateNotice(false); }} className={cn("rounded-full border px-4 py-2 text-xs font-semibold", tab === k ? "border-primary bg-primary text-primary-foreground" : "border-border text-muted-foreground")}>{l}</button>
           ))}
           {tab === "orders" && <button type="button" onClick={() => { setPrinterSettingsOpen((open) => !open); setPrinterSettingsMsg(""); }} aria-expanded={printerSettingsOpen} className="ml-auto inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-xs font-semibold text-muted-foreground transition hover:border-primary/50 hover:text-foreground"><Settings className="h-3.5 w-3.5" /> Printer Settings</button>}
         </div>
@@ -665,6 +685,8 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
           </form>
         ) : tab === "analytics" ? (
           <CanteenAnalytics canteenId={canteen.id} canteenName={canteen.name} />
+        ) : tab === "events" ? (
+          <div className="mt-6"><EventCapacityPanel mode="canteen" canteenId={canteen.id} canteenName={canteen.name} /></div>
         ) : (
           <div className="mt-6">
             <button onClick={() => { setFoodImageFile(null); setFoodImagePreview(null); setEditing({ veg: true, available: true }); }} className="flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-xs font-semibold text-primary-foreground"><Plus className="h-4 w-4" /> Add item</button>

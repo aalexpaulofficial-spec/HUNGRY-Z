@@ -1,0 +1,256 @@
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { supabase } from "@/integrations/supabase/client";
+import { createFacultyEvent, publishFacultyEvent, requestFacultyEventCapacity, resolveFacultyEventCapacity, reviewFacultyEventRequest, updateFacultyEvent } from "@/lib/hungry.functions";
+
+type EventRow = {
+  id: string; faculty_user_id: string; canteen_id: string; name: string; event_code: string; token_prefix: string;
+  description: string; food_requirements: Record<string, number>; initial_capacity: number; approved_capacity: number;
+  status: string; canteen_note: string; food_confirmation: { quantities?: Record<string, number>; prices?: Record<string, number> }; created_at: string;
+};
+type RequestRow = {
+  id: string; event_id: string; additional_tokens: number; proposed_capacity: number; revised_food_quantities: Record<string, number>;
+  status: string; canteen_note: string; created_at: string;
+};
+type TokenRow = { id: string; event_id: string; status: string; token_number: string };
+
+export function EventCapacityPanel({ mode, canteenId, canteenName }: { mode: "faculty" | "canteen"; canteenId: string; canteenName: string }) {
+  const [events, setEvents] = useState<EventRow[]>([]);
+  const [requests, setRequests] = useState<RequestRow[]>([]);
+  const [tokens, setTokens] = useState<TokenRow[]>([]);
+  const [name, setName] = useState("");
+  const [eventCode, setEventCode] = useState("");
+  const [capacity, setCapacity] = useState("100");
+  const [description, setDescription] = useState("");
+  const [foodJson, setFoodJson] = useState("{}");
+  const [additional, setAdditional] = useState<Record<string, string>>({});
+  const [quantities, setQuantities] = useState<Record<string, string>>({});
+  const [notes, setNotes] = useState<Record<string, string>>({});
+  const [prices, setPrices] = useState<Record<string, string>>({});
+  const [publishQuantities, setPublishQuantities] = useState<Record<string, string>>({});
+  const [publishPrices, setPublishPrices] = useState<Record<string, string>>({});
+  const [menuPrices, setMenuPrices] = useState<Record<string, number>>({});
+  const [editingEvent, setEditingEvent] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  const create = useServerFn(createFacultyEvent);
+  const requestCapacity = useServerFn(requestFacultyEventCapacity);
+  const resolve = useServerFn(resolveFacultyEventCapacity);
+  const review = useServerFn(reviewFacultyEventRequest);
+  const publish = useServerFn(publishFacultyEvent);
+  const updateDetails = useServerFn(updateFacultyEvent);
+
+  const load = useCallback(async () => {
+    const [eventResult, requestResult, tokenResult, menuResult] = await Promise.all([
+      supabase.from("faculty_events").select("*").eq("canteen_id", canteenId).order("created_at", { ascending: false }),
+      supabase.from("faculty_event_capacity_requests").select("*").order("created_at", { ascending: false }),
+      supabase.from("faculty_event_tokens").select("id,event_id,status,token_number").eq("canteen_id", canteenId),
+      supabase.from("menu_items").select("name,price").eq("canteen_id", canteenId).eq("available", true),
+    ]);
+    if (eventResult.data) setEvents(eventResult.data as EventRow[]);
+    if (requestResult.data) setRequests(requestResult.data as RequestRow[]);
+    if (tokenResult.data) setTokens(tokenResult.data as TokenRow[]);
+    if (menuResult.data) setMenuPrices(Object.fromEntries(menuResult.data.map((item) => [item.name, item.price])));
+    if (eventResult.error || requestResult.error || tokenResult.error || menuResult.error) setError("Event information could not be refreshed. Retrying automatically.");
+    else setError("");
+  }, [canteenId]);
+
+  useEffect(() => {
+    void load();
+    const channel = supabase.channel(`event-capacity-${mode}-${canteenId}-${Math.random().toString(36).slice(2)}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "faculty_events", filter: `canteen_id=eq.${canteenId}` }, load)
+      .on("postgres_changes", { event: "*", schema: "public", table: "faculty_event_capacity_requests" }, load)
+      .on("postgres_changes", { event: "*", schema: "public", table: "faculty_event_tokens", filter: `canteen_id=eq.${canteenId}` }, load)
+      .on("postgres_changes", { event: "*", schema: "public", table: "menu_items", filter: `canteen_id=eq.${canteenId}` }, load)
+      .subscribe();
+    const retry = window.setInterval(() => void load(), 15000);
+    return () => { window.clearInterval(retry); void supabase.removeChannel(channel); };
+  }, [canteenId, load, mode]);
+
+  const requestsByEvent = useMemo(() => {
+    const grouped = new Map<string, RequestRow[]>();
+    for (const request of requests) grouped.set(request.event_id, [...(grouped.get(request.event_id) ?? []), request]);
+    return grouped;
+  }, [requests]);
+
+  async function createEvent(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault(); setError(""); setMessage("");
+    let food: Record<string, number>;
+    try { food = JSON.parse(foodJson) as Record<string, number>; } catch { return setError("Food requirements must be a JSON object, for example {\"Lunch boxes\":100}."); }
+    setBusy(true);
+    try {
+      const result = await create({ data: { name, eventCode, description, initialCapacity: Number(capacity), foodRequirements: food } });
+      setMessage(`Event request sent to ${canteenName}. Event Code: ${result.event_code}. It will appear to users after canteen approval and publication.`); setName(""); setEventCode(""); setDescription(""); setFoodJson("{}");
+      await load();
+    } catch (caught) { setError(caught instanceof Error ? caught.message : "Could not create the event."); }
+    finally { setBusy(false); }
+  }
+
+  async function sendCapacityRequest(event: React.FormEvent<HTMLFormElement>, item: EventRow) {
+    event.preventDefault(); setError(""); setMessage("");
+    let food: Record<string, number>;
+    try { food = JSON.parse(quantities[item.id] ?? "{}") as Record<string, number>; } catch { return setError("Revised food quantities must be a JSON object."); }
+    setBusy(true);
+    try {
+      const result = await requestCapacity({ data: { eventId: item.id, additionalTokens: Number(additional[item.id]), revisedFoodQuantities: food } });
+      setMessage(`Additional capacity request sent. Proposed capacity: ${result.proposedCapacity}.`);
+      await load();
+    } catch (caught) { setError(caught instanceof Error ? caught.message : "Could not send the capacity request."); }
+    finally { setBusy(false); }
+  }
+
+  async function respond(request: RequestRow, approve: boolean) {
+    setError(""); setMessage(""); setBusy(true);
+    try {
+      let confirmedFoodQuantities: Record<string, number> = {};
+      let confirmedFoodPrices: Record<string, number> = {};
+      if (approve) {
+        try {
+          const event = events.find((row) => row.id === request.event_id);
+          confirmedFoodQuantities = JSON.parse(quantities[request.id] ?? JSON.stringify(request.revised_food_quantities)) as Record<string, number>;
+          confirmedFoodPrices = JSON.parse(prices[request.id] ?? JSON.stringify(Object.fromEntries(Object.keys(request.revised_food_quantities).map((food) => [food, menuPrices[food]])))) as Record<string, number>;
+          if (!event) throw new Error("The event linked to this request was removed.");
+        } catch { throw new Error("Confirmed quantities and prices must be valid JSON objects."); }
+      }
+      const result = await resolve({ data: { requestId: request.id, approve, note: notes[request.id] ?? "", confirmedFoodQuantities, confirmedFoodPrices } });
+      setMessage(result.status === "approved" ? "Additional capacity approved and activated." : "Capacity request rejected.");
+      await load();
+    } catch (caught) { setError(caught instanceof Error ? caught.message : "Could not update this request."); }
+    finally { setBusy(false); }
+  }
+
+  async function reviewEvent(event: EventRow, accept: boolean) {
+    setError(""); setMessage(""); setBusy(true);
+    try {
+      const result = await review({ data: { eventId: event.id, accept, note: notes[event.id] ?? "" } });
+      setMessage(result.status === "accepted" ? "Event accepted. Confirm quantities and prices, then publish it." : "Event request rejected.");
+      await load();
+    } catch (caught) { setError(caught instanceof Error ? caught.message : "Could not review this event."); }
+    finally { setBusy(false); }
+  }
+
+  async function publishEvent(event: EventRow) {
+    setError(""); setMessage(""); setBusy(true);
+    try {
+      const confirmedFoodQuantities = JSON.parse(publishQuantities[event.id] ?? JSON.stringify(event.food_requirements)) as Record<string, number>;
+      const confirmedFoodPrices = JSON.parse(publishPrices[event.id] ?? JSON.stringify(Object.fromEntries(Object.keys(event.food_requirements).map((food) => [food, menuPrices[food]])))) as Record<string, number>;
+      const result = await publish({ data: { eventId: event.id, confirmedFoodQuantities, confirmedFoodPrices, note: notes[event.id] ?? "" } });
+      setMessage(result.status === "published" ? "Event published. It is now available to students, faculty and guests." : "Event publication updated.");
+      await load();
+    } catch (caught) { setError(caught instanceof Error ? caught.message : "Could not publish this event."); }
+    finally { setBusy(false); }
+  }
+
+  async function saveDetails(event: EventRow, formEvent: React.FormEvent<HTMLFormElement>) {
+    formEvent.preventDefault(); setError(""); setMessage("");
+    const form = new FormData(formEvent.currentTarget);
+    let food: Record<string, number>;
+    try { food = JSON.parse(String(form.get("food"))) as Record<string, number>; } catch { return setError("Food requirements must be a JSON object."); }
+    setBusy(true);
+    try {
+      await updateDetails({ data: { eventId: event.id, name: String(form.get("name")), description: String(form.get("description")), foodRequirements: food } });
+      setEditingEvent(null); setMessage("Event details updated."); await load();
+    } catch (caught) { setError(caught instanceof Error ? caught.message : "Could not update event details."); }
+    finally { setBusy(false); }
+  }
+
+  return (
+    <section className="space-y-5" aria-label="Event token management">
+      {mode === "faculty" && <div><h2 className="display text-2xl">Manage My Events</h2><p className="mt-1 text-sm text-muted-foreground">Create events, review canteen responses and monitor event tokens.</p></div>}
+      {mode === "faculty" && <form onSubmit={createEvent} className="glass-red space-y-3 rounded-3xl p-5">
+        <h2 className="display text-xl">Create a Faculty Event</h2>
+        <input required minLength={2} maxLength={120} value={name} onChange={(event) => setName(event.currentTarget.value)} placeholder="Event name" aria-label="Event name" className="w-full rounded-2xl border border-input bg-ink-soft px-4 py-3 text-sm" />
+        <label className="block text-xs text-muted-foreground">Choose a unique 7-digit Event Code
+          <input required inputMode="numeric" pattern="[0-9]{7}" maxLength={7} value={eventCode} onChange={(event) => setEventCode(event.currentTarget.value.replace(/\D/g, "").slice(0, 7))} aria-label="7-digit Event Code" placeholder="1234567" className="mt-1 w-full rounded-2xl border border-input bg-ink-soft px-4 py-3 font-mono tracking-[0.3em] text-foreground" />
+        </label>
+        <p className="text-xs text-muted-foreground">This event will be sent privately to {canteenName}. It becomes visible to users after canteen approval and publication.</p>
+        <textarea maxLength={1000} value={description} onChange={(event) => setDescription(event.currentTarget.value)} placeholder="Event details" aria-label="Event details" className="w-full rounded-2xl border border-input bg-ink-soft px-4 py-3 text-sm" rows={2} />
+        <label className="block text-xs text-muted-foreground">Initial token capacity
+          <input required type="number" min={1} max={100000} value={capacity} onChange={(event) => setCapacity(event.currentTarget.value)} aria-label="Initial token capacity" className="mt-1 w-full rounded-2xl border border-input bg-ink-soft px-4 py-3 text-sm text-foreground" />
+        </label>
+        <label className="block text-xs text-muted-foreground">Requested food quantities by exact available menu name (JSON)
+          <textarea required value={foodJson} onChange={(event) => setFoodJson(event.currentTarget.value)} aria-label="Initial food quantities" placeholder='{"Lunch box":100}' rows={2} className="mt-1 w-full rounded-2xl border border-input bg-ink-soft px-4 py-3 font-mono text-xs text-foreground" />
+        </label>
+        <button disabled={busy} className="rounded-full bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground disabled:opacity-60">{busy ? "Sending…" : "Send Event Request"}</button>
+      </form>}
+
+      {(error || message) && <p role={error ? "alert" : "status"} className={`rounded-2xl border p-3 text-sm ${error ? "border-red-500/40 bg-red-500/10 text-red-500" : "border-emerald-500/30 bg-emerald-500/10 text-emerald-600"}`}>{error || message}</p>}
+      {!events.length && <p className="rounded-3xl border border-border bg-card p-6 text-center text-sm text-muted-foreground">No events for {canteenName} yet.</p>}
+
+      {events.map((event) => {
+        const eventTokens = tokens.filter((token) => token.event_id === event.id);
+        const issued = eventTokens.filter((token) => token.status !== "cancelled").length;
+        const collected = eventTokens.filter((token) => token.status === "collected").length;
+        const cancelled = eventTokens.filter((token) => token.status === "cancelled").length;
+        const eventRequests = requestsByEvent.get(event.id) ?? [];
+        const pending = eventRequests.some((request) => request.status === "pending");
+        return <article key={event.id} className="rounded-3xl border border-border bg-card p-5">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div><p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary-bright">{event.status} · {canteenName}</p><h3 className="display mt-1 text-xl">{event.name}</h3><p className="mt-1 text-xs text-muted-foreground">Event Code: <span className="font-mono font-bold tracking-widest text-foreground">{event.event_code}</span></p></div>
+            <span className="rounded-full border border-border px-3 py-1 text-xs font-semibold">{eventTokens.length}/{event.approved_capacity} tokens</span>
+          </div>
+          {event.description && <p className="mt-3 text-sm text-muted-foreground">{event.description}</p>}
+          {mode === "faculty" && <button type="button" onClick={() => setEditingEvent((current) => current === event.id ? null : event.id)} className="mt-3 rounded-full border border-border px-4 py-2 text-xs font-semibold text-muted-foreground">{editingEvent === event.id ? "Close event editor" : "Change event details"}</button>}
+          {mode === "faculty" && editingEvent === event.id && <form onSubmit={(formEvent) => saveDetails(event, formEvent)} className="mt-3 space-y-2 rounded-2xl border border-border p-4">
+            <input name="name" defaultValue={event.name} required minLength={2} maxLength={120} aria-label="Edit event name" className="w-full rounded-xl border border-input bg-ink-soft px-3 py-2 text-sm" />
+            <textarea name="description" defaultValue={event.description} maxLength={1000} aria-label="Edit event details" className="w-full rounded-xl border border-input bg-ink-soft px-3 py-2 text-sm" rows={2} />
+            <textarea name="food" defaultValue={JSON.stringify(event.food_requirements)} aria-label="Edit food requirements" className="w-full rounded-xl border border-input bg-ink-soft px-3 py-2 font-mono text-xs" rows={2} />
+            <button disabled={busy} className="rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50">Save event details</button>
+          </form>}
+          <div className="mt-4 grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
+            <Metric label="Original capacity" value={event.initial_capacity} />
+            <Metric label="Approved capacity" value={event.approved_capacity} />
+            <Metric label="Tokens issued" value={issued} />
+            <Metric label="Tokens remaining" value={Math.max(0, event.approved_capacity - eventTokens.length)} />
+            <Metric label="Tokens collected" value={collected} />
+            <Metric label="Cancelled tokens" value={cancelled} />
+            <Metric label="Canteen allocation" value={`${eventTokens.length} / ${event.approved_capacity}`} />
+          </div>
+          <p className="mt-3 text-xs text-muted-foreground">Food preparation requirements: {JSON.stringify(event.food_requirements)}</p>
+          {event.status === "published" && <p className="mt-2 text-xs text-muted-foreground">Canteen-confirmed quantities and prices: {JSON.stringify(event.food_confirmation)}</p>}
+          {event.canteen_note && <p className="mt-2 rounded-xl bg-ink-soft p-3 text-xs text-muted-foreground">Canteen response: {event.canteen_note}</p>}
+
+          {mode === "canteen" && event.status === "requested" && <div className="mt-4 space-y-3 rounded-2xl border border-primary/30 bg-primary/5 p-4">
+            <h4 className="text-sm font-bold">Faculty event request</h4>
+            <p className="text-xs text-muted-foreground">Accept or reject this request. Accepted events stay private until you confirm quantities and pricing and publish.</p>
+            <textarea maxLength={500} placeholder="Note for faculty (optional)" aria-label={`Review note for ${event.name}`} value={notes[event.id] ?? ""} onChange={(formEvent) => setNotes({ ...notes, [event.id]: formEvent.currentTarget.value })} className="w-full rounded-xl border border-input bg-ink-soft px-3 py-2 text-sm" />
+            <div className="flex flex-wrap gap-2"><button type="button" disabled={busy} onClick={() => reviewEvent(event, true)} className="rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50">Accept event request</button><button type="button" disabled={busy} onClick={() => reviewEvent(event, false)} className="rounded-full border border-border px-4 py-2 text-xs font-semibold text-muted-foreground disabled:opacity-50">Reject request</button></div>
+          </div>}
+          {mode === "canteen" && event.status === "accepted" && <div className="mt-4 space-y-3 rounded-2xl border border-primary/30 bg-primary/5 p-4">
+            <h4 className="text-sm font-bold">Confirm food quantities and prices</h4>
+            <p className="text-xs text-muted-foreground">Prices must match active menu prices. Update menu prices first if needed.</p>
+            <textarea aria-label={`Confirmed food quantities for ${event.name}`} value={publishQuantities[event.id] ?? JSON.stringify(event.food_requirements)} onChange={(formEvent) => setPublishQuantities({ ...publishQuantities, [event.id]: formEvent.currentTarget.value })} rows={2} className="w-full rounded-xl border border-input bg-ink-soft px-3 py-2 font-mono text-xs" />
+            <textarea aria-label={`Confirmed food prices for ${event.name}`} value={publishPrices[event.id] ?? JSON.stringify(Object.fromEntries(Object.keys(event.food_requirements).map((food) => [food, menuPrices[food]])))} onChange={(formEvent) => setPublishPrices({ ...publishPrices, [event.id]: formEvent.currentTarget.value })} rows={2} className="w-full rounded-xl border border-input bg-ink-soft px-3 py-2 font-mono text-xs" />
+            <button type="button" disabled={busy} onClick={() => publishEvent(event)} className="rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50">Confirm and publish event</button>
+          </div>}
+
+          {mode === "faculty" && event.status === "published" && <form onSubmit={(formEvent) => sendCapacityRequest(formEvent, event)} className="mt-4 space-y-2 border-t border-border pt-4">
+            <h4 className="text-sm font-semibold">Request additional tokens</h4>
+            {pending && <p className="text-xs text-amber-600">A request is waiting for the canteen to confirm food quantities.</p>}
+            <div className="grid gap-2 sm:grid-cols-2">
+              <input required type="number" min={1} max={100000} placeholder="Additional tokens" aria-label={`Additional tokens for ${event.name}`} value={additional[event.id] ?? ""} onChange={(formEvent) => setAdditional({ ...additional, [event.id]: formEvent.currentTarget.value })} className="rounded-xl border border-input bg-ink-soft px-3 py-2 text-sm" />
+              <input placeholder='Revised food JSON, e.g. {"Lunch boxes":10}' aria-label={`Revised food quantities for ${event.name}`} value={quantities[event.id] ?? "{}"} onChange={(formEvent) => setQuantities({ ...quantities, [event.id]: formEvent.currentTarget.value })} className="rounded-xl border border-input bg-ink-soft px-3 py-2 font-mono text-xs" />
+            </div>
+            <button disabled={busy || pending} className="rounded-full border border-primary/50 px-4 py-2 text-xs font-semibold text-primary-bright disabled:opacity-50">Send canteen confirmation request</button>
+            {eventRequests.map((request) => <p key={request.id} className="text-xs text-muted-foreground">+{request.additional_tokens} requested · proposed {request.proposed_capacity} · {request.status}{request.canteen_note ? ` — ${request.canteen_note}` : ""}</p>)}
+          </form>}
+
+          {mode === "canteen" && eventRequests.filter((request) => request.status === "pending").map((request) => <div key={request.id} className="mt-4 space-y-3 rounded-2xl border border-primary/30 bg-primary/5 p-4">
+            <h4 className="text-sm font-bold">Additional quantity confirmation</h4>
+            <p className="text-xs text-muted-foreground">Faculty requested +{request.additional_tokens} tokens. Proposed capacity: {request.proposed_capacity}. Currently approved: {event.approved_capacity}. Tokens issued: {issued}. Remaining: {Math.max(0, event.approved_capacity - eventTokens.length)}.</p>
+            <p className="text-xs text-muted-foreground">Revised food quantities: <span className="font-mono text-foreground">{JSON.stringify(request.revised_food_quantities)}</span></p>
+            <textarea aria-label={`Confirmed revised food quantities for ${event.name}`} value={quantities[request.id] ?? JSON.stringify(request.revised_food_quantities)} onChange={(formEvent) => setQuantities({ ...quantities, [request.id]: formEvent.currentTarget.value })} rows={2} className="w-full rounded-xl border border-input bg-ink-soft px-3 py-2 font-mono text-xs" />
+            <textarea aria-label={`Confirmed revised food prices for ${event.name}`} value={prices[request.id] ?? JSON.stringify(Object.fromEntries(Object.keys(request.revised_food_quantities).map((food) => [food, menuPrices[food]])))} onChange={(formEvent) => setPrices({ ...prices, [request.id]: formEvent.currentTarget.value })} rows={2} className="w-full rounded-xl border border-input bg-ink-soft px-3 py-2 font-mono text-xs" />
+            <input maxLength={500} placeholder="Note for faculty (optional)" aria-label={`Confirmation note for ${event.name}`} value={notes[request.id] ?? ""} onChange={(formEvent) => setNotes({ ...notes, [request.id]: formEvent.currentTarget.value })} className="w-full rounded-xl border border-input bg-ink-soft px-3 py-2 text-sm" />
+            <div className="flex gap-2"><button type="button" disabled={busy} onClick={() => respond(request, true)} className="rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50">Confirm preparation capacity</button><button type="button" disabled={busy} onClick={() => respond(request, false)} className="rounded-full border border-border px-4 py-2 text-xs font-semibold text-muted-foreground disabled:opacity-50">Reject request</button></div>
+          </div>)}
+        </article>;
+      })}
+    </section>
+  );
+}
+
+function Metric({ label, value }: { label: string; value: string | number }) {
+  return <div className="rounded-xl bg-ink-soft p-3"><p className="text-muted-foreground">{label}</p><p className="mt-1 font-bold text-foreground">{value}</p></div>;
+}

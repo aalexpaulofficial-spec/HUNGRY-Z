@@ -23,7 +23,7 @@ describe("dashboard support and legal dialogs", () => {
     const { container } = render(<LegalDialog legalDocument={privacyPolicy} onClose={onClose} />);
 
     expect(screen.getByRole("dialog", { name: "Privacy Policy" })).toBeInTheDocument();
-    expect(screen.getByText("8. Changes and contact")).toBeInTheDocument();
+    expect(screen.getByText("9. Changes and contact")).toBeInTheDocument();
     expect(container.querySelector("[role='dialog'] .overflow-y-auto")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Close legal information" }));
     expect(onClose).toHaveBeenCalledOnce();
@@ -33,7 +33,7 @@ describe("dashboard support and legal dialogs", () => {
     render(<LegalDialog legalDocument={termsConditions} onClose={() => undefined} />);
 
     expect(screen.getByRole("dialog", { name: "Terms & Conditions" })).toBeInTheDocument();
-    expect(screen.getByText("8. Support and updates")).toBeInTheDocument();
+    expect(screen.getByText("10. Support and updates")).toBeInTheDocument();
   });
 
   it("closes a legal popup with Escape without changing its dashboard route", () => {

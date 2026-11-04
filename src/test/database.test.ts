@@ -40,24 +40,81 @@ CREATE PUBLICATION supabase_realtime;`);
     await db.exec(readFileSync(path.join(root, "database/010_support_requests.sql"), "utf8"));
     await db.exec(readFileSync(path.join(root, "database/011_canteen_availability.sql"), "utf8"));
     await db.exec(readFileSync(path.join(root, "database/012_canteen_ist_timezone.sql"), "utf8"));
+    await db.exec(readFileSync(path.join(root, "drizzle/migrations/0004_registration_terms_consent.sql"), "utf8"));
+    await db.exec(readFileSync(path.join(root, "drizzle/migrations/0005_faculty_event_tokens.sql"), "utf8"));
+    await db.exec(readFileSync(path.join(root, "drizzle/migrations/0006_faculty_event_review_and_menu.sql"), "utf8"));
 
     const failures: string[] = [];
     const ok = (c: boolean | undefined, m: string) => { if (!c) failures.push(m); };
     const q = async (s: string, p?: unknown[]) => (await db.query<any>(s, p)).rows;
     const err = async (s: string, p?: unknown[]) => { try { await db.query(s, p); return null; } catch (e) { return (e as Error).message; } };
 
-    const [a] = await q(`INSERT INTO auth.users (email, raw_user_meta_data) VALUES ('a@x.com', '{"role":"student","full_name":"Asha K","registration_number":"R1"}') RETURNING id`);
-    const [b] = await q(`INSERT INTO auth.users (email, raw_user_meta_data) VALUES ('b@x.com', '{"role":"guest","full_name":"Bala"}') RETURNING id`);
-    await q(`INSERT INTO auth.users (email, raw_user_meta_data) VALUES ('f@x.com', '{"role":"faculty","full_name":"Faculty User","registration_number":"F1"}')`);
+    const consentMeta = `"accepted_terms":true,"terms_version":"2026-11-04"`;
+    const [a] = await q(`INSERT INTO auth.users (email, raw_user_meta_data) VALUES ('a@x.com', '{"role":"student","full_name":"Asha K","registration_number":"R1",${consentMeta}}') RETURNING id`);
+    const [b] = await q(`INSERT INTO auth.users (email, raw_user_meta_data) VALUES ('b@x.com', '{"role":"guest","full_name":"Bala",${consentMeta}}') RETURNING id`);
+    const [faculty] = await q(`INSERT INTO auth.users (email, raw_user_meta_data) VALUES ('f@x.com', '{"role":"faculty","full_name":"Faculty User","registration_number":"F1",${consentMeta}}') RETURNING id`);
     const [owner] = await q(`INSERT INTO auth.users (email, raw_user_meta_data) VALUES ('owner@owners.hungry.invalid', '{"role":"canteen_owner","full_name":"Owner User"}') RETURNING id`);
     ok((await q(`SELECT count(*)::int n FROM profiles`))[0].n === 3, "student, faculty, and guest users receive profiles but owner identities do not");
     const [c] = await q(`INSERT INTO canteens (code, name, university_name, campus_location, contact_email, owner_user_id) VALUES ('ABC1234','Main','Uni','Block A','o@x.com',$1) RETURNING id`, [owner.id]);
+    await q(`UPDATE profiles SET current_canteen_id=$1 WHERE id IN ($2,$3,$4)`, [c.id, a.id, b.id, faculty.id]);
+    ok((await q(`SELECT privacy_accepted_at IS NOT NULL AND terms_accepted_at IS NOT NULL AS accepted FROM profiles WHERE id=$1`, [a.id]))[0].accepted, "signup consent is recorded server-side on the customer profile");
+    ok(!!(await err(`INSERT INTO auth.users (email,raw_user_meta_data) VALUES ('no-consent@x.com','{"role":"student","full_name":"No Consent","registration_number":"R2"}')`)), "student signup without consent is rejected by the auth.users trigger");
+    const [event1] = await q(`INSERT INTO faculty_events (faculty_user_id,canteen_id,name,event_code,token_prefix,initial_capacity,approved_capacity,status,food_confirmation) VALUES ($1,$2,'Hackathon','1000001','H',100,100,'published','{"quantities":{"Tea":10},"prices":{"Tea":20}}') RETURNING id`, [faculty.id, c.id]);
+    ok((await q(`SELECT initial_capacity=100 AND approved_capacity=100 AS initial FROM faculty_events WHERE id=$1`, [event1.id]))[0].initial, "faculty event starts with the requested capacity of 100");
+    const eventOrder = (event: string, code: string, user: string, key: string, number: string) => q(
+      `SELECT * FROM hungry_place_event_order($1,$2,$3,$4,'Event participant',$5::jsonb,'dine_in','counter',20,null,0,$6,$7,'1234')`,
+      [event, code, user, c.id, JSON.stringify([{ id: m2.id, qty: 1 }]), key, number],
+    );
     ok(!!(await err(`UPDATE canteens SET timezone='UTC' WHERE id=$1`, [c.id])), "database keeps all canteen schedules in IST");
     const [supportRequest] = await q(`INSERT INTO support_requests (submission_id,user_id,canteen_id,sender_name,sender_email,sender_role,category,description,rating) VALUES (gen_random_uuid(),$1,$2,'Asha K','a@x.com','student','Rate Us','Great service',5) RETURNING id`, [a.id, c.id]);
     ok(!!supportRequest.id && (await q(`SELECT email_status FROM support_requests WHERE id=$1`, [supportRequest.id]))[0].email_status === "pending", "rating and comments are persisted before email delivery");
     ok(!!(await err(`INSERT INTO support_requests (submission_id,user_id,sender_name,sender_role,category,description) VALUES (gen_random_uuid(),$1,'Asha K','student','Rate Us','Missing rating')`, [a.id])), "Rate Us submissions require a one-to-five-star rating");
     const [m1] = await q(`INSERT INTO menu_items (canteen_id, name, price, stock) VALUES ($1,'Dosa',50,3) RETURNING id`, [c.id]);
     const [m2] = await q(`INSERT INTO menu_items (canteen_id, name, price) VALUES ($1,'Tea',20) RETURNING id`, [c.id]);
+
+    const [requestedEvent] = await q(`INSERT INTO faculty_events (faculty_user_id,canteen_id,name,event_code,token_prefix,initial_capacity,approved_capacity,food_requirements) VALUES ($1,$2,'Requested','1000004','R',5,5,'{"Tea":5}') RETURNING id,status`, [faculty.id, c.id]);
+    ok(requestedEvent.status === "requested", "new faculty events remain private pending canteen review");
+    ok((await q(`SELECT hungry_review_faculty_event_request($1,$2,true,'Accepted') status`, [requestedEvent.id, owner.id]))[0].status === "accepted", "only the linked canteen owner accepts the faculty event request");
+    ok((await q(`SELECT hungry_publish_faculty_event($1,$2,'{"Tea":5}'::jsonb,'{"Tea":20}'::jsonb,'Confirmed') status`, [requestedEvent.id, owner.id]))[0].status === "published", "canteen confirms available food, current pricing, and publishes the event");
+    ok(!!(await err(`SELECT hungry_review_faculty_event_request($1,$2,true,'')`, [requestedEvent.id, a.id])), "a student cannot approve or publish a canteen event request");
+    const [facultyToken] = await eventOrder(requestedEvent.id, "1000004", faculty.id, "event-faculty-001", "HG-EVT-F1");
+    ok(facultyToken.token_number === "R001", "faculty can join a published event and receives its own serial token");
+
+    const [hackToken] = await eventOrder(event1.id, "1000001", a.id, "event-hack-001", "HG-EVT-1");
+    ok(hackToken.token_number === "H001", "first event receives its own H001 sequence");
+    const [duplicateHackToken] = await eventOrder(event1.id, "1000001", a.id, "event-hack-001", "HG-EVT-2");
+    ok(duplicateHackToken.already_existed && duplicateHackToken.token_number === "H001", "repeated GET TOKEN request returns the same token and order");
+    const [event2] = await q(`INSERT INTO faculty_events (faculty_user_id,canteen_id,name,event_code,token_prefix,initial_capacity,approved_capacity,status,food_confirmation) VALUES ($1,$2,'Workshop','1000002','W',1,1,'published','{"quantities":{"Tea":1},"prices":{"Tea":20}}') RETURNING id`, [faculty.id, c.id]);
+    const [workshopToken] = await eventOrder(event2.id, "1000002", b.id, "event-workshop-001", "HG-EVT-3");
+    ok(workshopToken.token_number === "W001", "a separate event starts its own independent W001 sequence");
+    ok((await err(`SELECT * FROM hungry_place_event_order($1,'1000002',$2,$3,'Full participant',$4::jsonb,'dine_in','counter',20,null,0,'event-workshop-full','HG-EVT-F','1')`, [event2.id, a.id, c.id, JSON.stringify([{ id: m2.id, qty: 1 }])]))?.includes("EVENT:full"), "event capacity rejects an allocation beyond capacity");
+    ok((await q(`SELECT count(*)::int n FROM orders WHERE idempotency_key='event-workshop-full'`))[0].n === 0, "failed GET TOKEN rolls back its incomplete order");
+    const [capacityRequest] = await q(`INSERT INTO faculty_event_capacity_requests (event_id,faculty_user_id,additional_tokens,proposed_capacity,revised_food_quantities) VALUES ($1,$2,10,110,'{"Tea":10}'::jsonb) RETURNING id`, [event1.id, faculty.id]);
+    ok((await q(`SELECT hungry_resolve_faculty_event_capacity_request($1,$2,true,'{"Tea":10}'::jsonb,'{"Tea":20}'::jsonb,'Confirmed') status`, [capacityRequest.id, owner.id]))[0].status === "approved", "canteen can approve faculty-requested additional capacity");
+    ok((await q(`SELECT approved_capacity FROM faculty_events WHERE id=$1`, [event1.id]))[0].approved_capacity === 110, "approval alone activates the revised event capacity");
+    const [rejectedRequest] = await q(`INSERT INTO faculty_event_capacity_requests (event_id,faculty_user_id,additional_tokens,proposed_capacity,revised_food_quantities) VALUES ($1,$2,5,115,'{"Tea":15}'::jsonb) RETURNING id`, [event1.id, faculty.id]);
+    await q(`SELECT hungry_resolve_faculty_event_capacity_request($1,$2,false,'{}'::jsonb,'{}'::jsonb,'Cannot prepare')`, [rejectedRequest.id, owner.id]);
+    ok((await q(`SELECT approved_capacity FROM faculty_events WHERE id=$1`, [event1.id]))[0].approved_capacity === 110, "canteen rejection leaves approved capacity unchanged");
+    const [secondHackToken] = await eventOrder(event1.id, "1000001", b.id, "event-hack-002", "HG-EVT-4");
+    ok(secondHackToken.token_number === "H002", "approved capacity makes the next token H002");
+    await q(`SELECT hungry_release_order($1)`, [secondHackToken.order_id]);
+    ok((await q(`SELECT status FROM faculty_event_tokens WHERE order_id=$1`, [secondHackToken.order_id]))[0].status === "cancelled", "cancelling an event order marks its token cancelled for analytics");
+    const [thirdHackToken] = await eventOrder(event1.id, "1000001", a.id, "event-hack-003", "HG-EVT-5");
+    ok(thirdHackToken.token_number === "H003", "cancelled tokens are never reused");
+    await q(`UPDATE orders SET status='collected' WHERE id=$1`, [hackToken.order_id]);
+    ok((await q(`SELECT status FROM faculty_event_tokens WHERE order_id=$1`, [hackToken.order_id]))[0].status === "collected", "order collection updates the linked event token");
+    await q(`SELECT set_config('request.jwt.claim.sub',$1,false)`, [faculty.id]);
+    const [hackStats] = await q(`SELECT * FROM hungry_get_event_capacity($1)`, [event1.id]);
+    ok(hackStats.approved_capacity === 110 && hackStats.issued_tokens === 2 && hackStats.tokens_remaining === 107 && hackStats.collected_tokens === 1 && hackStats.cancelled_tokens === 1, "event capacity analytics count issued, remaining, collected and cancelled tokens consistently");
+    const [event3] = await q(`INSERT INTO faculty_events (faculty_user_id,canteen_id,name,event_code,token_prefix,initial_capacity,approved_capacity,status,food_confirmation) VALUES ($1,$2,'Concurrent','1000003','C',1,1,'published','{"quantities":{"Tea":2},"prices":{"Tea":20}}') RETURNING id`, [faculty.id, c.id]);
+    await db.query(`SELECT set_config('request.jwt.claim.sub',$1,false)`, [a.id]);
+    const parallel = await Promise.allSettled([
+      eventOrder(event3.id, "1000003", a.id, "event-race-user-a", "HG-EVT-RA"),
+      eventOrder(event3.id, "1000003", b.id, "event-race-user-b", "HG-EVT-RB"),
+    ]);
+    ok(parallel.filter((result) => result.status === "fulfilled").length === 1, "simultaneous users cannot oversell a one-token event");
+    ok((await q(`SELECT count(*)::int n FROM faculty_event_tokens WHERE event_id=$1`, [event3.id]))[0].n === 1, "atomic event allocation creates only one token under contention");
+    await q(`UPDATE profiles SET current_canteen_id=NULL WHERE id IN ($1,$2)`, [b.id, faculty.id]);
 
     const place = (user: string, lines: unknown, type: string, method: string, sub: number, coupon: string | null, disc: number, key: string, num: string) =>
       q(`SELECT * FROM hungry_place_order($1,$2,'X',$3::jsonb,$4,$5,$6,$7,$8,$9,$10,'1234')`,

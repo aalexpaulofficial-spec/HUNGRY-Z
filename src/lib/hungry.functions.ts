@@ -31,10 +31,151 @@ async function admin() {
 }
 
 function canteenDashboardInstallUrl() {
-  const configuredHost = process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.VERCEL_URL || "hungryzq.vercel.app";
+  const configuredHost = process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.VERCEL_URL || "hungryz.vercel.app";
   const origin = configuredHost.startsWith("https://") ? configuredHost : `https://${configuredHost}`;
   return new URL("/install/canteen", origin).toString();
 }
+
+const eventFoodQuantities = z.record(z.string().trim().min(1).max(120), z.number().int().min(0).max(100000));
+export const createFacultyEvent = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({
+    name: z.string().trim().min(2).max(120),
+    eventCode: z.string().regex(/^[0-9]{7}$/),
+    description: z.string().trim().max(1000).default(""),
+    initialCapacity: z.number().int().min(1).max(100000),
+    foodRequirements: z.record(z.string().trim().min(1).max(120), z.number().int().min(1).max(100000)).refine((items) => Object.keys(items).length > 0, "Add at least one food item."),
+  }).parse(input))
+  .handler(async ({ data, context }) => {
+    const db = await admin();
+    const { data: profile, error: profileError } = await db.from("profiles").select("role,current_canteen_id").eq("id", context.userId).maybeSingle();
+    if (profileError || profile?.role !== "faculty" || !profile.current_canteen_id) throw new Error("Join your participating canteen before creating an event.");
+    const { data: canteen } = await db.from("canteens").select("id,is_active").eq("id", profile.current_canteen_id).maybeSingle();
+    if (!canteen?.is_active) throw new Error("Your participating canteen is unavailable.");
+    const { data: menuItems, error: menuError } = await db.from("menu_items").select("name").eq("canteen_id", profile.current_canteen_id).eq("available", true);
+    if (menuError) throw new Error("Could not verify the requested event menu.");
+    const requestedNames = Object.keys(data.foodRequirements);
+    if (requestedNames.some((name) => menuItems?.filter((item) => item.name === name).length !== 1)) {
+      throw new Error("Choose food item names that match one available item in your joined canteen menu.");
+    }
+    const prefix = data.name.trim().match(/[A-Za-z]/)?.[0]?.toUpperCase() ?? "E";
+    const { data: row, error } = await db.from("faculty_events").insert({
+      faculty_user_id: context.userId,
+      canteen_id: profile.current_canteen_id,
+      name: data.name,
+      description: data.description,
+      food_requirements: data.foodRequirements,
+      event_code: data.eventCode,
+      token_prefix: prefix,
+      initial_capacity: data.initialCapacity,
+      approved_capacity: data.initialCapacity,
+      status: "requested",
+    }).select("id,event_code").single();
+    if (error || !row) throw new Error(error?.message.includes("faculty_events_event_code_key") ? "That 7-digit Event Code is already in use." : "Could not create the event. Please try again.");
+    return row;
+  });
+
+export const updateFacultyEvent = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({
+    eventId: z.string().uuid(),
+    name: z.string().trim().min(2).max(120),
+    description: z.string().trim().max(1000),
+    foodRequirements: eventFoodQuantities,
+  }).parse(input))
+  .handler(async ({ data, context }) => {
+    const db = await admin();
+    const { data: event, error: readError } = await db.from("faculty_events").select("id,faculty_user_id").eq("id", data.eventId).maybeSingle();
+    if (readError || event?.faculty_user_id !== context.userId) throw new Error("You cannot change this event.");
+    const { error } = await db.from("faculty_events").update({ name: data.name, description: data.description, food_requirements: data.foodRequirements, updated_at: new Date().toISOString() }).eq("id", data.eventId).in("status", ["requested", "accepted"]);
+    if (error) throw new Error("Could not update the event.");
+    return { ok: true };
+  });
+
+export const requestFacultyEventCapacity = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({
+    eventId: z.string().uuid(),
+    additionalTokens: z.number().int().min(1).max(100000),
+    revisedFoodQuantities: eventFoodQuantities,
+  }).parse(input))
+  .handler(async ({ data, context }) => {
+    const db = await admin();
+    const { data: event, error } = await db.from("faculty_events").select("id,faculty_user_id,approved_capacity,status").eq("id", data.eventId).maybeSingle();
+    if (error || event?.faculty_user_id !== context.userId || event.status !== "published") throw new Error("Additional capacity can be requested after the event is published.");
+    const { data: pending } = await db.from("faculty_event_capacity_requests").select("id").eq("event_id", data.eventId).eq("status", "pending").maybeSingle();
+    if (pending) throw new Error("A capacity request is already awaiting the canteen.");
+    const proposedCapacity = event.approved_capacity + data.additionalTokens;
+    if (proposedCapacity > 200000) throw new Error("The proposed event capacity is too large.");
+    const { data: request, error: insertError } = await db.from("faculty_event_capacity_requests").insert({
+      event_id: data.eventId,
+      faculty_user_id: context.userId,
+      additional_tokens: data.additionalTokens,
+      proposed_capacity: proposedCapacity,
+      revised_food_quantities: data.revisedFoodQuantities,
+    }).select("id").single();
+    if (insertError || !request) throw new Error(insertError?.message.includes("faculty_event_one_pending_capacity_request") ? "A capacity request is already awaiting the canteen." : "Could not send the capacity request.");
+    return { ok: true, requestId: request.id, proposedCapacity };
+  });
+
+export const reviewFacultyEventRequest = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ eventId: z.string().uuid(), accept: z.boolean(), note: z.string().trim().max(500).default("") }).parse(input))
+  .handler(async ({ data, context }) => {
+    const db = await admin();
+    const { data: result, error } = await db.rpc("hungry_review_faculty_event_request", {
+      p_event_id: data.eventId,
+      p_canteen_owner_id: context.userId,
+      p_accept: data.accept,
+      p_note: data.note,
+    });
+    if (error) throw new Error(error.message.includes("EVENT:not_canteen_owner") ? "You cannot review this event." : "This event request was already handled.");
+    return { status: result };
+  });
+
+export const publishFacultyEvent = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({
+    eventId: z.string().uuid(),
+    confirmedFoodQuantities: eventFoodQuantities,
+    confirmedFoodPrices: z.record(z.string().trim().min(1).max(120), z.number().int().min(0).max(10000000)),
+    note: z.string().trim().max(500).default(""),
+  }).parse(input))
+  .handler(async ({ data, context }) => {
+    const db = await admin();
+    const { data: result, error } = await db.rpc("hungry_publish_faculty_event", {
+      p_event_id: data.eventId,
+      p_canteen_owner_id: context.userId,
+      p_confirmed_food_quantities: data.confirmedFoodQuantities,
+      p_confirmed_food_prices: data.confirmedFoodPrices,
+      p_note: data.note,
+    });
+    if (error) throw new Error(error.message.replace("EVENT:", ""));
+    return { status: result };
+  });
+
+export const resolveFacultyEventCapacity = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({
+    requestId: z.string().uuid(),
+    approve: z.boolean(),
+    note: z.string().trim().max(500).default(""),
+    confirmedFoodQuantities: eventFoodQuantities.default({}),
+    confirmedFoodPrices: z.record(z.string().trim().min(1).max(120), z.number().int().min(0).max(10000000)).default({}),
+  }).parse(input))
+  .handler(async ({ data, context }) => {
+    const db = await admin();
+    const { data: result, error } = await db.rpc("hungry_resolve_faculty_event_capacity_request", {
+      p_request_id: data.requestId,
+      p_canteen_owner_id: context.userId,
+      p_approve: data.approve,
+      p_confirmed_food_quantities: data.confirmedFoodQuantities,
+      p_confirmed_food_prices: data.confirmedFoodPrices,
+      p_note: data.note,
+    });
+    if (error) throw new Error(error.message.includes("EVENT:not_canteen_owner") ? "You cannot confirm this event request." : "This request has already been handled or could not be updated.");
+    return { status: result };
+  });
 
 function safeEqual(a: string, b: string) {
   if (a.length !== b.length) return false;
@@ -819,27 +960,32 @@ export const placeOrder = createServerFn({ method: "POST" })
         paymentMethod: z.enum(PAYMENT_METHODS),
         couponCode: couponCodeSchema.nullable().optional(),
         idempotencyKey: z.string().regex(/^[A-Za-z0-9-]{8,64}$/),
+        eventId: z.string().uuid().optional(),
+        eventCode: z.string().regex(/^[0-9]{7}$/).optional(),
       })
+      .refine((v) => Boolean(v.eventId) === Boolean(v.eventCode), { message: "Enter the event code to get a token." })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
     if (!isPaymentAllowed(data.orderType, data.paymentMethod)) throw new Error("Parcel orders are paid at the counter.");
     const db = await admin();
     const { razorpayKeys } = await import("@/lib/razorpay.server");
+    if (data.eventId && data.paymentMethod !== "counter") throw new Error("Event tokens require Pay at Counter.");
     if (data.paymentMethod === "razorpay" && !razorpayKeys().configured)
       throw new Error("Online payment isn't available yet. Please choose Pay at counter.");
     await db.rpc("hungry_expire_stale_orders", { p_minutes: 30 });
 
     // Same checkout submitted twice: return the original order instead of creating a new one.
     const { data: existing } = await db.from("orders").select("id").eq("user_id", context.userId).eq("idempotency_key", data.idempotencyKey).maybeSingle();
-    let orderId = existing?.id ?? null;
+    let orderId = data.eventId ? null : (existing?.id ?? null);
     let created = false;
+    let eventToken: string | null = null;
 
     if (!orderId) {
       const q = await priceCart(context.userId, data.lines, data.couponCode);
       if (data.couponCode && !q.coupon) throw new Error(q.couponError ?? "This coupon can't be used.");
       for (let attempt = 0; attempt < 3 && !orderId; attempt++) {
-        const { data: rows, error } = await db.rpc("hungry_place_order", {
+        const orderArgs = {
           p_user: context.userId,
           p_canteen: q.canteenId,
           p_customer_name: q.profile.full_name,
@@ -852,15 +998,23 @@ export const placeOrder = createServerFn({ method: "POST" })
           p_idempotency_key: data.idempotencyKey,
           p_order_number: "HG-" + generateCanteenCode().slice(0, 6),
           p_pickup_code: pickupCode(),
-        });
+        };
+        const { data: rows, error } = data.eventId
+          ? await db.rpc("hungry_place_event_order", { ...orderArgs, p_event_id: data.eventId, p_event_code: data.eventCode! })
+          : await db.rpc("hungry_place_order", orderArgs);
         if (error) {
+          if (error.message.includes("EVENT:full")) throw new Error("EVENT FULL");
+          if (error.message.includes("EVENT:invalid_or_closed")) throw new Error("This event is not available. Check its Event Code.");
+          if (error.message.includes("EVENT:not_participant")) throw new Error("Join the participating canteen to get this event token.");
+          if (error.message.includes("EVENT:counter_payment_required")) throw new Error("Event tokens require Pay at Counter.");
           if (error.message.includes("orders_order_number_key")) continue; // rare number clash — retry
           throw new Error(friendlyOrderError(error.message) ?? "Could not place order. Please try again.");
         }
-        const row = (rows as { order_id: string; already_existed: boolean }[] | null)?.[0];
+        const row = (rows as { order_id: string; already_existed: boolean; token_number?: string }[] | null)?.[0];
         if (!row) throw new Error("Could not place order. Please try again.");
         orderId = row.order_id;
         created = !row.already_existed;
+        eventToken = row.token_number ?? null;
       }
       if (!orderId) throw new Error("Could not place order. Please try again.");
     }
@@ -873,7 +1027,7 @@ export const placeOrder = createServerFn({ method: "POST" })
       try {
         const payment = await orders.checkoutParams(order);
         const email = await orders.sendPaymentPendingNotice(order.id);
-        return { orderId: order.id, payment, emailSent: email.sent };
+        return { orderId: order.id, payment, emailSent: email.sent, eventToken };
       } catch (e) {
         console.error("[placeOrder] could not create Razorpay order", e instanceof Error ? e.message : e);
         if (created) await db.rpc("hungry_release_order", { p_order: order.id, p_payment_status: "failed" });
@@ -881,7 +1035,7 @@ export const placeOrder = createServerFn({ method: "POST" })
       }
     }
     const email = await orders.sendOrderConfirmation(order.id);
-    return { orderId: order.id, payment: null, emailSent: email.sent && email.ownerSent !== false };
+    return { orderId: order.id, payment: null, emailSent: email.sent && email.ownerSent !== false, eventToken };
   });
 
 async function ownOrder(userId: string, orderId: string) {
