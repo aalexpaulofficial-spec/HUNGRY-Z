@@ -223,17 +223,25 @@ html[data-theme="light"] {
   --shadow-device: 0 40px 80px -40px oklch(0.2 0 0 / 0.25), 0 0 60px -30px color-mix(in oklab, var(--primary) 24%, transparent);
 }
 
-.order-card-placed { border-color: rgb(34 197 94 / 0.65) !important; }
-.order-card-other { border-color: rgb(239 68 68 / 0.65) !important; }
-.order-status-placed { border: 1px solid rgb(34 197 94 / 0.55); background: rgb(34 197 94 / 0.12); color: #15803d; }
-.order-status-other { border: 1px solid rgb(239 68 68 / 0.55); background: rgb(239 68 68 / 0.12); color: #b91c1c; }
-.order-status-dot-placed { background: #16a34a; }
-.order-status-dot-other { background: #dc2626; }
+.order-card-placed,
+.order-card-collected { border-color: rgb(34 197 94 / 0.65) !important; }
+.order-card-cancelled { border-color: rgb(239 68 68 / 0.65) !important; }
+.order-card-other { border-color: var(--border) !important; }
+.order-status-placed,
+.order-status-collected { border: 1px solid rgb(34 197 94 / 0.55); background: rgb(34 197 94 / 0.12); color: #15803d; }
+.order-status-cancelled { border: 1px solid rgb(239 68 68 / 0.55); background: rgb(239 68 68 / 0.12); color: #b91c1c; }
+.order-status-other { border: 1px solid var(--border); background: var(--ink-soft); color: var(--muted-foreground); }
+.order-status-dot-placed,
+.order-status-dot-collected { background: #16a34a; }
+.order-status-dot-cancelled { background: #dc2626; }
+.order-status-dot-other { background: var(--muted-foreground); }
 
-html[data-theme="dark"] .order-status-placed { color: #86efac; }
-html[data-theme="dark"] .order-status-other { color: #fca5a5; }
-html[data-theme="dark"] .order-status-dot-placed { background: #4ade80; }
-html[data-theme="dark"] .order-status-dot-other { background: #f87171; }
+html[data-theme="dark"] .order-status-placed,
+html[data-theme="dark"] .order-status-collected { color: #86efac; }
+html[data-theme="dark"] .order-status-cancelled { color: #fca5a5; }
+html[data-theme="dark"] .order-status-dot-placed,
+html[data-theme="dark"] .order-status-dot-collected { background: #4ade80; }
+html[data-theme="dark"] .order-status-dot-cancelled { background: #f87171; }
 
 .verified-canteen-indicator {
   color: #15803d;

@@ -14,25 +14,34 @@ describe("student order status and verification UI", () => {
     ["HUNGRY", "dark", 1440],
     ["White", "light", 1440],
     ["HUNGRY", "dark", 390],
-  ])("uses the red collected indicator in %s theme at %i px", (_theme, theme, width) => {
+  ])("uses the green collected indicator in %s theme at %i px", (_theme, theme, width) => {
     Object.defineProperty(window, "innerWidth", { configurable: true, value: width });
     document.documentElement.dataset.theme = theme;
-    const { container } = render(<OrderStatusBadge status="collected" />);
+    const { container, rerender } = render(<OrderStatusBadge status="collected" />);
 
     const badge = container.querySelector('[data-order-status="collected"]');
     expect(badge).toHaveTextContent("Collected");
-    expect(badge).toHaveClass("order-status-other");
-    expect(badge?.querySelector("span[aria-hidden='true']")).toHaveClass("order-status-dot-other");
-    expect(badge).not.toHaveClass("bg-primary", "bg-muted");
+    expect(badge).toHaveClass("order-status-collected");
+    expect(badge?.querySelector("span[aria-hidden='true']")).toHaveClass("order-status-dot-collected");
+
+    rerender(<OrderStatusBadge status="cancelled" />);
+    const cancelledBadge = container.querySelector('[data-order-status="cancelled"]');
+    expect(cancelledBadge).toHaveClass("order-status-cancelled");
+    expect(cancelledBadge?.querySelector("span[aria-hidden='true']")).toHaveClass("order-status-dot-cancelled");
   });
 
-  it("uses green only for placed and red for every other order status", () => {
-    const statuses = ["preparing", "ready", "collected", "cancelled"];
+  it("uses green for placed and collected, red for cancelled, and neutral for in-progress statuses", () => {
     expect(orderStatusBorderClass("placed")).toBe("order-card-placed");
     const { rerender, container } = render(<OrderStatusBadge status="placed" />);
     expect(container.querySelector('[data-order-status="placed"]')).toHaveClass("order-status-placed");
 
-    for (const status of statuses) {
+    expect(orderStatusBorderClass("collected")).toBe("order-card-collected");
+    rerender(<OrderStatusBadge status="collected" />);
+    expect(container.querySelector('[data-order-status="collected"]')).toHaveClass("order-status-collected");
+
+    expect(orderStatusBorderClass("cancelled")).toBe("order-card-cancelled");
+
+    for (const status of ["preparing", "ready"]) {
       expect(orderStatusBorderClass(status)).toBe("order-card-other");
       rerender(<OrderStatusBadge status={status} />);
       expect(container.querySelector(`[data-order-status="${status}"]`)).toHaveClass("order-status-other");

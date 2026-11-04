@@ -114,6 +114,7 @@ function OrderingApp() {
   const [refunds, setRefunds] = useState<Refund[]>([]);
   const [notice, setNotice] = useState("");
   const [thankYouQueue, setThankYouQueue] = useState<Order[]>([]);
+  const dismissedThankYouOrderIds = useRef(new Set<string>());
   const [foodReceiptQueue, setFoodReceiptQueue] = useState<Order[]>([]);
   const [foodReceiptBusy, setFoodReceiptBusy] = useState(false);
   const [foodReceiptError, setFoodReceiptError] = useState("");
@@ -225,6 +226,7 @@ function OrderingApp() {
   const userId = profile?.id;
   useEffect(() => {
     setThankYouQueue([]);
+    dismissedThankYouOrderIds.current.clear();
     setFoodReceiptQueue([]);
     setFoodReceiptError("");
     if (!userId) return;
@@ -234,7 +236,7 @@ function OrderingApp() {
       const physicallyCollected = (order: Order) => order.completion_workflow === "printed"
         ? Boolean(order.food_received_confirmed_at)
         : order.status === "collected";
-      const pending = candidates.filter((order) => physicallyCollected(order) && !order.collection_thank_you_seen_at);
+      const pending = candidates.filter((order) => physicallyCollected(order) && !order.collection_thank_you_seen_at && !dismissedThankYouOrderIds.current.has(order.id));
       if (!pending.length) return;
       setThankYouQueue((current) => {
         const queued = new Set(current.map((order) => order.id));
@@ -303,10 +305,14 @@ function OrderingApp() {
   async function acknowledgeCurrentThankYou() {
     const order = thankYouQueue[0];
     if (!order) return;
+    thankYouQueue.forEach((queuedOrder) => dismissedThankYouOrderIds.current.add(queuedOrder.id));
+    setThankYouQueue([]);
+    setTab("home");
     try {
       await acknowledgeOrderThankYou({ data: { orderId: order.id } });
-      setThankYouQueue((current) => current.filter((queuedOrder) => queuedOrder.id !== order.id));
     } catch {
+      dismissedThankYouOrderIds.current.delete(order.id);
+      setThankYouQueue((current) => current.some((queuedOrder) => queuedOrder.id === order.id) ? current : [order, ...current]);
       setNotice("The thank-you message could not be dismissed yet. Please try again.");
     }
   }
