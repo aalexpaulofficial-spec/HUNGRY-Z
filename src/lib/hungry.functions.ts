@@ -581,7 +581,26 @@ async function setCurrentCanteen(userId: string, canteenId: string) {
   const db = await admin();
   const { data: p, error } = await db.from("profiles").select("role").eq("id", userId).maybeSingle();
   if (error || !p || !isCustomerRole(p.role)) throw new Error("Only student, faculty and guest accounts can join a canteen.");
-  await db.from("profiles").update({ current_canteen_id: canteenId }).eq("id", userId);
+  const { error: updateError } = await db.from("profiles").update({ current_canteen_id: canteenId }).eq("id", userId);
+  if (updateError) throw new Error("Could not save your canteen. Please try again.");
+}
+
+async function getCustomerUserId(accessToken: string) {
+  if (accessToken.length < 20 || accessToken.length > 8192) {
+    throw new Error("Your session has expired. Please sign in again.");
+  }
+  const db = await admin();
+  const { data: { user }, error } = await db.auth.getUser(accessToken);
+  if (error || !user) throw new Error("Your session has expired. Please sign in again.");
+  const { data: profile, error: profileError } = await db
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .maybeSingle();
+  if (profileError || !profile || !isCustomerRole(profile.role)) {
+    throw new Error("Only student, faculty and guest accounts can join a canteen.");
+  }
+  return user.id;
 }
 
 export const ensureWelcomeEmail = createServerFn({ method: "POST" })
@@ -680,9 +699,9 @@ export const submitSupportRequest = createServerFn({ method: "POST" })
   });
 
 export const joinCanteenByCode = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => z.object({ code: accessCodeSchema }).parse(input))
-  .handler(async ({ data, context }) => {
+  .inputValidator((input: unknown) => z.object({ code: accessCodeSchema, accessToken: z.string().min(20).max(8192) }).parse(input))
+  .handler(async ({ data }) => {
+    const userId = await getCustomerUserId(data.accessToken);
     const db = await admin();
     const { data: c } = await db
       .from("canteens")
@@ -691,12 +710,11 @@ export const joinCanteenByCode = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!c || !c.is_active) throw new Error("This code isn't an approved HUNGRY Z canteen code.");
     if (c.visibility === "maintenance") throw new Error("This canteen is in maintenance mode right now. Try again later.");
-    await setCurrentCanteen(context.userId, c.id);
+    await setCurrentCanteen(userId, c.id);
     return { name: c.name, university: c.university_name, visibility: c.visibility };
   });
 
 export const listPublicCanteens = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
   .handler(async () => {
     const db = await admin();
     const { data } = await db
@@ -709,13 +727,13 @@ export const listPublicCanteens = createServerFn({ method: "GET" })
   });
 
 export const joinPublicCanteen = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
-  .handler(async ({ data, context }) => {
+  .inputValidator((input: unknown) => z.object({ id: z.string().uuid(), accessToken: z.string().min(20).max(8192) }).parse(input))
+  .handler(async ({ data }) => {
+    const userId = await getCustomerUserId(data.accessToken);
     const db = await admin();
     const { data: c } = await db.from("canteens").select("id, visibility, is_active").eq("id", data.id).maybeSingle();
     if (!c || !c.is_active || c.visibility !== "public") throw new Error("This canteen needs its code to join.");
-    await setCurrentCanteen(context.userId, c.id);
+    await setCurrentCanteen(userId, c.id);
     return { ok: true };
   });
 

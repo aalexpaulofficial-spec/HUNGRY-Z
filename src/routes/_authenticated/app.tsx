@@ -424,7 +424,9 @@ function CodeEntry({ onJoined, cta = "Continue" }: { onJoined: () => void; cta?:
     if (!/^[A-Z0-9]{7}$/.test(code)) return setErr("Enter the 7-character code.");
     setBusy(true);
     try {
-      await join({ data: { code } });
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session?.access_token) throw new Error("Your session has expired. Please sign in again.");
+      await join({ data: { code, accessToken: session.access_token } });
       onJoined();
     } catch (e) {
       setErr(e instanceof Error ? e.message : "That code isn't valid.");
@@ -501,7 +503,9 @@ function SwitchCampus({ current, onJoined }: { current: Canteen; onJoined: () =>
                 onClick={async () => {
                   setErr("");
                   try {
-                    await joinPublic({ data: { id: p.id } });
+                    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+                    if (sessionError || !session?.access_token) throw new Error("Your session has expired. Please sign in again.");
+                    await joinPublic({ data: { id: p.id, accessToken: session.access_token } });
                     onJoined();
                   } catch (e) {
                     setErr(e instanceof Error ? e.message : "Could not switch");
