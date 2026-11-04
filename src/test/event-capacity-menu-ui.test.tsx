@@ -6,6 +6,8 @@ vi.mock("@tanstack/react-start", () => ({ useServerFn: (fn: unknown) => fn }));
 vi.mock("@/lib/hungry.functions", () => ({
   createFacultyEvent: vi.fn(), publishFacultyEvent: vi.fn(), requestFacultyEventCapacity: vi.fn(),
   resolveFacultyEventCapacity: vi.fn(), reviewFacultyEventRequest: vi.fn(), updateFacultyEvent: vi.fn(),
+  submitFacultyEventQuotation: vi.fn(), reviewFacultyEventQuotation: vi.fn(), collectFacultyEventToken: vi.fn(),
+  updateFacultyEventServedQuantities: vi.fn(),
 }));
 
 vi.mock("@/integrations/supabase/client", () => ({
@@ -42,7 +44,7 @@ describe("faculty event food request menu", () => {
     expect(detailsField.parentElement).toHaveClass("border-primary/45", "bg-primary/[0.06]");
     expect(screen.queryByText("DOSA")).not.toBeInTheDocument();
     expect(screen.queryByText("WADA")).not.toBeInTheDocument();
-    expect(screen.queryByLabelText(/Additional Food Requirements/)).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Message to Canteen (Optional)")).toBeInTheDocument();
 
     fireEvent.click(menuButton);
     expect(await screen.findByRole("dialog", { name: "FLAMES Menu" })).toBeInTheDocument();

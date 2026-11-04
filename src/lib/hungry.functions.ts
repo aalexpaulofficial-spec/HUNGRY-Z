@@ -43,7 +43,10 @@ export const createFacultyEvent = createServerFn({ method: "POST" })
     name: z.string().trim().min(2).max(120),
     eventCode: z.string().regex(/^[0-9]{7}$/),
     description: z.string().trim().max(1000).default(""),
-    initialCapacity: z.number().int().min(1).max(100000),
+    eventDate: z.string().date(),
+    venue: z.string().trim().min(2).max(200),
+    foodRequestMessage: z.string().trim().max(500).default(""),
+    initialCapacity: z.number().int().min(1).max(9999),
     foodRequirements: z.record(z.string().trim().min(1).max(120), z.number().int().min(1).max(100000)).refine((items) => Object.keys(items).length > 0, "Add at least one food item."),
   }).parse(input))
   .handler(async ({ data, context }) => {
@@ -64,6 +67,9 @@ export const createFacultyEvent = createServerFn({ method: "POST" })
       canteen_id: profile.current_canteen_id,
       name: data.name,
       description: data.description,
+      event_date: data.eventDate,
+      venue: data.venue,
+      food_request_message: data.foodRequestMessage,
       food_requirements: data.foodRequirements,
       event_code: data.eventCode,
       token_prefix: prefix,
@@ -81,13 +87,16 @@ export const updateFacultyEvent = createServerFn({ method: "POST" })
     eventId: z.string().uuid(),
     name: z.string().trim().min(2).max(120),
     description: z.string().trim().max(1000),
+    eventDate: z.string().date(),
+    venue: z.string().trim().min(2).max(200),
+    foodRequestMessage: z.string().trim().max(500).default(""),
     foodRequirements: eventFoodQuantities,
   }).parse(input))
   .handler(async ({ data, context }) => {
     const db = await admin();
     const { data: event, error: readError } = await db.from("faculty_events").select("id,faculty_user_id").eq("id", data.eventId).maybeSingle();
     if (readError || event?.faculty_user_id !== context.userId) throw new Error("You cannot change this event.");
-    const { error } = await db.from("faculty_events").update({ name: data.name, description: data.description, food_requirements: data.foodRequirements, updated_at: new Date().toISOString() }).eq("id", data.eventId).in("status", ["requested", "accepted"]);
+    const { error } = await db.from("faculty_events").update({ name: data.name, description: data.description, event_date: data.eventDate, venue: data.venue, food_request_message: data.foodRequestMessage, food_requirements: data.foodRequirements, updated_at: new Date().toISOString() }).eq("id", data.eventId).in("status", ["requested", "accepted", "changes_requested"]);
     if (error) throw new Error("Could not update the event.");
     return { ok: true };
   });
@@ -96,7 +105,7 @@ export const requestFacultyEventCapacity = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({
     eventId: z.string().uuid(),
-    additionalTokens: z.number().int().min(1).max(100000),
+    additionalTokens: z.number().int().min(1).max(9999),
     revisedFoodQuantities: eventFoodQuantities,
   }).parse(input))
   .handler(async ({ data, context }) => {
@@ -106,7 +115,7 @@ export const requestFacultyEventCapacity = createServerFn({ method: "POST" })
     const { data: pending } = await db.from("faculty_event_capacity_requests").select("id").eq("event_id", data.eventId).eq("status", "pending").maybeSingle();
     if (pending) throw new Error("A capacity request is already awaiting the canteen.");
     const proposedCapacity = event.approved_capacity + data.additionalTokens;
-    if (proposedCapacity > 200000) throw new Error("The proposed event capacity is too large.");
+    if (proposedCapacity > 9999) throw new Error("Event capacity cannot exceed 9,999 participants because event tokens use four digits.");
     const { data: request, error: insertError } = await db.from("faculty_event_capacity_requests").insert({
       event_id: data.eventId,
       faculty_user_id: context.userId,
@@ -131,6 +140,90 @@ export const reviewFacultyEventRequest = createServerFn({ method: "POST" })
     });
     if (error) throw new Error(error.message.includes("EVENT:not_canteen_owner") ? "You cannot review this event." : "This event request was already handled.");
     return { status: result };
+  });
+
+export const submitFacultyEventQuotation = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({
+    eventId: z.string().uuid(),
+    quantities: z.record(z.string().trim().min(1).max(120), z.number().int().min(1).max(100000)),
+    prices: z.record(z.string().trim().min(1).max(120), z.number().int().min(0).max(10000000)),
+    note: z.string().trim().max(500).default(""),
+  }).refine((value) => Object.keys(value.quantities).length > 0 && Object.keys(value.quantities).length === Object.keys(value.prices).length && Object.keys(value.quantities).every((name) => Object.hasOwn(value.prices, name)), "Add matching quantities and prices for the quotation.").parse(input))
+  .handler(async ({ data, context }) => {
+    const db = await admin();
+    const { data: budget, error } = await db.rpc("hungry_submit_faculty_event_quotation", {
+      p_event_id: data.eventId,
+      p_canteen_owner_id: context.userId,
+      p_quantities: data.quantities,
+      p_prices: data.prices,
+      p_note: data.note,
+    });
+    if (error) throw new Error(error.message.replace("EVENT:", ""));
+    return { estimatedBudget: budget as number };
+  });
+
+export const reviewFacultyEventQuotation = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ eventId: z.string().uuid(), approve: z.boolean(), note: z.string().trim().max(500).default("") }).parse(input))
+  .handler(async ({ data, context }) => {
+    const db = await admin();
+    const { data: status, error } = await db.rpc("hungry_review_faculty_event_quotation", {
+      p_event_id: data.eventId,
+      p_faculty_user_id: context.userId,
+      p_approve: data.approve,
+      p_note: data.note,
+    });
+    if (error) throw new Error(error.message.replace("EVENT:", ""));
+    return { status: status as string };
+  });
+
+export const issueFacultyEventToken = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ eventId: z.string().uuid(), eventCode: z.string().regex(/^[0-9]{7}$/) }).parse(input))
+  .handler(async ({ data, context }) => {
+    const db = await admin();
+    const { data: profile, error: profileError } = await db.from("profiles").select("role,current_canteen_id").eq("id", context.userId).maybeSingle();
+    if (profileError || !profile?.current_canteen_id || !["student", "faculty", "guest"].includes(profile.role)) throw new Error("Join the participating canteen before generating an event token.");
+    const { data: tokens, error } = await db.rpc("hungry_issue_faculty_event_token", {
+      p_event_id: data.eventId,
+      p_event_code: data.eventCode,
+      p_customer_user_id: context.userId,
+      p_canteen_id: profile.current_canteen_id,
+    });
+    if (error) {
+      if (error.message.includes("EVENT:full")) throw new Error("EVENT FULL");
+      if (error.message.includes("EVENT:invalid_or_closed")) throw new Error("This event is not available. Check the Event Code.");
+      if (error.message.includes("EVENT:not_participant")) throw new Error("Join the participating canteen to get this event token.");
+      throw new Error("Could not generate the event token. Please try again.");
+    }
+    const token = (tokens as { token_number: string; approved_capacity: number; issued_tokens: number; tokens_remaining: number; already_issued: boolean }[] | null)?.[0];
+    if (!token) throw new Error("Could not generate the event token. Please try again.");
+    return token;
+  });
+
+export const collectFacultyEventToken = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ tokenId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const db = await admin();
+    const { data: status, error } = await db.rpc("hungry_collect_faculty_event_token", { p_token_id: data.tokenId, p_canteen_owner_id: context.userId });
+    if (error) throw new Error(error.message.includes("EVENT:token_not_issued") ? "This event token has already been served or cancelled." : "You cannot verify this event token.");
+    return { status };
+  });
+
+export const updateFacultyEventServedQuantities = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ eventId: z.string().uuid(), quantities: eventFoodQuantities }).parse(input))
+  .handler(async ({ data, context }) => {
+    const db = await admin();
+    const { error } = await db.rpc("hungry_update_faculty_event_served_quantities", {
+      p_event_id: data.eventId,
+      p_canteen_owner_id: context.userId,
+      p_quantities: data.quantities,
+    });
+    if (error) throw new Error(error.message.replace("EVENT:", ""));
+    return { ok: true };
   });
 
 export const publishFacultyEvent = createServerFn({ method: "POST" })
