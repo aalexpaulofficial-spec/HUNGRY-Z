@@ -585,12 +585,18 @@ async function setCurrentCanteen(userId: string, canteenId: string) {
   if (updateError) throw new Error("Could not save your canteen. Please try again.");
 }
 
-async function getCustomerUserId(accessToken: string) {
-  if (accessToken.length < 20 || accessToken.length > 8192) {
+async function getCustomerUserId(accessToken?: string) {
+  const authorization = getRequest().headers.get("authorization");
+  const bearerToken = authorization?.startsWith("Bearer ") ? authorization.slice(7) : undefined;
+  const token = accessToken || bearerToken;
+  if (!token) {
+    throw new Error("This page is out of date. Refresh the page and try again.");
+  }
+  if (token.length < 20 || token.length > 8192) {
     throw new Error("Your session has expired. Please sign in again.");
   }
   const db = await admin();
-  const { data: { user }, error } = await db.auth.getUser(accessToken);
+  const { data: { user }, error } = await db.auth.getUser(token);
   if (error || !user) throw new Error("Your session has expired. Please sign in again.");
   const { data: profile, error: profileError } = await db
     .from("profiles")
@@ -699,7 +705,7 @@ export const submitSupportRequest = createServerFn({ method: "POST" })
   });
 
 export const joinCanteenByCode = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) => z.object({ code: accessCodeSchema, accessToken: z.string().min(20).max(8192) }).parse(input))
+  .inputValidator((input: unknown) => z.object({ code: accessCodeSchema, accessToken: z.string().min(20).max(8192).optional() }).parse(input))
   .handler(async ({ data }) => {
     const userId = await getCustomerUserId(data.accessToken);
     const db = await admin();
@@ -727,7 +733,7 @@ export const listPublicCanteens = createServerFn({ method: "GET" })
   });
 
 export const joinPublicCanteen = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) => z.object({ id: z.string().uuid(), accessToken: z.string().min(20).max(8192) }).parse(input))
+  .inputValidator((input: unknown) => z.object({ id: z.string().uuid(), accessToken: z.string().min(20).max(8192).optional() }).parse(input))
   .handler(async ({ data }) => {
     const userId = await getCustomerUserId(data.accessToken);
     const db = await admin();
