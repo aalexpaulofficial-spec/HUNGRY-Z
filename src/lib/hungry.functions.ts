@@ -1181,32 +1181,33 @@ export const ownerRecordConfirmedBillPrint = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ orderId: z.string().uuid(), paperWidth: z.enum(["auto", "58", "80"]) }).parse(input))
   .handler(async ({ data, context }) => {
     const db = await admin();
-    const orders = await import("@/lib/orders.server");
-    const order = await orders.getOrder(data.orderId);
-    if (!order) throw new Error("Order not found.");
-    const { data: canteen } = await db.from("canteens").select("id,owner_user_id").eq("id", order.canteen_id).maybeSingle();
-    if (!canteen || canteen.owner_user_id !== context.userId) throw new Error("Forbidden");
-    const { error } = await db.from("order_print_events").insert({
-      order_id: order.id,
-      canteen_id: order.canteen_id,
-      owner_user_id: context.userId,
-      order_number: order.order_number,
-      order_type: order.order_type,
-      payment_method: order.payment_method,
-      payment_status: order.payment_status,
-      order_status: order.status,
-      paper_width: data.paperWidth,
-      bill_snapshot: {
-        customer_name: order.customer_name,
-        lines: order.lines,
-        subtotal: order.subtotal,
-        discount: order.discount,
-        total: order.total,
-        pickup_code: order.pickup_code,
-        counter: order.counter,
-        created_at: order.created_at,
-      },
+    const { data: result, error } = await db.rpc("hungry_confirm_order_bill_print", {
+      p_order_id: data.orderId,
+      p_owner_user_id: context.userId,
+      p_paper_width: data.paperWidth,
     });
-    if (error) throw new Error("The print was confirmed, but its audit record could not be saved.");
-    return { ok: true };
+    if (error) {
+      if (error.message.includes("PRINT:not_canteen_owner")) throw new Error("You cannot confirm a print for this order.");
+      if (error.message.includes("PRINT:cancelled_order")) throw new Error("Cancelled orders cannot be printed as customer bills.");
+      throw new Error("The print confirmation could not be saved.");
+    }
+    const confirmation = Array.isArray(result) ? result[0] : result;
+    if (!confirmation) throw new Error("The print confirmation could not be saved.");
+    return { ok: true, alreadyConfirmed: confirmation.already_confirmed as boolean };
+  });
+
+export const acknowledgeBillPrintThankYou = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ orderId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const db = await admin();
+    const { data: acknowledged, error } = await db.rpc("hungry_acknowledge_bill_print_thank_you", {
+      p_order_id: data.orderId,
+      p_customer_user_id: context.userId,
+    });
+    if (error) {
+      if (error.message.includes("PRINT:not_order_customer")) throw new Error("You cannot dismiss another customer's message.");
+      throw new Error("Could not save the thank-you popup status.");
+    }
+    return { acknowledged: Boolean(acknowledged) };
   });

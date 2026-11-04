@@ -558,6 +558,8 @@ export type Database = {
       orders: {
         Row: {
           canteen_id: string
+          bill_print_confirmed_at: string | null
+          bill_print_thank_you_seen_at: string | null
           confirmation_email_sent_at: string | null
           counter: string
           coupon_code: string | null
@@ -585,6 +587,8 @@ export type Database = {
         }
         Insert: {
           canteen_id: string
+          bill_print_confirmed_at?: string | null
+          bill_print_thank_you_seen_at?: string | null
           confirmation_email_sent_at?: string | null
           counter: string
           coupon_code?: string | null
@@ -612,6 +616,8 @@ export type Database = {
         }
         Update: {
           canteen_id?: string
+          bill_print_confirmed_at?: string | null
+          bill_print_thank_you_seen_at?: string | null
           confirmation_email_sent_at?: string | null
           counter?: string
           coupon_code?: string | null
@@ -1012,6 +1018,8 @@ export type Database = {
         Returns: number
       }
       hungry_mark_order_paid: { Args: { p_order: string }; Returns: string }
+      hungry_confirm_order_bill_print: { Args: { p_order_id: string; p_owner_user_id: string; p_paper_width: string }; Returns: { confirmed_at: string; already_confirmed: boolean }[] }
+      hungry_acknowledge_bill_print_thank_you: { Args: { p_order_id: string; p_customer_user_id: string }; Returns: boolean }
       hungry_resolve_faculty_event_capacity_request: { Args: { p_request_id: string; p_canteen_owner_id: string; p_approve: boolean; p_confirmed_food_quantities?: Json; p_confirmed_food_prices?: Json; p_note?: string }; Returns: string }
       hungry_review_faculty_event_request: { Args: { p_event_id: string; p_canteen_owner_id: string; p_accept: boolean; p_note?: string }; Returns: string }
       hungry_publish_faculty_event: { Args: { p_event_id: string; p_canteen_owner_id: string; p_confirmed_food_quantities: Json; p_confirmed_food_prices: Json; p_note?: string }; Returns: string }

@@ -20,6 +20,7 @@ import { OrderStatusBadge } from "@/components/foodexa/OrderStatusBadge";
 import { VerifiedCanteenLabel } from "@/components/foodexa/VerifiedCanteenLabel";
 import {
   cancelPendingOrder,
+  acknowledgeBillPrintThankYou,
   ensureWelcomeEmail,
   getOwnOrderDetails,
   getPaymentConfig,
@@ -84,6 +85,7 @@ type Order = {
   id: string; user_id: string; order_number: string; pickup_code: string; customer_name: string; canteen_name?: string; lines: { name: string; qty: number; price: number }[];
   subtotal: number; discount: number; total: number; coupon_code: string | null; payment: string; payment_method: string; payment_status: string;
   order_type: string; created_at: string; prep_minutes: number; counter: string; status: string; canteen_id: string;
+  bill_print_confirmed_at: string | null; bill_print_thank_you_seen_at: string | null;
 };
 type Refund = { id: string; order_id: string; amount: number; status: string; admin_note: string | null; created_at: string };
 type Tab = "home" | "menu" | "events" | "orders" | "you" | "scan";
@@ -114,7 +116,7 @@ function OrderingApp() {
   const [switching, setSwitching] = useState(false);
   const [refunds, setRefunds] = useState<Refund[]>([]);
   const [notice, setNotice] = useState("");
-  const [socialThankYouOpen, setSocialThankYouOpen] = useState(false);
+  const [printThankYouQueue, setPrintThankYouQueue] = useState<Order[]>([]);
   const [qrOrderMessage, setQrOrderMessage] = useState("");
   const [qrOrder, setQrOrder] = useState<Order | null>(null);
   const [activeEvent, setActiveEvent] = useState<SelectedEvent | null>(null);
@@ -135,6 +137,7 @@ function OrderingApp() {
   useBackStep(switching, () => setSwitching(false));
   const welcome = useServerFn(ensureWelcomeEmail);
   const getOwnOrder = useServerFn(getOwnOrderDetails);
+  const acknowledgePrintThankYou = useServerFn(acknowledgeBillPrintThankYou);
 
   useEffect(() => {
     const timer = window.setInterval(() => setAvailabilityNow(new Date()), 30_000);
@@ -224,10 +227,22 @@ function OrderingApp() {
     ordersInitialized.current = false;
     pendingCollectionEvents.current.clear();
     setCollectedOrder(null);
+    setPrintThankYouQueue([]);
     if (!userId) return;
+    const canReceivePrintThankYou = profile?.role === "student" || profile?.role === "guest";
+    const queueThankYou = (candidates: Order[]) => {
+      if (!canReceivePrintThankYou) return;
+      const pending = candidates.filter((order) => order.bill_print_confirmed_at && !order.bill_print_thank_you_seen_at);
+      if (!pending.length) return;
+      setPrintThankYouQueue((current) => {
+        const queued = new Set(current.map((order) => order.id));
+        return [...current, ...pending.filter((order) => !queued.has(order.id))];
+      });
+    };
     const load = async () => {
       const { data } = await supabase.from("orders").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(50);
       const nextOrders = (data as unknown as Order[]) ?? [];
+      queueThankYou(nextOrders);
       if (ordersInitialized.current) {
         const newlyCollected = nextOrders.find((order) => order.status === "collected" && orderSnapshot.current.get(order.id)?.status !== "collected");
         if (newlyCollected) setCollectedOrder(newlyCollected);
@@ -253,6 +268,7 @@ function OrderingApp() {
       .channel(`my-orders-${uid()}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "orders", filter: `user_id=eq.${userId}` }, (payload) => {
         const updatedOrder = payload.new as Order;
+        if (payload.eventType === "UPDATE" && updatedOrder.user_id === userId) queueThankYou([updatedOrder]);
         if (payload.eventType === "UPDATE") setQrOrder((current) => current?.id === updatedOrder.id ? { ...current, ...updatedOrder } : current);
         if (payload.eventType === "UPDATE" && updatedOrder.user_id === userId && updatedOrder.status === "collected") {
           if (!ordersInitialized.current) pendingCollectionEvents.current.set(updatedOrder.id, updatedOrder);
@@ -268,7 +284,18 @@ function OrderingApp() {
     return () => {
       supabase.removeChannel(ch);
     };
-  }, [userId]);
+  }, [profile?.role, userId]);
+
+  async function acknowledgeCurrentPrintThankYou() {
+    const notification = printThankYouQueue[0];
+    if (!notification) return;
+    try {
+      await acknowledgePrintThankYou({ data: { orderId: notification.id } });
+      setPrintThankYouQueue((current) => current.filter((order) => order.id !== notification.id));
+    } catch {
+      setNotice("The thank-you message could not be dismissed yet. Please try again.");
+    }
+  }
 
   useEffect(() => {
     if (!qrOrderId || !userId) return;
@@ -405,7 +432,7 @@ function OrderingApp() {
           ordering={ordering}
           closedMessage={canteen.availability_mode === "closed" ? "The owner has temporarily closed this canteen." : canteen.visibility === "maintenance" ? "The canteen is under maintenance." : `The canteen is outside its operating hours (${describeTodayHours(canteen, availabilityNow)} IST).`}
           onAdd={add}
-          onPlaced={(id, msg, showThankYou, token) => {
+          onPlaced={(id, msg, token) => {
             if (token && activeEvent) setEventReceipt({ token, eventName: activeEvent.name, canteenName: canteen.name, orderId: id, lines: cart.map(({ item, qty }) => ({ name: item.name, qty, price: item.price })) });
             setCart([]);
             setCheckout(false);
@@ -413,7 +440,6 @@ function OrderingApp() {
             setNotice(msg ?? "");
             setTab("orders");
             setOpenOrderId(id);
-            if (showThankYou) setSocialThankYouOpen(true);
           }}
         />
       </Sheet>
@@ -449,7 +475,7 @@ function OrderingApp() {
       <AnimatePresence>
         {collectedOrder && <CollectionCelebration onContinue={() => { setCollectedOrder(null); setOpenOrderId(null); setNotice(""); setTab("menu"); }} />}
       </AnimatePresence>
-        <SocialThankYouDialog open={socialThankYouOpen} onClose={() => setSocialThankYouOpen(false)} />
+        <SocialThankYouDialog open={printThankYouQueue.length > 0} onClose={() => void acknowledgeCurrentPrintThankYou()} />
     </div>
   );
 }
@@ -763,7 +789,7 @@ function useRazorpayPay() {
   );
 }
 
-function Checkout({ cart, subtotal, ordering, closedMessage, onAdd, onPlaced, event }: { cart: CartLine[]; subtotal: number; ordering: boolean; closedMessage: string; event: SelectedEvent | null; onAdd: (i: MenuItem, d: number) => void; onPlaced: (id: string, message?: string, showThankYou?: boolean, eventToken?: string) => void }) {
+function Checkout({ cart, subtotal, ordering, closedMessage, onAdd, onPlaced, event }: { cart: CartLine[]; subtotal: number; ordering: boolean; closedMessage: string; event: SelectedEvent | null; onAdd: (i: MenuItem, d: number) => void; onPlaced: (id: string, message?: string, eventToken?: string) => void }) {
   const place = useServerFn(placeOrder);
   const quote = useServerFn(quoteOrder);
   const cfgFn = useServerFn(getPaymentConfig);
@@ -847,9 +873,9 @@ function Checkout({ cart, subtotal, ordering, closedMessage, onAdd, onPlaced, ev
     try {
       const r = await place({ data: { lines, orderType, paymentMethod: method, couponCode: applied?.code ?? null, idempotencyKey: idemKey, ...(event ? { eventId: event.id, eventCode: event.event_code } : {}) } });
       const emailNotice = r.emailSent === false ? " The email update could not be delivered yet; contact hungryofficialx@gmail.com if you need help." : "";
-      if (!r.payment) return onPlaced(r.orderId, event ? `Event token ${r.eventToken ?? ""} confirmed. Pay at the counter at ${event.name}.${emailNotice}` : `Order placed. Pay at the counter when you pick it up.${emailNotice}`, false, r.eventToken ?? undefined);
+      if (!r.payment) return onPlaced(r.orderId, event ? `Event token ${r.eventToken ?? ""} confirmed. Pay at the counter at ${event.name}.${emailNotice}` : `Order placed. Pay at the counter when you pick it up.${emailNotice}`, r.eventToken ?? undefined);
       const res = await pay(r.payment);
-      onPlaced(r.orderId, `${res.message}${emailNotice}`, res.ok);
+      onPlaced(r.orderId, `${res.message}${emailNotice}`);
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Could not place order");
     } finally {

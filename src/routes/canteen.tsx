@@ -27,7 +27,6 @@ import { LegalDialog } from "@/components/foodexa/LegalDialog";
 import { useSessionState } from "@/lib/session-state";
 import { privacyPolicy, termsConditions } from "@/content/legal";
 import { CanteenAvailabilityPanel, type AvailabilitySettings } from "@/components/foodexa/CanteenAvailabilityPanel";
-import { SocialThankYouDialog } from "@/components/foodexa/SocialThankYouDialog";
 
 export const Route = createFileRoute("/canteen")({
   ssr: false,
@@ -273,7 +272,6 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
   const [printerSettingsMsg, setPrinterSettingsMsg] = useState("");
   const [printJob, setPrintJob] = useState<ReceiptPrintJob | null>(null);
   const [printing, setPrinting] = useState(false);
-  const [socialThankYouOpen, setSocialThankYouOpen] = useState(false);
   const [ownerFeedbackOpen, setOwnerFeedbackOpen] = useState(false);
   const [ownerLegalPage, setOwnerLegalPage] = useState<"privacy" | "terms" | null>(null);
   const [availability, setAvailability] = useState(canteen);
@@ -338,26 +336,24 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
       }
       if (!window.confirm(`Did ${job.order.order_number} print or save as PDF successfully? Choose Yes only if the bill was produced. This records a print audit only; it does not change payment or order status.`)) {
         setOrderMsg("Print was not confirmed. No print record or order/payment change was saved.");
-        setSocialThankYouOpen(true);
         return;
       }
-      setSocialThankYouOpen(true);
       setBusyOrder(job.order.id);
       void recordConfirmedPrint({ data: { orderId: job.order.id, paperWidth: printerPaperWidth } })
-        .then(() => setOrderMsg(`${job.order.order_number} print details saved. Order and payment statuses were not changed.`))
+        .then(({ alreadyConfirmed }) => setOrderMsg(alreadyConfirmed
+          ? `${job.order.order_number} already has a confirmed print. No duplicate record or customer notification was created.`
+          : `${job.order.order_number} print confirmed. The customer will see the thank-you message. Order and payment statuses were not changed.`))
         .catch((cause) => setOrderMsg(cause instanceof Error ? cause.message : "Could not save the bill print record."))
         .finally(() => setBusyOrder(null));
     };
     const finishWithoutPrintConfirmation = () => {
       clearPrintState();
       setOrderMsg("Print dialog was not confirmed. The order and payment statuses were not changed.");
-      if (job.kind === "order") setSocialThankYouOpen(true);
     };
 
     if (typeof window.print !== "function") {
       setPrinting(false);
       setOrderMsg("Printing is not supported in this browser. The order was left unchanged.");
-      if (job.kind === "order") setSocialThankYouOpen(true);
       return;
     }
     window.addEventListener("afterprint", finishAfterPrint, { once: true });
@@ -368,7 +364,6 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
     } catch {
       clearPrintState();
       setOrderMsg("Could not open the browser print dialog.");
-      if (job.kind === "order") setSocialThankYouOpen(true);
     }
   }
 
@@ -636,15 +631,31 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
             {!orders.length && <p className="rounded-3xl border border-border bg-card p-8 text-center text-sm text-muted-foreground sm:col-span-2">No orders yet. New orders appear here instantly.</p>}
             {orders.map((o) => (
               <div key={o.id} className="rounded-3xl border border-border bg-card p-5">
-                <div className="flex items-center justify-between">
-                  <span className="font-mono text-sm font-bold">{o.order_number}</span>
-                  <span className="rounded-full bg-muted px-3 py-1 text-[10px] font-bold uppercase tracking-widest">{ORDER_LABELS[o.status]}</span>
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className={`rounded-full border px-4 py-2 text-sm font-black tracking-wider ${o.order_type === "parcel" ? "border-amber-500/40 bg-amber-500/10 text-amber-600" : "border-sky-500/40 bg-sky-500/10 text-sky-600"}`}>{o.order_type === "parcel" ? "PARCEL" : "DINE-IN"}</span>
+                    <span className="rounded-full bg-muted px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest">{ORDER_LABELS[o.status]}</span>
+                  </div>
+                  <div className="text-right"><p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Order ID</p><p className="font-mono text-sm font-bold text-foreground">{o.order_number}</p></div>
                 </div>
-                <p className="mt-1 text-xs text-muted-foreground">{o.customer_name} · pickup {o.pickup_code} · {new Date(o.created_at).toLocaleTimeString()}</p>
-        <p className="mt-1 text-[11px] font-semibold uppercase tracking-widest text-primary-bright">{ORDER_TYPE_LABELS[o.order_type as OrderType] ?? "Dine In"} · {orderPaymentMethodLabel(o.payment_method)} · {orderPaymentStatusLabel(o.payment_status)}{o.payment_method === "counter" && o.payment_status !== "paid" ? ` · ₹${o.total} due` : ""}</p>
-                <p data-no-translate className="mt-2 text-sm">{o.lines.map((l) => `${l.qty}× ${l.name}`).join(", ")}</p>
-                <p className="mt-1 text-sm font-bold">₹{o.total}</p>
-                {o.status !== "cancelled" && <div className="mt-3"><button type="button" disabled={printing} onClick={() => startReceiptPrint({ kind: "order", order: o })} className="inline-flex items-center gap-2 rounded-full border border-primary/45 px-4 py-2 text-xs font-semibold text-foreground transition hover:border-primary hover:bg-primary/10 disabled:opacity-50"><Printer className="h-3.5 w-3.5" /> Download PDF / Print Bill</button><p className="mt-1 text-[10px] text-muted-foreground">Choose Save as PDF in the browser print dialog to download a PDF. Printing does not change order or payment status.</p></div>}
+                <div className="mt-4 grid gap-2 rounded-2xl bg-ink-soft p-3 text-sm sm:grid-cols-2">
+                  <p><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Customer </span><strong>{o.customer_name}</strong></p>
+                  <p><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Pickup code </span><strong className="font-mono text-base tracking-widest">{o.pickup_code}</strong></p>
+                  <p className="text-xs text-muted-foreground">{new Date(o.created_at).toLocaleString()}</p>
+                  <p className="text-xs font-semibold text-foreground">{orderPaymentMethodLabel(o.payment_method)} · {orderPaymentStatusLabel(o.payment_status)}{o.payment_method === "counter" && o.payment_status !== "paid" ? ` · ₹${o.total} due` : ""}</p>
+                </div>
+                <div className="mt-4 space-y-2 border-b border-border pb-4">
+                  <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Food items</p>
+                  {o.lines.map((line, index) => <div key={`${line.name}-${index}`} className="flex items-center justify-between gap-3 text-sm">
+                    <span data-no-translate className="font-semibold text-foreground">{line.qty} × {line.name}</span>
+                    <span className="shrink-0 text-muted-foreground">₹{line.price} each · <strong className="text-foreground">₹{line.price * line.qty}</strong></span>
+                  </div>)}
+                </div>
+                <div className="mt-3 flex items-end justify-between gap-3">
+                  <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Total amount</span>
+                  <strong className="text-2xl font-black tabular-nums text-foreground">₹{o.total}</strong>
+                </div>
+                {o.status !== "cancelled" && <button type="button" disabled={printing || busyOrder === o.id} onClick={() => startReceiptPrint({ kind: "order", order: o })} className="mt-4 flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-black tracking-widest text-primary-foreground transition hover:brightness-110 disabled:opacity-50"><Printer className="h-5 w-5" /> PRINT BILL</button>}
                 {NEXT[o.status] && (
                   <div className="mt-3 flex gap-2">
                     <button disabled={busyOrder === o.id} onClick={() => setStatus(o, NEXT[o.status] as "preparing" | "ready" | "collected")} className="rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50">{o.status === "ready" && o.payment_method === "counter" ? "Mark paid & collected" : `Mark ${ORDER_LABELS[NEXT[o.status]!]}`}</button>
@@ -756,7 +767,6 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
       </section>
       {ownerFeedbackOpen && <FeedbackDialog mode="canteen-report" onClose={() => setOwnerFeedbackOpen(false)} />}
       {ownerLegalPage && <LegalDialog legalDocument={ownerLegalPage === "privacy" ? privacyPolicy : termsConditions} onClose={() => setOwnerLegalPage(null)} />}
-      <SocialThankYouDialog open={socialThankYouOpen} onClose={() => setSocialThankYouOpen(false)} />
       {printJob && <ThermalReceipt job={printJob} paperWidth={printerPaperWidth} />}
     </div>
   );
