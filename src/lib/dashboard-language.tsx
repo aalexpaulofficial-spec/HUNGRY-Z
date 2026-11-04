@@ -8,6 +8,18 @@ export const DASHBOARD_LANGUAGES: { value: DashboardLanguage; label: string }[] 
   { value: "kn", label: "ಕನ್ನಡ" },
 ];
 
+const LANGUAGE_STORAGE_KEY = "hungry:language";
+
+export function readStoredDashboardLanguage(): DashboardLanguage {
+  if (typeof window === "undefined") return "en";
+  try {
+    const saved = window.localStorage.getItem(LANGUAGE_STORAGE_KEY);
+    return saved === "hi" || saved === "kn" ? saved : "en";
+  } catch {
+    return "en";
+  }
+}
+
 const hi: Record<string, string> = {
   Language: "भाषा", "Log out": "लॉग आउट", "Sign out": "साइन आउट", "Use another account": "दूसरे खाते का उपयोग करें", "Try again": "फिर से कोशिश करें", Continue: "जारी रखें", "Loading…": "लोड हो रहा है…", "Loading...": "लोड हो रहा है…",
   "CANTEEN DASHBOARD": "कैंटीन डैशबोर्ड", "Canteen Dashboard": "कैंटीन डैशबोर्ड", Menu: "मेन्यू", "Live Orders": "लाइव ऑर्डर", "Change Template": "टेम्पलेट बदलें", "Add item": "आइटम जोड़ें", "Add Item": "आइटम जोड़ें", Save: "सहेजें", Edit: "बदलें", Delete: "हटाएं", Cancel: "रद्द करें", Available: "उपलब्ध", "Sold out": "स्टॉक खत्म", "in stock": "स्टॉक में", Veg: "शाकाहारी", "Non-veg": "मांसाहारी",
@@ -91,7 +103,32 @@ const scannerProductTranslations: Record<Exclude<DashboardLanguage, "en">, Recor
   },
 };
 
-const dictionaries: Record<DashboardLanguage, Record<string, string>> = { en: {}, hi: { ...hi, ...hiExtra, ...scannerAndStatusTranslations.hi, ...studentDashboardTranslations.hi, ...scannerProductTranslations.hi }, kn: { ...kn, ...knExtra, ...scannerAndStatusTranslations.kn, ...studentDashboardTranslations.kn, ...scannerProductTranslations.kn } };
+const authTranslations: Record<Exclude<DashboardLanguage, "en">, Record<string, string>> = {
+  hi: {
+    "Create Account": "खाता बनाएं", Login: "लॉग इन", "I am a": "मैं हूँ", student: "छात्र", faculty: "संकाय सदस्य", guest: "अतिथि",
+    "Full name": "पूरा नाम", "Registration number": "पंजीकरण संख्या", "Registration number (optional)": "पंजीकरण संख्या (वैकल्पिक)", Email: "ईमेल",
+    "Password (8+ characters)": "पासवर्ड (कम से कम 8 अक्षर)", Password: "पासवर्ड", "Creating account…": "खाता बनाया जा रहा है…", "Account created": "खाता बन गया",
+    "Log in with": "इससे लॉग इन करें", "and your password to continue.": "और जारी रखने के लिए अपना पासवर्ड दर्ज करें।", "Go to Login": "लॉग इन पर जाएं",
+    "Logging in…": "लॉग इन हो रहा है…", "Please confirm your email first.": "पहले अपने ईमेल की पुष्टि करें।", "Wrong email or password.": "ईमेल या पासवर्ड गलत है।",
+    "Forgot your password or having trouble logging in?": "पासवर्ड भूल गए हैं या लॉग इन करने में परेशानी हो रही है?", "Login help": "लॉग इन सहायता",
+    "Please contact our support team at": "कृपया हमारी सहायता टीम से संपर्क करें:", "for assistance.": "सहायता के लिए।", "We're happy to help!": "हमें मदद करके खुशी होगी!",
+    "OK": "ठीक है", Close: "बंद करें", "Follow & Join HUNGRY Z": "HUNGRY Z को फ़ॉलो करें और जुड़ें",
+    "Follow HUNGRY Z on Instagram": "Instagram पर HUNGRY Z को फ़ॉलो करें", "Follow HUNGRY Z on WhatsApp": "WhatsApp पर HUNGRY Z से जुड़ें", "Follow HUNGRY Z on LinkedIn": "LinkedIn पर HUNGRY Z को फ़ॉलो करें",
+  },
+  kn: {
+    "Create Account": "ಖಾತೆ ರಚಿಸಿ", Login: "ಲಾಗಿನ್", "I am a": "ನಾನು", student: "ವಿದ್ಯಾರ್ಥಿ", faculty: "ಅಧ್ಯಾಪಕರು", guest: "ಅತಿಥಿ",
+    "Full name": "ಪೂರ್ಣ ಹೆಸರು", "Registration number": "ನೋಂದಣಿ ಸಂಖ್ಯೆ", "Registration number (optional)": "ನೋಂದಣಿ ಸಂಖ್ಯೆ (ಐಚ್ಛಿಕ)", Email: "ಇಮೇಲ್",
+    "Password (8+ characters)": "ಪಾಸ್‌ವರ್ಡ್ (ಕನಿಷ್ಠ 8 ಅಕ್ಷರಗಳು)", Password: "ಪಾಸ್‌ವರ್ಡ್", "Creating account…": "ಖಾತೆ ರಚಿಸಲಾಗುತ್ತಿದೆ…", "Account created": "ಖಾತೆ ರಚಿಸಲಾಗಿದೆ",
+    "Log in with": "ಇದರಿಂದ ಲಾಗಿನ್ ಮಾಡಿ", "and your password to continue.": "ಮತ್ತು ಮುಂದುವರಿಯಲು ಪಾಸ್‌ವರ್ಡ್ ನಮೂದಿಸಿ.", "Go to Login": "ಲಾಗಿನ್‌ಗೆ ಹೋಗಿ",
+    "Logging in…": "ಲಾಗಿನ್ ಆಗುತ್ತಿದೆ…", "Please confirm your email first.": "ಮೊದಲು ನಿಮ್ಮ ಇಮೇಲ್ ದೃಢೀಕರಿಸಿ.", "Wrong email or password.": "ಇಮೇಲ್ ಅಥವಾ ಪಾಸ್‌ವರ್ಡ್ ತಪ್ಪಾಗಿದೆ.",
+    "Forgot your password or having trouble logging in?": "ಪಾಸ್‌ವರ್ಡ್ ಮರೆತಿರಾ ಅಥವಾ ಲಾಗಿನ್ ಮಾಡಲು ತೊಂದರೆಯಾಗುತ್ತಿದೆಯೇ?", "Login help": "ಲಾಗಿನ್ ಸಹಾಯ",
+    "Please contact our support team at": "ಸಹಾಯಕ್ಕಾಗಿ ನಮ್ಮ ಬೆಂಬಲ ತಂಡವನ್ನು ಸಂಪರ್ಕಿಸಿ:", "for assistance.": "ಸಹಾಯಕ್ಕಾಗಿ.", "We're happy to help!": "ಸಹಾಯ ಮಾಡಲು ನಮಗೆ ಸಂತೋಷ!",
+    "OK": "ಸರಿ", Close: "ಮುಚ್ಚಿ", "Follow & Join HUNGRY Z": "HUNGRY Z ಅನ್ನು ಫಾಲೋ ಮಾಡಿ ಮತ್ತು ಸೇರಿ",
+    "Follow HUNGRY Z on Instagram": "Instagram ನಲ್ಲಿ HUNGRY Z ಅನ್ನು ಫಾಲೋ ಮಾಡಿ", "Follow HUNGRY Z on WhatsApp": "WhatsApp ನಲ್ಲಿ HUNGRY Z ಗೆ ಸೇರಿ", "Follow HUNGRY Z on LinkedIn": "LinkedIn ನಲ್ಲಿ HUNGRY Z ಅನ್ನು ಫಾಲೋ ಮಾಡಿ",
+  },
+};
+
+const dictionaries: Record<DashboardLanguage, Record<string, string>> = { en: {}, hi: { ...hi, ...hiExtra, ...scannerAndStatusTranslations.hi, ...studentDashboardTranslations.hi, ...scannerProductTranslations.hi, ...authTranslations.hi }, kn: { ...kn, ...knExtra, ...scannerAndStatusTranslations.kn, ...studentDashboardTranslations.kn, ...scannerProductTranslations.kn, ...authTranslations.kn } };
 
 export function translateDashboardText(input: string, language: DashboardLanguage): string {
   if (language === "en") return input;
@@ -176,17 +213,20 @@ export function LanguageSelect({ language, onChange }: { language: DashboardLang
 }
 
 export function useDashboardLanguage(userId: string | null | undefined) {
-  const [language, setLanguage] = useState<DashboardLanguage>("en");
+  const [language, setLanguage] = useState<DashboardLanguage>(readStoredDashboardLanguage);
   const [loadedFor, setLoadedFor] = useState<string | null>(null);
   useEffect(() => {
-    if (!userId) { setLanguage("en"); setLoadedFor(null); return; }
+    if (!userId) { setLanguage(readStoredDashboardLanguage()); setLoadedFor(null); return; }
     let alive = true;
-    setLanguage("en");
+    setLanguage(readStoredDashboardLanguage());
     void (async () => {
       try {
         const { data } = await supabase.from("user_language_preferences").select("language").eq("user_id", userId).maybeSingle();
         if (!alive) return;
-        if (data?.language === "en" || data?.language === "hi" || data?.language === "kn") setLanguage(data.language);
+        if (data?.language === "en" || data?.language === "hi" || data?.language === "kn") {
+          setLanguage(data.language);
+          try { window.localStorage.setItem(LANGUAGE_STORAGE_KEY, data.language); } catch { /* Optional browser cache only. */ }
+        }
       } catch (error) {
         // Keep the dashboard usable with English if the preference query or client is unavailable.
         console.error("Could not load dashboard language preference", error);
@@ -198,6 +238,7 @@ export function useDashboardLanguage(userId: string | null | undefined) {
   }, [userId]);
   const saveLanguage = useCallback(async (value: DashboardLanguage) => {
     setLanguage(value);
+    try { window.localStorage.setItem(LANGUAGE_STORAGE_KEY, value); } catch { /* Keep the in-memory selection. */ }
     if (!userId) return;
     const { error } = await supabase.from("user_language_preferences").upsert({ user_id: userId, language: value, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
     if (error) console.error("Could not save dashboard language preference", error.message);

@@ -1,22 +1,8 @@
 import { useEffect, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Instagram, Linkedin, MessageCircle, X } from "lucide-react";
-
-export const HUNGRY_SOCIAL_LINKS = {
-  instagram: "https://www.instagram.com/hungryz___?obrf=MTBoOHp3ZjJzZW9tdg==",
-  whatsapp: "https://chat.whatsapp.com/LlhEK43VNYE6zWZBX9hYqM",
-  linkedin: "https://www.linkedin.com/company/hungryz/",
-} as const;
-
-function WhatsAppMark() {
-  return <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor"><path d="M12 2a9.8 9.8 0 0 0-8.4 14.8L2.3 22l5.3-1.4A10 10 0 1 0 12 2Zm0 17.9a8 8 0 0 1-4.1-1.1l-.3-.2-3.1.8.8-3-.2-.3A8 8 0 1 1 12 19.9Zm4.4-6c-.2-.1-1.4-.7-1.7-.8-.2-.1-.4-.1-.5.1-.2.2-.6.8-.8 1-.1.2-.3.2-.5.1-1.4-.7-2.3-1.3-3.2-2.9-.2-.3.2-.3.7-1.3.1-.2 0-.4 0-.5l-.8-1.9c-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.3-.2.2-.9.9-.9 2.1s.9 2.4 1 2.6c.1.2 1.8 2.8 4.4 3.9 1.6.7 2.2.7 3 .6.5-.1 1.4-.6 1.6-1.2.2-.6.2-1.1.2-1.2-.1-.2-.3-.3-.5-.4Z" /></svg>;
-}
-
-const socialActions = [
-  { label: "Instagram", href: HUNGRY_SOCIAL_LINKS.instagram, Icon: Instagram },
-  { label: "WhatsApp", href: HUNGRY_SOCIAL_LINKS.whatsapp, Icon: WhatsAppMark },
-  { label: "LinkedIn", href: HUNGRY_SOCIAL_LINKS.linkedin, Icon: Linkedin },
-] as const;
+import { X } from "lucide-react";
+import { SocialIconLinks } from "@/components/foodexa/SocialIconLinks";
+export { HUNGRY_SOCIAL_LINKS } from "@/lib/social-links";
 
 export function SocialThankYouDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const closeButton = useRef<HTMLButtonElement>(null);
@@ -43,9 +29,7 @@ export function SocialThankYouDialog({ open, onClose }: { open: boolean; onClose
         <h2 id="social-thank-you-title" className="display mt-4 text-2xl leading-tight">THANK YOU FOR CHOOSING HUNGRY Z! ❤️</h2>
         <p className="mt-4 text-sm leading-relaxed text-muted-foreground">Enjoyed your experience? Follow us and join our community for exclusive updates and announcements about FREE discount coupons when available.</p>
         <p className="mt-6 text-xs font-bold uppercase tracking-[0.22em] text-primary-bright">Follow &amp; Join HUNGRY Z</p>
-        <div className="mt-4 flex items-center justify-center gap-4">
-          {socialActions.map(({ label, href, Icon }) => <a key={label} href={href} target="_blank" rel="noopener noreferrer" aria-label={`Follow HUNGRY Z on ${label}`} className="grid h-12 w-12 place-items-center rounded-full border border-border bg-background/50 text-foreground transition hover:border-primary hover:bg-primary/10 hover:text-primary-bright"><Icon /></a>)}
-        </div>
+        <SocialIconLinks className="mt-4 gap-4" />
         <p className="mt-6 text-xs leading-relaxed text-muted-foreground">Join us, comment &quot;HUNGRYZ&quot; and stay connected for exclusive coupon announcements!</p>
       </motion.section>
     </motion.div>}
