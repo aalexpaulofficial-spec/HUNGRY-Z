@@ -249,6 +249,7 @@ const BANNER_IMAGE_TYPES: Record<string, string> = { "image/jpeg": "jpg", "image
 export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { canteen: Canteen; onSignOut: () => void; language: "en" | "hi" | "kn"; onLanguageChange: (language: "en" | "hi" | "kn") => void }) {
   const [tab, setTab] = useSessionState<"menu" | "orders" | "template" | "analytics" | "events">(`hungry-canteen-dashboard-tab-${canteen.id}`, "menu");
   const [pendingEventRequests, setPendingEventRequests] = useState(0);
+  const [activeOrderCount, setActiveOrderCount] = useState(0);
   const [eventUpdateNotice, setEventUpdateNotice] = useState(false);
   const [menu, setMenu] = useState<MenuItem[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -283,22 +284,49 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
   const recordConfirmedPrint = useServerFn(ownerRecordConfirmedBillPrint);
   const saveAvailability = useServerFn(saveCanteenAvailability);
 
-  useEffect(() => {
-    const loadPendingEventRequests = async () => {
-      const [capacityRequests, facultyEvents] = await Promise.all([
-        supabase.from("faculty_event_capacity_requests").select("id", { count: "exact", head: true }).eq("status", "pending"),
-        supabase.from("faculty_events").select("id", { count: "exact", head: true }).eq("canteen_id", canteen.id).eq("status", "requested"),
-      ]);
-      if (!capacityRequests.error && !facultyEvents.error) setPendingEventRequests((capacityRequests.count ?? 0) + (facultyEvents.count ?? 0));
-    };
-    void loadPendingEventRequests();
-    const channel = supabase.channel(`canteen-event-notifications-${canteen.id}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "faculty_event_capacity_requests" }, () => { setEventUpdateNotice(true); void loadPendingEventRequests(); })
-      .on("postgres_changes", { event: "*", schema: "public", table: "faculty_events", filter: `canteen_id=eq.${canteen.id}` }, () => { setEventUpdateNotice(true); void loadPendingEventRequests(); })
-      .subscribe();
-    const retry = window.setInterval(() => void loadPendingEventRequests(), 15000);
-    return () => { window.clearInterval(retry); void supabase.removeChannel(channel); };
+  const refreshPendingEventRequests = useCallback(async () => {
+    const { data: eventRows, error: eventError } = await supabase
+      .from("faculty_events")
+      .select("id")
+      .eq("canteen_id", canteen.id);
+    if (eventError) return;
+    const eventIds = (eventRows ?? []).map((event) => event.id);
+    if (eventIds.length === 0) {
+      setPendingEventRequests(0);
+      return;
+    }
+    const [capacityRequests, facultyEvents] = await Promise.all([
+      supabase.from("faculty_event_capacity_requests").select("id", { count: "exact", head: true }).in("event_id", eventIds).eq("status", "pending"),
+      supabase.from("faculty_events").select("id", { count: "exact", head: true }).eq("canteen_id", canteen.id).eq("status", "requested"),
+    ]);
+    if (!capacityRequests.error && !facultyEvents.error) {
+      setPendingEventRequests((capacityRequests.count ?? 0) + (facultyEvents.count ?? 0));
+    }
   }, [canteen.id]);
+
+  const refreshActiveOrderCount = useCallback(async () => {
+    try {
+      const { count, error } = await supabase
+        .from("orders")
+        .select("id", { count: "exact", head: true })
+        .eq("canteen_id", canteen.id)
+        .neq("status", "collected")
+        .neq("status", "cancelled");
+      if (!error) setActiveOrderCount(count ?? 0);
+    } catch {
+      // Keep the last confirmed count; the Realtime subscription and retry interval refresh it.
+    }
+  }, [canteen.id]);
+
+  useEffect(() => {
+    void refreshPendingEventRequests();
+    const channel = supabase.channel(`canteen-event-notifications-${canteen.id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "faculty_event_capacity_requests" }, () => { void refreshPendingEventRequests(); })
+      .on("postgres_changes", { event: "*", schema: "public", table: "faculty_events", filter: `canteen_id=eq.${canteen.id}` }, () => { setEventUpdateNotice(true); void refreshPendingEventRequests(); })
+      .subscribe();
+    const retry = window.setInterval(() => void refreshPendingEventRequests(), 15000);
+    return () => { window.clearInterval(retry); void supabase.removeChannel(channel); };
+  }, [canteen.id, refreshPendingEventRequests]);
 
   useEffect(() => {
     setPrinterPaperWidth(readPrinterPaperWidth(canteen.id));
@@ -411,6 +439,7 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
         // this flag records the staff member's explicit payment confirmation.
         counterPaymentConfirmed: status === "collected" && o.payment_method === "counter",
       } });
+      void refreshActiveOrderCount();
       if (r.refund) setOrderMsg(`${o.order_number} cancelled — refund started.`);
       if (r.notificationsSent === false) setOrderMsg(`${o.order_number} status updated, but an email notification could not be delivered. Check email configuration and the email log.`);
     } catch (e) {
@@ -428,6 +457,7 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
     const loadOrders = async () => {
       const { data } = await supabase.from("orders").select("*").eq("canteen_id", canteen.id).order("created_at", { ascending: false }).limit(100);
       setOrders((data as unknown as Order[]) ?? []);
+      void refreshActiveOrderCount();
     };
     const loadTemplate = async () => {
       const { data, error } = await supabase.from("canteen_templates").select("canteen_id,banner_image_url,heading,description,banner_crop_x,banner_crop_y,banner_crop_zoom,updated_at").eq("canteen_id", canteen.id).maybeSingle();
@@ -452,10 +482,12 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
       .on("postgres_changes", { event: "*", schema: "public", table: "canteen_templates", filter: `canteen_id=eq.${canteen.id}` }, loadTemplate)
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "canteens", filter: `id=eq.${canteen.id}` }, (payload) => setAvailability(payload.new as Canteen))
       .subscribe();
+    const orderCountRetry = window.setInterval(() => void refreshActiveOrderCount(), 15000);
     return () => {
+      window.clearInterval(orderCountRetry);
       supabase.removeChannel(ch);
     };
-  }, [canteen.id]);
+  }, [canteen.id, refreshActiveOrderCount]);
 
   async function updateAvailability(settings: AvailabilitySettings) {
     setAvailabilitySaving(true);
@@ -615,8 +647,8 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
           onSave={updateAvailability}
         />
         <div className="mt-6 flex flex-wrap items-center gap-2">
-          {([['menu', `Menu (${menu.length})`], ['orders', `Live Orders (${orders.filter((o) => o.status !== "collected" && o.status !== "cancelled").length})`], ['events', `${eventUpdateNotice ? "• " : ""}${pendingEventRequests ? `Faculty Events (${pendingEventRequests} requests)` : "Faculty Events"}`], ['template', "Change Template"], ['analytics', "Analytics"]] as const).map(([k, l]) => (
-            <button key={k} type="button" onClick={() => { setTab(k); if (k === "events") setEventUpdateNotice(false); }} className={cn("rounded-full border px-4 py-2 text-xs font-semibold", tab === k ? "border-primary bg-primary text-primary-foreground" : "border-border text-muted-foreground")}>{l}</button>
+          {([['menu', `Menu (${menu.length})`], ['orders', `Live Orders (${activeOrderCount})`], ['events', `${eventUpdateNotice ? "• " : ""}Faculty Events (${pendingEventRequests} requests)`], ['template', "Change Template"], ['analytics', "Analytics"]] as const).map(([k, l]) => (
+            <button key={k} type="button" onClick={() => { setTab(k); if (k === "orders") void refreshActiveOrderCount(); if (k === "events") { setEventUpdateNotice(false); void refreshPendingEventRequests(); } }} className={cn("rounded-full border px-4 py-2 text-xs font-semibold", tab === k ? "border-primary bg-primary text-primary-foreground" : "border-border text-muted-foreground")}>{l}</button>
           ))}
           {tab === "orders" && <button type="button" onClick={() => { setPrinterSettingsOpen((open) => !open); setPrinterSettingsMsg(""); }} aria-expanded={printerSettingsOpen} className="ml-auto inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-xs font-semibold text-muted-foreground transition hover:border-primary/50 hover:text-foreground"><Settings className="h-3.5 w-3.5" /> Printer Settings</button>}
         </div>

@@ -177,7 +177,10 @@ export function EventCapacityPanel({ mode, canteenId, canteenName }: { mode: "fa
           <input required inputMode="numeric" pattern="[0-9]{7}" maxLength={7} value={eventCode} onChange={(event) => setEventCode(event.currentTarget.value.replace(/\D/g, "").slice(0, 7))} aria-label="7-digit Event Code" placeholder="1234567" className="mt-1 w-full rounded-2xl border border-input bg-ink-soft px-4 py-3 font-mono tracking-[0.3em] text-foreground" />
         </label>
         <p className="text-xs text-muted-foreground">This event will be sent privately to {canteenName}. It becomes visible to users after canteen approval and publication.</p>
-        <textarea maxLength={1000} value={description} onChange={(event) => setDescription(event.currentTarget.value)} placeholder="Event details" aria-label="Event details" className="w-full rounded-2xl border border-input bg-ink-soft px-4 py-3 text-sm" rows={2} />
+        <label htmlFor="faculty-event-details" className="block space-y-2 rounded-2xl border border-primary/45 bg-primary/[0.06] p-3 shadow-[0_0_24px_hsl(var(--primary)/0.06)] focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20">
+          <span className="block text-xs font-bold tracking-[0.14em] text-primary">FACULTY EVENT DETAILS</span>
+          <textarea id="faculty-event-details" maxLength={1000} value={description} onChange={(event) => setDescription(event.currentTarget.value)} placeholder="Add important information about this event" aria-label="Faculty event details" className="min-h-20 w-full resize-y rounded-xl border border-primary/25 bg-background/75 px-4 py-3 text-sm leading-relaxed text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" rows={2} />
+        </label>
         <label className="block text-xs text-muted-foreground">Initial token capacity
           <input required type="number" min={1} max={100000} value={capacity} onChange={(event) => setCapacity(event.currentTarget.value)} aria-label="Initial token capacity" className="mt-1 w-full rounded-2xl border border-input bg-ink-soft px-4 py-3 text-sm text-foreground" />
         </label>

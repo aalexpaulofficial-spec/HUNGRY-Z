@@ -36,6 +36,10 @@ describe("faculty event food request menu", () => {
     render(<EventCapacityPanel mode="faculty" canteenId="canteen-1" canteenName="FLAMES" />);
 
     const menuButton = await screen.findByRole("button", { name: "Open FLAMES menu" });
+    const detailsField = screen.getByLabelText("Faculty event details");
+    expect(screen.getByText("FACULTY EVENT DETAILS")).toBeInTheDocument();
+    expect(detailsField).toHaveClass("text-foreground");
+    expect(detailsField.parentElement).toHaveClass("border-primary/45", "bg-primary/[0.06]");
     expect(screen.queryByText("DOSA")).not.toBeInTheDocument();
     expect(screen.queryByText("WADA")).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/Additional Food Requirements/)).not.toBeInTheDocument();
