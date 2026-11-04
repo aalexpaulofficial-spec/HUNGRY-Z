@@ -86,6 +86,10 @@ describe("HUNGRY Z order email content", () => {
       expect(email.html).toContain('aria-label="Instagram"');
       expect(email.html).toContain('aria-label="WhatsApp"');
       expect(email.html).toContain('aria-label="LinkedIn"');
+      expect(email.html.match(/Red%20Social%20Media%20Icons%20Trio\.png/g)).toHaveLength(3);
+      expect(email.html).toContain("background-position:0 0");
+      expect(email.html).toContain("background-position:-34px 0");
+      expect(email.html).toContain("background-position:-68px 0");
     }
   });
 

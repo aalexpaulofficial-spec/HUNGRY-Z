@@ -33,7 +33,7 @@ describe("login help and social links", () => {
       const link = screen.getByRole("link", { name: `Follow HUNGRY Z on ${name}` });
       expect(link).toHaveAttribute("href", href);
       expect(link).toHaveAttribute("target", "_blank");
-      expect(link.querySelector("img")).toHaveAttribute("src", "/Instagram%2C%20WhatsApp%2C%20and%20LinkedIn%20Icons.png");
+      expect(link.querySelector("img")).toHaveAttribute("src", "/Red%20Social%20Media%20Icons%20Trio.png");
     }
   });
 

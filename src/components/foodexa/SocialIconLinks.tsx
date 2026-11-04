@@ -6,7 +6,7 @@ const socialLinks = [
   { label: "LinkedIn", href: HUNGRY_SOCIAL_LINKS.linkedin },
 ] as const;
 
-const sprite = "/Instagram%2C%20WhatsApp%2C%20and%20LinkedIn%20Icons.png";
+const sprite = "/Red%20Social%20Media%20Icons%20Trio.png";
 
 export function SocialIconLinks({ className = "" }: { className?: string }) {
   return (
