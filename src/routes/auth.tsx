@@ -229,7 +229,7 @@ function SignupForm({ onDone, orderId, language }: { onDone: () => void; orderId
   );
 }
 
-function LoginForm({ orderId, language }: { orderId?: string; language: "en" | "hi" | "kn" }) {
+export function LoginForm({ orderId, language }: { orderId?: string; language: "en" | "hi" | "kn" }) {
   const navigate = useNavigate();
   const [errors, setErrors] = useState<Partial<Record<"fullName"|"registrationNumber"|"email"|"password"|"accessCode"|"role", string>>>({});
   const [busy, setBusy] = useState(false);
