@@ -29,6 +29,13 @@
       "when": 1793707426000,
       "tag": "0003_scanner_multifood_corrections",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793780000000,
+      "tag": "0004_registration_terms_consent",
+      "breakpoints": true
     }
   ]
 }

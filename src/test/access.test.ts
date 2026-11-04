@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { accessCodeSchema, signupSchema, canAcceptOrders, generateCanteenCode, isCustomerRole } from "@/lib/access";
 
-const base = { role: "student", fullName: "Asha K", registrationNumber: "21CS001", email: "a@b.co", password: "password1" };
+const base = { role: "student", fullName: "Asha K", registrationNumber: "21CS001", email: "a@b.co", password: "password1", acceptedTerms: true };
 
 describe("access rules", () => {
   it("code must be exactly 7 characters", () => {
@@ -25,6 +25,7 @@ describe("access rules", () => {
   it("registration number optional only for guests", () => {
     expect(signupSchema.safeParse({ ...base, registrationNumber: "" }).success).toBe(false);
     expect(signupSchema.safeParse({ ...base, role: "guest", registrationNumber: "" }).success).toBe(true);
+    expect(signupSchema.safeParse({ ...base, acceptedTerms: false }).success).toBe(false);
   });
   it("only active, non-maintenance canteens accept orders", () => {
     expect(canAcceptOrders({ is_active: true, visibility: "public" })).toBe(true);

@@ -16,6 +16,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as CanteenRouteImport } from './routes/canteen'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as RegisterCanteenRouteImport } from './routes/register-canteen'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/app'
 import { Route as InstallCanteenRouteImport } from './routes/install.canteen'
@@ -55,6 +56,11 @@ const RegisterCanteenRoute = RegisterCanteenRouteImport.update({
   path: '/register-canteen',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
   path: '/terms',
@@ -84,6 +90,7 @@ export interface FileRoutesByFullPath {
   '/canteen': typeof CanteenRoute
   '/privacy': typeof PrivacyRoute
   '/register-canteen': typeof RegisterCanteenRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/terms': typeof TermsRoute
   '/app': typeof AuthenticatedAppRoute
   '/install/canteen': typeof InstallCanteenRoute
@@ -96,6 +103,7 @@ export interface FileRoutesByTo {
   '/canteen': typeof CanteenRoute
   '/privacy': typeof PrivacyRoute
   '/register-canteen': typeof RegisterCanteenRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/terms': typeof TermsRoute
   '/app': typeof AuthenticatedAppRoute
   '/install/canteen': typeof InstallCanteenRoute
@@ -110,6 +118,7 @@ export interface FileRoutesById {
   '/canteen': typeof CanteenRoute
   '/privacy': typeof PrivacyRoute
   '/register-canteen': typeof RegisterCanteenRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/terms': typeof TermsRoute
   '/_authenticated/app': typeof AuthenticatedAppRoute
   '/install/canteen': typeof InstallCanteenRoute
@@ -124,6 +133,7 @@ export interface FileRouteTypes {
     | '/canteen'
     | '/privacy'
     | '/register-canteen'
+    | '/reset-password'
     | '/terms'
     | '/app'
     | '/install/canteen'
@@ -136,6 +146,7 @@ export interface FileRouteTypes {
     | '/canteen'
     | '/privacy'
     | '/register-canteen'
+    | '/reset-password'
     | '/terms'
     | '/app'
     | '/install/canteen'
@@ -149,6 +160,7 @@ export interface FileRouteTypes {
     | '/canteen'
     | '/privacy'
     | '/register-canteen'
+    | '/reset-password'
     | '/terms'
     | '/_authenticated/app'
     | '/install/canteen'
@@ -163,6 +175,7 @@ export interface RootRouteChildren {
   CanteenRoute: typeof CanteenRoute
   PrivacyRoute: typeof PrivacyRoute
   RegisterCanteenRoute: typeof RegisterCanteenRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   TermsRoute: typeof TermsRoute
   InstallCanteenRoute: typeof InstallCanteenRoute
   ApiPublicRazorpayWebhookRoute: typeof ApiPublicRazorpayWebhookRoute
@@ -219,6 +232,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RegisterCanteenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/terms': {
       id: '/terms'
       path: '/terms'
@@ -269,6 +289,7 @@ const rootRouteChildren: RootRouteChildren = {
   CanteenRoute: CanteenRoute,
   PrivacyRoute: PrivacyRoute,
   RegisterCanteenRoute: RegisterCanteenRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   TermsRoute: TermsRoute,
   InstallCanteenRoute: InstallCanteenRoute,
   ApiPublicRazorpayWebhookRoute: ApiPublicRazorpayWebhookRoute,

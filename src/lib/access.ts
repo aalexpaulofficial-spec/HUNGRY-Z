@@ -17,6 +17,7 @@ export function isCustomerRole(role: unknown): role is Role {
 export const signupSchema = z
   .object({
     role: z.enum(roles),
+    acceptedTerms: z.literal(true, { error: "Please agree to the Privacy Policy and Terms & Conditions." }),
     fullName: z.string().trim().min(2, "Enter your full name").max(100),
     registrationNumber: z.string().trim().max(40).optional().default(""),
     email: z.string().trim().email("Enter a valid email").max(255),

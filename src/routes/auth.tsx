@@ -14,6 +14,8 @@ import { useBackNavigationEnabled } from "@/lib/back-nav";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { SocialIconLinks } from "@/components/foodexa/SocialIconLinks";
 import { readStoredDashboardLanguage, translateDashboardText } from "@/lib/dashboard-language";
+import { LegalDialog } from "@/components/foodexa/LegalDialog";
+import { privacyPolicy, termsConditions } from "@/content/legal";
 
 export const Route = createFileRoute("/auth")({
   validateSearch: z.object({ mode: z.enum(["login", "signup"]).optional(), orderId: z.string().uuid().optional() }),
@@ -113,21 +115,23 @@ function ErrorText({ msg }: { msg?: string | undefined }) {
   return msg ? <p className="mt-1.5 text-xs text-primary-bright">{msg}</p> : null;
 }
 
-function SignupForm({ onDone, orderId, language }: { onDone: () => void; orderId?: string; language: "en" | "hi" | "kn" }) {
+export function SignupForm({ onDone, orderId, language }: { onDone: () => void; orderId?: string; language: "en" | "hi" | "kn" }) {
   const t = (value: string) => translateDashboardText(value, language);
   const [role, setRole] = useState<Role>("student");
-  const [errors, setErrors] = useState<Partial<Record<"fullName"|"registrationNumber"|"email"|"password"|"accessCode"|"role", string>>>({});
+  const [errors, setErrors] = useState<Partial<Record<"fullName"|"registrationNumber"|"email"|"password"|"accessCode"|"role"|"acceptedTerms", string>>>({});
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState<string | null>(null);
   const [formError, setFormError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [legalPage, setLegalPage] = useState<"privacy" | "terms" | null>(null);
   const welcome = useServerFn(ensureWelcomeEmail);
 
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setFormError("");
     const fd = new FormData(e.currentTarget);
-    const parsed = signupSchema.safeParse({ ...Object.fromEntries(fd), role });
+    const parsed = signupSchema.safeParse({ ...Object.fromEntries(fd), role, acceptedTerms });
     if (!parsed.success) {
       const errs: Record<string, string> = {} as Record<string, string>;
       parsed.error.issues.forEach((i) => (errs[String(i.path[0])] = i.message));
@@ -148,6 +152,8 @@ function SignupForm({ onDone, orderId, language }: { onDone: () => void; orderId
           role: v.role,
           full_name: v.fullName,
           registration_number: v.registrationNumber,
+          accepted_terms: true,
+          terms_version: "2026-11-04",
         },
       },
     });
@@ -222,9 +228,21 @@ function SignupForm({ onDone, orderId, language }: { onDone: () => void; orderId
         <ErrorText msg={errors.password} />
       </div>
       {formError && <p className="text-sm text-primary-bright">{t(formError)}</p>}
-      <button disabled={busy} className="w-full rounded-full bg-primary py-4 text-sm font-semibold text-primary-foreground transition hover:shadow-[0_0_40px_-6px_var(--primary-bright)] disabled:opacity-60">
+      <button disabled={busy || !acceptedTerms} className="w-full rounded-full bg-primary py-4 text-sm font-semibold text-primary-foreground transition hover:shadow-[0_0_40px_-6px_var(--primary-bright)] disabled:opacity-60">
           {busy ? t("Creating account…") : t("Create Account")}
       </button>
+      <label className="flex items-start gap-2.5 text-sm leading-relaxed text-muted-foreground">
+        <input name="acceptedTerms" type="checkbox" checked={acceptedTerms} onChange={(event) => setAcceptedTerms(event.currentTarget.checked)} className="mt-1 h-4 w-4 accent-primary" />
+        <span>
+          I agree to the{" "}
+          <button type="button" onClick={() => setLegalPage("privacy")} className="text-primary-bright underline underline-offset-2">Privacy Policy</button>
+          {" and "}
+          <button type="button" onClick={() => setLegalPage("terms")} className="text-primary-bright underline underline-offset-2">Terms &amp; Conditions</button>.
+        </span>
+      </label>
+      {!acceptedTerms && <p className="-mt-2 text-xs text-muted-foreground">Please agree to continue.</p>}
+      <ErrorText msg={errors.acceptedTerms} />
+      {legalPage && <LegalDialog legalDocument={legalPage === "privacy" ? privacyPolicy : termsConditions} onClose={() => setLegalPage(null)} />}
     </form>
   );
 }
@@ -235,17 +253,8 @@ export function LoginForm({ orderId, language }: { orderId?: string; language: "
   const [busy, setBusy] = useState(false);
   const [formError, setFormError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [helpOpen, setHelpOpen] = useState(false);
+  const [resetOpen, setResetOpen] = useState(false);
   const t = (value: string) => translateDashboardText(value, language);
-
-  useEffect(() => {
-    if (!helpOpen) return;
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setHelpOpen(false);
-    };
-    window.addEventListener("keydown", closeOnEscape);
-    return () => window.removeEventListener("keydown", closeOnEscape);
-  }, [helpOpen]);
 
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -265,6 +274,7 @@ export function LoginForm({ orderId, language }: { orderId?: string; language: "
   }
 
   return (
+    <>
     <form onSubmit={submit} className="space-y-4" noValidate>
       <div>
         <input name="email" type="email" placeholder={t("Email")} className={field} autoComplete="email" />
@@ -283,26 +293,57 @@ export function LoginForm({ orderId, language }: { orderId?: string; language: "
       <button disabled={busy} className="w-full rounded-full bg-primary py-4 text-sm font-semibold text-primary-foreground transition hover:shadow-[0_0_40px_-6px_var(--primary-bright)] disabled:opacity-60">
         {busy ? t("Logging in…") : t("Login")}
       </button>
-      <button type="button" onClick={() => setHelpOpen(true)} className="-mt-1 block w-full text-center text-xs text-muted-foreground underline decoration-primary/50 underline-offset-4 transition hover:text-primary-bright">
-        {t("Forgot your password or having trouble logging in?")}
+      <button type="button" onClick={() => setResetOpen(true)} className="-mt-1 block w-full text-center text-xs text-muted-foreground underline decoration-primary/50 underline-offset-4 transition hover:text-primary-bright">
+        Forgot password?
       </button>
       <div className="border-t border-border/70 pt-4 text-center">
         <p className="mb-3 text-xs font-semibold tracking-wide text-muted-foreground">{t("Follow & Join HUNGRY Z")}</p>
         <SocialIconLinks />
       </div>
-      {helpOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onMouseDown={(event) => { if (event.target === event.currentTarget) setHelpOpen(false); }}>
-          <section role="dialog" aria-modal="true" aria-labelledby="login-help-title" className="glass-red relative w-full max-w-sm rounded-3xl border border-primary/30 p-6 shadow-[0_24px_80px_-20px_rgba(220,20,40,0.55)]">
-            <button type="button" onClick={() => setHelpOpen(false)} aria-label={t("Close")} className="absolute right-3 top-3 grid h-9 w-9 place-items-center rounded-full text-xl text-muted-foreground transition hover:bg-primary/10 hover:text-foreground">×</button>
-            <h2 id="login-help-title" className="display pr-8 text-lg">{t("Login help")}</h2>
-            <p className="mt-4 text-sm leading-relaxed text-foreground">
-              {t("Please contact our support team at")} <a href="mailto:hungryofficialx@gmail.com" className="font-bold text-primary-bright underline underline-offset-2">hungryofficialx@gmail.com</a> {t("for assistance.")}
-            </p>
-            <p className="mt-2 text-sm text-muted-foreground">{t("We're happy to help!")}</p>
-            <button type="button" onClick={() => setHelpOpen(false)} className="mt-6 w-full rounded-full bg-primary py-3 text-sm font-semibold text-primary-foreground transition hover:shadow-[0_0_32px_-8px_var(--primary-bright)]">{t("OK")}</button>
-          </section>
-        </div>
-      )}
     </form>
+    {resetOpen && <ForgotPasswordDialog initialEmail="" onClose={() => setResetOpen(false)} />}
+    </>
+  );
+}
+
+function ForgotPasswordDialog({ initialEmail, onClose }: { initialEmail: string; onClose: () => void }) {
+  const [email, setEmail] = useState(initialEmail);
+  const [busy, setBusy] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [error, setError] = useState("");
+
+  async function submit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError("");
+    const parsed = z.string().trim().email("Enter a valid email address.").safeParse(email);
+    if (!parsed.success) return setError(parsed.error.issues[0]?.message ?? "Enter a valid email address.");
+    setBusy(true);
+    const redirectTo = new URL("/reset-password", window.location.origin).toString();
+    try {
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(parsed.data, { redirectTo });
+      if (resetError) return setError("We couldn't send the reset email right now. Please try again later.");
+      setSent(true);
+    } catch {
+      setError("We couldn't send the reset email right now. Please try again later.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+      <section role="dialog" aria-modal="true" aria-labelledby="forgot-password-title" className="glass-red relative w-full max-w-sm rounded-3xl border border-primary/30 p-6 shadow-[0_24px_80px_-20px_rgba(220,20,40,0.55)]">
+        <button type="button" onClick={onClose} aria-label="Close" className="absolute right-3 top-3 grid h-9 w-9 place-items-center rounded-full text-xl text-muted-foreground transition hover:bg-primary/10 hover:text-foreground">×</button>
+        <h2 id="forgot-password-title" className="display pr-8 text-lg">Reset your password</h2>
+        {sent ? <p role="status" className="mt-4 text-sm leading-relaxed text-foreground">If an account exists for that email, we’ve sent a password reset link.</p> : (
+          <form onSubmit={submit} className="mt-4 space-y-4">
+            <label htmlFor="reset-email" className="block text-sm text-muted-foreground">Enter your registered email address.</label>
+            <input id="reset-email" name="resetEmail" type="email" autoComplete="email" required value={email} onChange={(event) => setEmail(event.currentTarget.value)} className={field} />
+            {error && <p role="alert" className="text-sm text-primary-bright">{error}</p>}
+            <button disabled={busy} className="w-full rounded-full bg-primary py-3 text-sm font-semibold text-primary-foreground disabled:opacity-60">{busy ? "Sending…" : "Send reset link"}</button>
+          </form>
+        )}
+      </section>
+    </div>
   );
 }
