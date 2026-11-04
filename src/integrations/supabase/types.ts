@@ -558,6 +558,9 @@ export type Database = {
       orders: {
         Row: {
           canteen_id: string
+          completion_workflow: string | null
+          food_received_confirmed_at: string | null
+          collection_thank_you_seen_at: string | null
           bill_print_confirmed_at: string | null
           bill_print_thank_you_seen_at: string | null
           confirmation_email_sent_at: string | null
@@ -587,6 +590,9 @@ export type Database = {
         }
         Insert: {
           canteen_id: string
+          completion_workflow?: string | null
+          food_received_confirmed_at?: string | null
+          collection_thank_you_seen_at?: string | null
           bill_print_confirmed_at?: string | null
           bill_print_thank_you_seen_at?: string | null
           confirmation_email_sent_at?: string | null
@@ -616,6 +622,9 @@ export type Database = {
         }
         Update: {
           canteen_id?: string
+          completion_workflow?: string | null
+          food_received_confirmed_at?: string | null
+          collection_thank_you_seen_at?: string | null
           bill_print_confirmed_at?: string | null
           bill_print_thank_you_seen_at?: string | null
           confirmation_email_sent_at?: string | null
@@ -973,9 +982,9 @@ export type Database = {
         Relationships: []
       }
       faculty_events: {
-        Row: { id: string; faculty_user_id: string; canteen_id: string; name: string; event_code: string; token_prefix: string; description: string; food_requirements: Json; food_confirmation: Json; canteen_note: string; initial_capacity: number; approved_capacity: number; next_token_sequence: number; status: string; created_at: string; updated_at: string }
-        Insert: { id?: string; faculty_user_id: string; canteen_id: string; name: string; event_code: string; token_prefix: string; description?: string; food_requirements?: Json; food_confirmation?: Json; canteen_note?: string; initial_capacity: number; approved_capacity: number; next_token_sequence?: number; status?: string; created_at?: string; updated_at?: string }
-        Update: { id?: string; faculty_user_id?: string; canteen_id?: string; name?: string; event_code?: string; token_prefix?: string; description?: string; food_requirements?: Json; food_confirmation?: Json; canteen_note?: string; initial_capacity?: number; approved_capacity?: number; next_token_sequence?: number; status?: string; created_at?: string; updated_at?: string }
+        Row: { id: string; faculty_user_id: string; canteen_id: string; name: string; event_code: string; token_prefix: string; description: string; food_requirements: Json; food_request_message: string; food_confirmation: Json; canteen_note: string; initial_capacity: number; approved_capacity: number; next_token_sequence: number; status: string; created_at: string; updated_at: string }
+        Insert: { id?: string; faculty_user_id: string; canteen_id: string; name: string; event_code: string; token_prefix: string; description?: string; food_requirements?: Json; food_request_message?: string; food_confirmation?: Json; canteen_note?: string; initial_capacity: number; approved_capacity: number; next_token_sequence?: number; status?: string; created_at?: string; updated_at?: string }
+        Update: { id?: string; faculty_user_id?: string; canteen_id?: string; name?: string; event_code?: string; token_prefix?: string; description?: string; food_requirements?: Json; food_request_message?: string; food_confirmation?: Json; canteen_note?: string; initial_capacity?: number; approved_capacity?: number; next_token_sequence?: number; status?: string; created_at?: string; updated_at?: string }
         Relationships: []
       }
       faculty_event_capacity_requests: {
@@ -1020,6 +1029,8 @@ export type Database = {
       hungry_mark_order_paid: { Args: { p_order: string }; Returns: string }
       hungry_confirm_order_bill_print: { Args: { p_order_id: string; p_owner_user_id: string; p_paper_width: string }; Returns: { confirmed_at: string; already_confirmed: boolean }[] }
       hungry_acknowledge_bill_print_thank_you: { Args: { p_order_id: string; p_customer_user_id: string }; Returns: boolean }
+      hungry_acknowledge_collected_order_thank_you: { Args: { p_order_id: string; p_customer_user_id: string }; Returns: boolean }
+      hungry_confirm_printed_order_food_received: { Args: { p_order_id: string; p_customer_user_id: string }; Returns: { confirmed_at: string; already_confirmed: boolean }[] }
       hungry_resolve_faculty_event_capacity_request: { Args: { p_request_id: string; p_canteen_owner_id: string; p_approve: boolean; p_confirmed_food_quantities?: Json; p_confirmed_food_prices?: Json; p_note?: string }; Returns: string }
       hungry_review_faculty_event_request: { Args: { p_event_id: string; p_canteen_owner_id: string; p_accept: boolean; p_note?: string }; Returns: string }
       hungry_publish_faculty_event: { Args: { p_event_id: string; p_canteen_owner_id: string; p_confirmed_food_quantities: Json; p_confirmed_food_prices: Json; p_note?: string }; Returns: string }

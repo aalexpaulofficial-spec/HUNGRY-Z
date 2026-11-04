@@ -1152,6 +1152,7 @@ export const ownerUpdateOrderStatus = createServerFn({ method: "POST" })
     if (!o) throw new Error("Order not found");
     const { data: c } = await db.from("canteens").select("owner_user_id").eq("id", o.canteen_id).maybeSingle();
     if (!c || c.owner_user_id !== context.userId) throw new Error("Forbidden");
+    if (o.completion_workflow === "printed" && data.status !== "cancelled") throw new Error("This order uses customer-confirmed printed collection; it cannot enter the manual preparation workflow.");
     if (!canOwnerMove(o.status, data.status)) throw new Error("That status change isn't allowed.");
 
     if (data.status === "cancelled") {
@@ -1165,7 +1166,10 @@ export const ownerUpdateOrderStatus = createServerFn({ method: "POST" })
       const notifications = await orders.sendOrderStatusUpdate(o.id, "cancelled");
       return { ok: true, refund: false, notificationsSent: notifications.sent };
     }
-    const patch: { status: string; payment_status?: string; paid_at?: string } = { status: data.status };
+    const patch: { status: string; completion_workflow?: string | null; payment_status?: string; paid_at?: string } = {
+      status: data.status,
+      completion_workflow: data.status === "cancelled" ? o.completion_workflow : "manual",
+    };
     if (data.status === "collected" && o.payment_method === "counter" && data.counterPaymentConfirmed) {
       patch.payment_status = "paid";
       patch.paid_at = new Date().toISOString();
@@ -1193,7 +1197,7 @@ export const ownerRecordConfirmedBillPrint = createServerFn({ method: "POST" })
     }
     const confirmation = Array.isArray(result) ? result[0] : result;
     if (!confirmation) throw new Error("The print confirmation could not be saved.");
-    return { ok: true, alreadyConfirmed: confirmation.already_confirmed as boolean };
+    return { ok: true, alreadyConfirmed: confirmation.already_confirmed as boolean, confirmedAt: confirmation.confirmed_at as string };
   });
 
 export const acknowledgeBillPrintThankYou = createServerFn({ method: "POST" })
@@ -1210,4 +1214,37 @@ export const acknowledgeBillPrintThankYou = createServerFn({ method: "POST" })
       throw new Error("Could not save the thank-you popup status.");
     }
     return { acknowledged: Boolean(acknowledged) };
+  });
+
+export const acknowledgeCollectedOrderThankYou = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ orderId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const db = await admin();
+    const { data: acknowledged, error } = await db.rpc("hungry_acknowledge_collected_order_thank_you", {
+      p_order_id: data.orderId,
+      p_customer_user_id: context.userId,
+    });
+    if (error) throw new Error("Could not save the thank-you popup status.");
+    return { acknowledged: acknowledged === true };
+  });
+
+export const confirmOwnPrintedOrderFoodReceived = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ orderId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const db = await admin();
+    const { data: result, error } = await db.rpc("hungry_confirm_printed_order_food_received", {
+      p_order_id: data.orderId,
+      p_customer_user_id: context.userId,
+    });
+    if (error) {
+      if (error.message.includes("RECEIPT:not_order_customer")) throw new Error("You can only confirm receipt for your own order.");
+      if (error.message.includes("RECEIPT:bill_not_printed")) throw new Error("This order has no confirmed printed bill.");
+      if (error.message.includes("RECEIPT:order_cancelled")) throw new Error("A cancelled order cannot be confirmed as received.");
+      throw new Error("Could not save your food-received confirmation. Please try again.");
+    }
+    const confirmation = Array.isArray(result) ? result[0] : result;
+    if (!confirmation) throw new Error("Could not save your food-received confirmation. Please try again.");
+    return { confirmedAt: confirmation.confirmed_at as string, alreadyConfirmed: confirmation.already_confirmed as boolean };
   });

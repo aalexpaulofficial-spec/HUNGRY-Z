@@ -1,12 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { BackButton, useBackNavigationEnabled, useBackStep } from "@/lib/back-nav";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { flushSync } from "react-dom";
 import { z } from "zod";
 import { LogOut, Plus, Trash2, Pencil, Printer, Settings } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { CanteenTemplatePreview } from "@/components/foodexa/CanteenTemplatePreview";
+import { OrderStatusBadge, orderStatusBorderClass } from "@/components/foodexa/OrderStatusBadge";
 import { DEFAULT_BANNER_CROP, normalizeBannerCrop } from "@/lib/banner-crop";
 import { createCanteenMenuImageUpload, getCanteenOwnerAccess, ownerRecordConfirmedBillPrint, ownerUpdateOrderStatus, saveCanteenAvailability } from "@/lib/hungry.functions";
 import { ORDER_TYPE_LABELS, orderPaymentMethodLabel, orderPaymentStatusLabel, type OrderType } from "@/lib/order-rules";
@@ -173,7 +174,7 @@ function CanteenPage() {
   );
 }
 
-type Order = { id: string; order_number: string; customer_name: string; lines: { name: string; qty: number; price: number }[]; subtotal: number; total: number; discount: number; pickup_code: string; counter: string; status: string; created_at: string; order_type: string; payment_method: string; payment_status: string };
+type Order = { id: string; order_number: string; customer_name: string; lines: { name: string; qty: number; price: number }[]; subtotal: number; total: number; discount: number; pickup_code: string; counter: string; status: string; created_at: string; order_type: string; payment_method: string; payment_status: string; bill_print_confirmed_at: string | null; completion_workflow: string | null; food_received_confirmed_at: string | null };
 type ReceiptPaperWidth = "auto" | "58" | "80";
 type ReceiptPrintJob = { kind: "order"; order: Order } | { kind: "test"; counterName: string; createdAt: string };
 const printerPreferenceKey = (canteenId: string) => `hungry:printer-preferences:${canteenId}`;
@@ -197,7 +198,7 @@ function ThermalReceipt({ job, paperWidth }: { job: ReceiptPrintJob; paperWidth:
   return (
     <section id="hungry-thermal-print" className={`hungry-print-only hungry-receipt-paper-${paperWidth}`} aria-label="HUNGRY Z receipt">
       <header className="hungry-receipt-header">
-        <img src="/HUNGRY%20Z%20Q%20LOGO.png" alt="HUNGRY Z" />
+        <img src="/HUNGRY%20Z%20Q%20LOGO.png" alt="HUNGRY Z official logo" width="160" height="160" decoding="sync" />
         <h1>HUNGRY Z</h1>
         <p>NO QUEUES. SAVE FOOD.</p>
         <p>SMART CAMPUS FOOD ORDERING</p>
@@ -272,6 +273,7 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
   const [printerSettingsMsg, setPrinterSettingsMsg] = useState("");
   const [printJob, setPrintJob] = useState<ReceiptPrintJob | null>(null);
   const [printing, setPrinting] = useState(false);
+  const printLock = useRef(false);
   const [ownerFeedbackOpen, setOwnerFeedbackOpen] = useState(false);
   const [ownerLegalPage, setOwnerLegalPage] = useState<"privacy" | "terms" | null>(null);
   const [availability, setAvailability] = useState(canteen);
@@ -313,8 +315,9 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
     }
   }
 
-  function startReceiptPrint(job: ReceiptPrintJob) {
-    if (printing) return;
+  async function startReceiptPrint(job: ReceiptPrintJob) {
+    if (printLock.current) return;
+    printLock.current = true;
     setPrinting(true);
     let finished = false;
     let cleanupTimer: number | undefined;
@@ -323,6 +326,7 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
       finished = true;
       window.removeEventListener("afterprint", finishAfterPrint);
       if (cleanupTimer !== undefined) window.clearTimeout(cleanupTimer);
+      printLock.current = false;
       flushSync(() => {
         setPrintJob(null);
         setPrinting(false);
@@ -340,9 +344,12 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
       }
       setBusyOrder(job.order.id);
       void recordConfirmedPrint({ data: { orderId: job.order.id, paperWidth: printerPaperWidth } })
-        .then(({ alreadyConfirmed }) => setOrderMsg(alreadyConfirmed
+        .then(({ alreadyConfirmed, confirmedAt }) => {
+          setOrders((current) => current.map((order) => order.id === job.order.id ? { ...order, bill_print_confirmed_at: confirmedAt, completion_workflow: "printed" } : order));
+          setOrderMsg(alreadyConfirmed
           ? `${job.order.order_number} already has a confirmed print. No duplicate record or customer notification was created.`
-          : `${job.order.order_number} print confirmed. The customer will see the thank-you message. Order and payment statuses were not changed.`))
+          : `${job.order.order_number} print confirmed. The customer can see the receipt status and confirm food receipt. Payment status was not changed.`);
+        })
         .catch((cause) => setOrderMsg(cause instanceof Error ? cause.message : "Could not save the bill print record."))
         .finally(() => setBusyOrder(null));
     };
@@ -352,18 +359,29 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
     };
 
     if (typeof window.print !== "function") {
+      printLock.current = false;
       setPrinting(false);
       setOrderMsg("Printing is not supported in this browser. The order was left unchanged.");
       return;
     }
     window.addEventListener("afterprint", finishAfterPrint, { once: true });
     cleanupTimer = window.setTimeout(finishWithoutPrintConfirmation, 60_000);
-    flushSync(() => setPrintJob(job));
     try {
+      flushSync(() => setPrintJob(job));
+      const logo = document.querySelector<HTMLImageElement>("#hungry-thermal-print .hungry-receipt-header img");
+      if (!logo) throw new Error("The HUNGRY Z receipt logo is missing.");
+      if (!logo.complete) await new Promise<void>((resolve, reject) => {
+        const timeout = window.setTimeout(() => reject(new Error("The receipt logo did not finish loading.")), 8000);
+        logo.addEventListener("load", () => { window.clearTimeout(timeout); resolve(); }, { once: true });
+        logo.addEventListener("error", () => { window.clearTimeout(timeout); reject(new Error("The receipt logo could not be loaded.")); }, { once: true });
+      });
+      if (!logo.naturalWidth || !logo.naturalHeight) throw new Error("The receipt logo could not be loaded.");
+      if (typeof logo.decode === "function") await logo.decode();
+      await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
       window.print();
-    } catch {
+    } catch (cause) {
       clearPrintState();
-      setOrderMsg("Could not open the browser print dialog.");
+      setOrderMsg(cause instanceof Error ? `${cause.message} The bill was not printed.` : "Could not open the browser print dialog.");
     }
   }
 
@@ -630,11 +648,11 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
           <div className="mt-6 grid gap-3 sm:grid-cols-2">
             {!orders.length && <p className="rounded-3xl border border-border bg-card p-8 text-center text-sm text-muted-foreground sm:col-span-2">No orders yet. New orders appear here instantly.</p>}
             {orders.map((o) => (
-              <div key={o.id} className="rounded-3xl border border-border bg-card p-5">
+              <div key={o.id} className={cn("rounded-3xl border bg-card p-5", orderStatusBorderClass(o.status))}>
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className={`rounded-full border px-4 py-2 text-sm font-black tracking-wider ${o.order_type === "parcel" ? "border-amber-500/40 bg-amber-500/10 text-amber-600" : "border-sky-500/40 bg-sky-500/10 text-sky-600"}`}>{o.order_type === "parcel" ? "PARCEL" : "DINE-IN"}</span>
-                    <span className="rounded-full bg-muted px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest">{ORDER_LABELS[o.status]}</span>
+                    <OrderStatusBadge status={o.status} className="max-w-none text-left text-[10px] tracking-widest" />
                   </div>
                   <div className="text-right"><p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Order ID</p><p className="font-mono text-sm font-bold text-foreground">{o.order_number}</p></div>
                 </div>
@@ -655,13 +673,15 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
                   <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Total amount</span>
                   <strong className="text-2xl font-black tabular-nums text-foreground">₹{o.total}</strong>
                 </div>
-                {o.status !== "cancelled" && <button type="button" disabled={printing || busyOrder === o.id} onClick={() => startReceiptPrint({ kind: "order", order: o })} className="mt-4 flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-black tracking-widest text-primary-foreground transition hover:brightness-110 disabled:opacity-50"><Printer className="h-5 w-5" /> PRINT BILL</button>}
-                {NEXT[o.status] && (
+                {o.completion_workflow === "printed" && <p className="mt-4 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs font-semibold text-amber-700 dark:text-amber-300">{o.food_received_confirmed_at ? "Customer confirmed that food was received." : "Printed bill confirmed; waiting for customer to confirm food receipt."}</p>}
+                {o.status !== "cancelled" && o.completion_workflow !== "manual" && (o.bill_print_confirmed_at ? <div className="mt-4 flex gap-2"><button type="button" disabled className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-2xl border border-emerald-500/40 bg-emerald-500/10 px-4 py-3 text-sm font-black tracking-widest text-emerald-600 disabled:opacity-100">BILL PRINTED ✓</button><button type="button" disabled={printing || busyOrder === o.id} onClick={() => { if (window.confirm(`Authorized reprint for ${o.order_number}? This will not create another print record or customer notification.`)) void startReceiptPrint({ kind: "order", order: o }); }} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-border px-4 py-3 text-xs font-bold text-muted-foreground disabled:opacity-50"><Printer className="h-4 w-4" /> REPRINT</button></div> : <button type="button" disabled={printing || busyOrder === o.id} onClick={() => void startReceiptPrint({ kind: "order", order: o })} className="mt-4 flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-black tracking-widest text-primary-foreground transition hover:brightness-110 disabled:opacity-50"><Printer className="h-5 w-5" /> PRINT BILL</button>)}
+                {NEXT[o.status] && o.completion_workflow !== "printed" && (
                   <div className="mt-3 flex gap-2">
                     <button disabled={busyOrder === o.id} onClick={() => setStatus(o, NEXT[o.status] as "preparing" | "ready" | "collected")} className="rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50">{o.status === "ready" && o.payment_method === "counter" ? "Mark paid & collected" : `Mark ${ORDER_LABELS[NEXT[o.status]!]}`}</button>
                     {o.status === "placed" && <button disabled={busyOrder === o.id} onClick={() => setStatus(o, "cancelled")} className="rounded-full border border-border px-4 py-2 text-xs text-muted-foreground disabled:opacity-50">Cancel</button>}
                   </div>
                 )}
+                {o.status === "placed" && o.completion_workflow === "printed" && <button disabled={busyOrder === o.id} onClick={() => setStatus(o, "cancelled")} className="mt-3 rounded-full border border-border px-4 py-2 text-xs text-muted-foreground disabled:opacity-50">Cancel</button>}
               </div>
             ))}
           </div>

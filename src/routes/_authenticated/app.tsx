@@ -4,7 +4,6 @@ import { AnimatePresence, motion } from "motion/react";
 import { QRCodeCanvas } from "qrcode.react";
 import { useServerFn } from "@tanstack/react-start";
 import { Home, UtensilsCrossed, Receipt, User, ScanLine, Plus, Minus, ShoppingBag, Clock, X, Check, LogOut, Repeat, MapPin, Store, Download, Ticket } from "lucide-react";
-import { LogoMark } from "@/components/foodexa/LogoMark";
 import { CanteenTemplateBanner } from "@/components/foodexa/CanteenTemplateBanner";
 import { FeedbackDialog } from "@/components/foodexa/FeedbackDialog";
 import { LegalDialog } from "@/components/foodexa/LegalDialog";
@@ -16,11 +15,12 @@ import { ORDER_LABELS, ORDER_STATUSES, canAcceptOrders, type MenuItem } from "@/
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { ScannerTab } from "@/components/foodexa/ScannerTab";
 import { SocialThankYouDialog } from "@/components/foodexa/SocialThankYouDialog";
-import { OrderStatusBadge } from "@/components/foodexa/OrderStatusBadge";
+import { OrderStatusBadge, orderStatusBorderClass } from "@/components/foodexa/OrderStatusBadge";
 import { VerifiedCanteenLabel } from "@/components/foodexa/VerifiedCanteenLabel";
 import {
   cancelPendingOrder,
-  acknowledgeBillPrintThankYou,
+  acknowledgeCollectedOrderThankYou,
+  confirmOwnPrintedOrderFoodReceived,
   ensureWelcomeEmail,
   getOwnOrderDetails,
   getPaymentConfig,
@@ -85,7 +85,8 @@ type Order = {
   id: string; user_id: string; order_number: string; pickup_code: string; customer_name: string; canteen_name?: string; lines: { name: string; qty: number; price: number }[];
   subtotal: number; discount: number; total: number; coupon_code: string | null; payment: string; payment_method: string; payment_status: string;
   order_type: string; created_at: string; prep_minutes: number; counter: string; status: string; canteen_id: string;
-  bill_print_confirmed_at: string | null; bill_print_thank_you_seen_at: string | null;
+  bill_print_confirmed_at: string | null; bill_print_thank_you_seen_at: string | null; completion_workflow: string | null;
+  food_received_confirmed_at: string | null; collection_thank_you_seen_at: string | null;
 };
 type Refund = { id: string; order_id: string; amount: number; status: string; admin_note: string | null; created_at: string };
 type Tab = "home" | "menu" | "events" | "orders" | "you" | "scan";
@@ -104,10 +105,6 @@ function OrderingApp() {
   const [canteenTemplate, setCanteenTemplate] = useState<CanteenTemplate | null>(null);
   const [menu, setMenu] = useState<MenuItem[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
-  const [collectedOrder, setCollectedOrder] = useState<Order | null>(null);
-  const orderSnapshot = useRef(new Map<string, Order>());
-  const ordersInitialized = useRef(false);
-  const pendingCollectionEvents = useRef(new Map<string, Order>());
   const [tab, setTab] = useSessionState<Tab>("hungry-student-dashboard-tab", "home");
   const [cart, setCart] = useSessionState<CartLine[]>("hungry-student-dashboard-cart", []);
   const [detail, setDetail] = useState<MenuItem | null>(null);
@@ -116,7 +113,10 @@ function OrderingApp() {
   const [switching, setSwitching] = useState(false);
   const [refunds, setRefunds] = useState<Refund[]>([]);
   const [notice, setNotice] = useState("");
-  const [printThankYouQueue, setPrintThankYouQueue] = useState<Order[]>([]);
+  const [thankYouQueue, setThankYouQueue] = useState<Order[]>([]);
+  const [foodReceiptQueue, setFoodReceiptQueue] = useState<Order[]>([]);
+  const [foodReceiptBusy, setFoodReceiptBusy] = useState(false);
+  const [foodReceiptError, setFoodReceiptError] = useState("");
   const [qrOrderMessage, setQrOrderMessage] = useState("");
   const [qrOrder, setQrOrder] = useState<Order | null>(null);
   const [activeEvent, setActiveEvent] = useState<SelectedEvent | null>(null);
@@ -137,7 +137,8 @@ function OrderingApp() {
   useBackStep(switching, () => setSwitching(false));
   const welcome = useServerFn(ensureWelcomeEmail);
   const getOwnOrder = useServerFn(getOwnOrderDetails);
-  const acknowledgePrintThankYou = useServerFn(acknowledgeBillPrintThankYou);
+  const acknowledgeOrderThankYou = useServerFn(acknowledgeCollectedOrderThankYou);
+  const confirmFoodReceived = useServerFn(confirmOwnPrintedOrderFoodReceived);
 
   useEffect(() => {
     const timer = window.setInterval(() => setAvailabilityNow(new Date()), 30_000);
@@ -223,18 +224,28 @@ function OrderingApp() {
 
   const userId = profile?.id;
   useEffect(() => {
-    orderSnapshot.current = new Map();
-    ordersInitialized.current = false;
-    pendingCollectionEvents.current.clear();
-    setCollectedOrder(null);
-    setPrintThankYouQueue([]);
+    setThankYouQueue([]);
+    setFoodReceiptQueue([]);
+    setFoodReceiptError("");
     if (!userId) return;
-    const canReceivePrintThankYou = profile?.role === "student" || profile?.role === "guest";
+    const canReceiveThankYou = ["student", "faculty", "guest"].includes(profile?.role ?? "");
     const queueThankYou = (candidates: Order[]) => {
-      if (!canReceivePrintThankYou) return;
-      const pending = candidates.filter((order) => order.bill_print_confirmed_at && !order.bill_print_thank_you_seen_at);
+      if (!canReceiveThankYou) return;
+      const physicallyCollected = (order: Order) => order.completion_workflow === "printed"
+        ? Boolean(order.food_received_confirmed_at)
+        : order.status === "collected";
+      const pending = candidates.filter((order) => physicallyCollected(order) && !order.collection_thank_you_seen_at);
       if (!pending.length) return;
-      setPrintThankYouQueue((current) => {
+      setThankYouQueue((current) => {
+        const queued = new Set(current.map((order) => order.id));
+        return [...current, ...pending.filter((order) => !queued.has(order.id))];
+      });
+    };
+    const queueFoodReceipt = (candidates: Order[]) => {
+      if (!canReceiveThankYou) return;
+      const pending = candidates.filter((order) => order.completion_workflow === "printed" && order.bill_print_confirmed_at && !order.food_received_confirmed_at && order.status !== "cancelled");
+      if (!pending.length) return;
+      setFoodReceiptQueue((current) => {
         const queued = new Set(current.map((order) => order.id));
         return [...current, ...pending.filter((order) => !queued.has(order.id))];
       });
@@ -243,19 +254,7 @@ function OrderingApp() {
       const { data } = await supabase.from("orders").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(50);
       const nextOrders = (data as unknown as Order[]) ?? [];
       queueThankYou(nextOrders);
-      if (ordersInitialized.current) {
-        const newlyCollected = nextOrders.find((order) => order.status === "collected" && orderSnapshot.current.get(order.id)?.status !== "collected");
-        if (newlyCollected) setCollectedOrder(newlyCollected);
-      } else {
-        const pending = Array.from(pendingCollectionEvents.current.keys()).find((id) => nextOrders.some((order) => order.id === id && order.status === "collected"));
-        if (pending) {
-          const matchingOrder = nextOrders.find((order) => order.id === pending);
-          if (matchingOrder) setCollectedOrder(matchingOrder);
-        }
-        pendingCollectionEvents.current.clear();
-        ordersInitialized.current = true;
-      }
-      orderSnapshot.current = new Map(nextOrders.map((order) => [order.id, order]));
+      queueFoodReceipt(nextOrders);
       setOrders(nextOrders);
     };
     const loadRefunds = async () => {
@@ -268,15 +267,11 @@ function OrderingApp() {
       .channel(`my-orders-${uid()}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "orders", filter: `user_id=eq.${userId}` }, (payload) => {
         const updatedOrder = payload.new as Order;
-        if (payload.eventType === "UPDATE" && updatedOrder.user_id === userId) queueThankYou([updatedOrder]);
-        if (payload.eventType === "UPDATE") setQrOrder((current) => current?.id === updatedOrder.id ? { ...current, ...updatedOrder } : current);
-        if (payload.eventType === "UPDATE" && updatedOrder.user_id === userId && updatedOrder.status === "collected") {
-          if (!ordersInitialized.current) pendingCollectionEvents.current.set(updatedOrder.id, updatedOrder);
-          else if (orderSnapshot.current.get(updatedOrder.id)?.status !== "collected") {
-            orderSnapshot.current.set(updatedOrder.id, updatedOrder);
-            setCollectedOrder(updatedOrder);
-          }
+        if (payload.eventType === "UPDATE" && updatedOrder.user_id === userId) {
+          queueThankYou([updatedOrder]);
+          queueFoodReceipt([updatedOrder]);
         }
+        if (payload.eventType === "UPDATE") setQrOrder((current) => current?.id === updatedOrder.id ? { ...current, ...updatedOrder } : current);
         void load();
       })
       .on("postgres_changes", { event: "*", schema: "public", table: "refunds", filter: `user_id=eq.${userId}` }, loadRefunds)
@@ -286,12 +281,31 @@ function OrderingApp() {
     };
   }, [profile?.role, userId]);
 
-  async function acknowledgeCurrentPrintThankYou() {
-    const notification = printThankYouQueue[0];
-    if (!notification) return;
+  async function confirmCurrentPrintedOrderReceived() {
+    const order = foodReceiptQueue[0];
+    if (!order || foodReceiptBusy) return;
+    setFoodReceiptBusy(true);
+    setFoodReceiptError("");
     try {
-      await acknowledgePrintThankYou({ data: { orderId: notification.id } });
-      setPrintThankYouQueue((current) => current.filter((order) => order.id !== notification.id));
+      const { confirmedAt } = await confirmFoodReceived({ data: { orderId: order.id } });
+      const updatedOrder = { ...order, food_received_confirmed_at: confirmedAt };
+      setOrders((current) => current.map((item) => item.id === order.id ? updatedOrder : item));
+      setQrOrder((current) => current?.id === order.id ? updatedOrder : current);
+      setFoodReceiptQueue((current) => current.filter((item) => item.id !== order.id));
+      setThankYouQueue((current) => current.some((item) => item.id === order.id) ? current : [...current, updatedOrder]);
+    } catch (cause) {
+      setFoodReceiptError(cause instanceof Error ? cause.message : "Could not save your confirmation. Please try again.");
+    } finally {
+      setFoodReceiptBusy(false);
+    }
+  }
+
+  async function acknowledgeCurrentThankYou() {
+    const order = thankYouQueue[0];
+    if (!order) return;
+    try {
+      await acknowledgeOrderThankYou({ data: { orderId: order.id } });
+      setThankYouQueue((current) => current.filter((queuedOrder) => queuedOrder.id !== order.id));
     } catch {
       setNotice("The thank-you message could not be dismissed yet. Please try again.");
     }
@@ -472,10 +486,8 @@ function OrderingApp() {
           }}
         />
       </Sheet>
-      <AnimatePresence>
-        {collectedOrder && <CollectionCelebration onContinue={() => { setCollectedOrder(null); setOpenOrderId(null); setNotice(""); setTab("menu"); }} />}
-      </AnimatePresence>
-        <SocialThankYouDialog open={printThankYouQueue.length > 0} onClose={() => void acknowledgeCurrentPrintThankYou()} />
+      <FoodReceivedConfirmationDialog order={foodReceiptQueue[0] ?? null} busy={foodReceiptBusy} error={foodReceiptError} onConfirm={() => void confirmCurrentPrintedOrderReceived()} />
+      <SocialThankYouDialog open={foodReceiptQueue.length === 0 && thankYouQueue.length > 0} onClose={() => void acknowledgeCurrentThankYou()} />
     </div>
   );
 }
@@ -955,18 +967,24 @@ function Row({ k, v, bold }: { k: string; v: string; bold?: boolean }) {
   return <div className={cn("flex justify-between", bold ? "text-base font-bold" : "text-muted-foreground")}><span>{k}</span><span className={bold ? "" : "text-foreground"}>{v}</span></div>;
 }
 
+function displayedCustomerOrderStatus(order: Order) {
+  if (order.status === "cancelled") return "cancelled";
+  if (order.completion_workflow === "printed" && order.bill_print_confirmed_at) return "collected";
+  return order.status;
+}
+
 function OrdersTab({ orders, onOpen }: { orders: Order[]; onOpen: (o: Order) => void }) {
   if (!orders.length) return <Empty title="No orders yet" text="Your orders, tracking and pickup QR codes will show up here." />;
   return (
     <div className="space-y-3 pt-2">
         {orders.map((o) => (
-        <button key={o.id} onClick={() => onOpen(o)} className="w-full rounded-3xl border border-border bg-card p-5 text-left transition hover:border-primary/50">
+        <button key={o.id} onClick={() => onOpen(o)} className={cn("w-full rounded-3xl border bg-card p-5 text-left transition hover:border-primary/50", orderStatusBorderClass(displayedCustomerOrderStatus(o)))}>
           <div className="flex items-center justify-between gap-2">
             <span className="min-w-0 truncate font-mono text-sm font-bold">{o.order_number}</span>
             <span className="flex shrink-0 items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1 text-[10px] font-semibold text-primary-bright"><Clock className="h-3 w-3" />{o.prep_minutes} min</span>
           </div>
           <div className="mt-2 flex justify-end">
-            <OrderStatusBadge status={o.status} />
+            <OrderStatusBadge status={displayedCustomerOrderStatus(o)} />
           </div>
           <p data-no-translate className="mt-2 truncate text-sm text-muted-foreground">{o.lines.map((l) => `${l.qty}× ${l.name}`).join(", ")}</p>
           <p className="mt-2 flex items-center justify-between text-sm">
@@ -979,56 +997,24 @@ function OrdersTab({ orders, onOpen }: { orders: Order[]; onOpen: (o: Order) => 
   );
 }
 
-function CollectionCelebration({ onContinue }: { onContinue: () => void }) {
-  const colors = ["#ff3b3b", "#ff6961", "#f6c85f", "#f8f4f0", "#d91f2b"];
+function FoodReceivedConfirmationDialog({ order, busy, error, onConfirm }: { order: Order | null; busy: boolean; error: string; onConfirm: () => void }) {
+  const [notReceived, setNotReceived] = useState(false);
+  useEffect(() => setNotReceived(false), [order?.id]);
+  if (!order) return null;
+
   return (
-    <motion.div
-      className="fixed inset-0 z-[80] grid place-items-center overflow-hidden px-5"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="collection-celebration-title"
-    >
-      <div className="absolute inset-0 bg-background/90 backdrop-blur-xl" />
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
-        {Array.from({ length: 34 }, (_, index) => (
-          <motion.span
-            key={index}
-            className="absolute top-[-5vh] rounded-sm shadow-[0_0_12px_currentColor]"
-            initial={{ y: "-5vh", opacity: 0, rotate: 0 }}
-            animate={{ y: "110vh", opacity: [0, 1, 1, 0], rotate: 720 + index * 15 }}
-            transition={{ duration: 3.4 + (index % 5) * 0.45, delay: (index % 9) * 0.12, repeat: Infinity, ease: "linear" }}
-            style={{
-              left: `${(index * 37) % 100}%`,
-              width: index % 4 === 0 ? 5 : 8,
-              height: index % 4 === 0 ? 12 : 7,
-              color: colors[index % colors.length],
-              backgroundColor: colors[index % colors.length],
-            }}
-          />
-        ))}
-      </div>
-      <motion.div
-        initial={{ y: 24, scale: 0.96, opacity: 0 }}
-        animate={{ y: 0, scale: 1, opacity: 1 }}
-        exit={{ y: 12, scale: 0.98, opacity: 0 }}
-        transition={{ type: "spring", stiffness: 260, damping: 24 }}
-        className="glass-red relative w-full max-w-md overflow-hidden rounded-[2rem] p-8 text-center shadow-[var(--shadow-cinema)] sm:p-10"
-      >
-        <div aria-hidden="true" className="ember pointer-events-none absolute -top-28 left-1/2 h-56 w-56 -translate-x-1/2 opacity-60" />
-        <div className="relative mx-auto">
-          <LogoMark className="h-16 w-16 text-2xl animate-none transition-none transform-none" />
+    <div className="fixed inset-0 z-[105] grid place-items-center overflow-y-auto bg-black/75 p-4 backdrop-blur-sm">
+      <section role="dialog" aria-modal="true" aria-labelledby="food-received-title" className="glass-red relative my-auto w-full max-w-md rounded-[2rem] p-6 text-center shadow-[var(--shadow-cinema)] sm:p-9">
+        <h2 id="food-received-title" className="display mt-3 text-2xl leading-tight">DID YOU RECEIVE YOUR FOOD?</h2>
+        <p className="mt-4 text-sm leading-relaxed text-muted-foreground">Please confirm whether you have collected your food. If you haven't received it, please visit the canteen counter and share your order ID and pickup code with the canteen staff.</p>
+        {notReceived && <p role="status" className="mt-4 rounded-2xl border border-primary/30 bg-primary/10 p-3 text-left text-sm text-foreground">Please visit {order.counter || "the canteen counter"} and share Order ID <strong className="font-mono">{order.order_number}</strong> and pickup code <strong className="font-mono">{order.pickup_code}</strong> with the staff. You can confirm receipt here later.</p>}
+        {error && <p role="alert" className="mt-4 rounded-2xl border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-600 dark:text-red-300">{error}</p>}
+        <div className="mt-6 grid gap-3">
+          <button type="button" disabled={busy} onClick={onConfirm} className="min-h-12 rounded-full bg-primary px-5 py-3 text-sm font-bold text-primary-foreground disabled:opacity-60">{busy ? "SAVING…" : "YES, RECEIVED"}</button>
+          <button type="button" onClick={() => setNotReceived(true)} className="min-h-12 rounded-full border border-border px-5 py-3 text-sm font-bold text-foreground transition hover:border-primary/50">NOT RECEIVED</button>
         </div>
-        <p className="relative mt-6 text-[10px] font-bold tracking-[0.32em] text-primary-bright">ORDER COLLECTED</p>
-        <h2 id="collection-celebration-title" className="display relative mt-3 text-2xl leading-tight sm:text-3xl">THANK YOU FOR USING HUNGRY Z!</h2>
-        <p className="relative mt-4 text-sm text-muted-foreground">Great food. Zero queues. See you hungry again!</p>
-        <button onClick={onContinue} className="relative mt-8 w-full rounded-full bg-primary px-6 py-4 text-sm font-semibold text-primary-foreground transition hover:shadow-[0_0_40px_-6px_var(--primary-bright)]">
-          Continue Exploring
-        </button>
-      </motion.div>
-    </motion.div>
+      </section>
+    </div>
   );
 }
 
@@ -1077,7 +1063,8 @@ function OrderDetail({ order, canteenName, refund, notice, onNotice }: { order: 
   const [busy, setBusy] = useState(false);
   const [refundOpen, setRefundOpen] = useState(false);
   const [reason, setReason] = useState("");
-  const step = ORDER_STATUSES.indexOf(order.status as (typeof ORDER_STATUSES)[number]);
+  const trackingStatus = displayedCustomerOrderStatus(order);
+  const step = ORDER_STATUSES.indexOf(trackingStatus as (typeof ORDER_STATUSES)[number]);
   const awaiting = order.status === "pending_payment";
   const placedAt = new Intl.DateTimeFormat("en-IN", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kolkata" }).format(new Date(order.created_at));
 
@@ -1129,7 +1116,7 @@ function OrderDetail({ order, canteenName, refund, notice, onNotice }: { order: 
       <dl className="mt-4 grid grid-cols-1 gap-x-4 gap-y-3 rounded-2xl border border-border bg-ink-soft p-4 text-xs sm:grid-cols-2">
         <div className="min-w-0"><dt className="text-muted-foreground">Customer</dt><dd className="mt-1 break-words font-semibold text-foreground">{order.customer_name}</dd></div>
         <div className="min-w-0"><dt className="text-muted-foreground">Canteen</dt><dd className="mt-1 break-words font-semibold text-foreground">{canteenName}</dd></div>
-        <div className="min-w-0"><dt className="text-muted-foreground">Order status</dt><dd className="mt-1 break-words font-semibold capitalize text-foreground">{order.status === "collected" ? <OrderStatusBadge status={order.status} className="max-w-full text-left normal-case tracking-normal" /> : (ORDER_LABELS[order.status] ?? order.status.replaceAll("_", " "))}</dd></div>
+        <div className="min-w-0"><dt className="text-muted-foreground">Order status</dt><dd className="mt-1 break-words font-semibold capitalize text-foreground"><OrderStatusBadge status={trackingStatus} className="max-w-full text-left normal-case tracking-normal" /></dd></div>
         <div className="min-w-0"><dt className="text-muted-foreground">Date and time</dt><dd className="mt-1 break-words font-semibold text-foreground">{placedAt} IST</dd></div>
       </dl>
       {notice && <p className="mt-4 rounded-2xl border border-primary/40 bg-primary/10 p-3 text-sm" role="status">{notice}</p>}
@@ -1150,7 +1137,7 @@ function OrderDetail({ order, canteenName, refund, notice, onNotice }: { order: 
         <div className="mt-6 space-y-4">
           {ORDER_STATUSES.map((s, i) => (
             <div key={s} className="flex items-center gap-3">
-              <span className={cn("grid h-7 w-7 place-items-center rounded-full border text-xs font-bold", i <= step ? "border-primary bg-primary text-primary-foreground" : "border-input text-muted-foreground", i === step && s === "collected" && "status-collected", i === step && "anim-pulse-glow")}>{i < step ? <Check className="h-3.5 w-3.5" /> : i + 1}</span>
+              <span className={cn("grid h-7 w-7 place-items-center rounded-full border text-xs font-bold", i <= step ? "border-primary bg-primary text-primary-foreground" : "border-input text-muted-foreground", i === step && s === "collected" && "order-status-other", i === step && s === "placed" && "order-status-placed", i === step && "anim-pulse-glow")}>{i < step ? <Check className="h-3.5 w-3.5" /> : i + 1}</span>
               <span className={cn("text-sm", i <= step ? "font-semibold" : "text-muted-foreground")}>{ORDER_LABELS[s]}</span>
             </div>
           ))}

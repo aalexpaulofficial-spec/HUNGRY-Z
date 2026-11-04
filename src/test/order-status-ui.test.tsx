@@ -1,6 +1,6 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
-import { OrderStatusBadge } from "@/components/foodexa/OrderStatusBadge";
+import { OrderStatusBadge, orderStatusBorderClass } from "@/components/foodexa/OrderStatusBadge";
 import { VerifiedCanteenLabel } from "@/components/foodexa/VerifiedCanteenLabel";
 
 afterEach(() => {
@@ -14,22 +14,29 @@ describe("student order status and verification UI", () => {
     ["HUNGRY", "dark", 1440],
     ["White", "light", 1440],
     ["HUNGRY", "dark", 390],
-  ])("uses the green collected indicator in %s theme at %i px", (_theme, theme, width) => {
+  ])("uses the red collected indicator in %s theme at %i px", (_theme, theme, width) => {
     Object.defineProperty(window, "innerWidth", { configurable: true, value: width });
     document.documentElement.dataset.theme = theme;
     const { container } = render(<OrderStatusBadge status="collected" />);
 
     const badge = container.querySelector('[data-order-status="collected"]');
     expect(badge).toHaveTextContent("Collected");
-    expect(badge).toHaveClass("status-collected", "border");
+    expect(badge).toHaveClass("order-status-other");
+    expect(badge?.querySelector("span[aria-hidden='true']")).toHaveClass("order-status-dot-other");
     expect(badge).not.toHaveClass("bg-primary", "bg-muted");
   });
 
-  it("keeps non-collected status colors unchanged", () => {
-    const { rerender } = render(<OrderStatusBadge status="ready" />);
-    expect(screen.getByText("Ready for pickup")).toHaveClass("bg-primary", "text-primary-foreground");
-    rerender(<OrderStatusBadge status="preparing" />);
-    expect(screen.getByText("Preparing")).toHaveClass("bg-muted", "text-muted-foreground");
+  it("uses green only for placed and red for every other order status", () => {
+    const statuses = ["preparing", "ready", "collected", "cancelled"];
+    expect(orderStatusBorderClass("placed")).toBe("order-card-placed");
+    const { rerender, container } = render(<OrderStatusBadge status="placed" />);
+    expect(container.querySelector('[data-order-status="placed"]')).toHaveClass("order-status-placed");
+
+    for (const status of statuses) {
+      expect(orderStatusBorderClass(status)).toBe("order-card-other");
+      rerender(<OrderStatusBadge status={status} />);
+      expect(container.querySelector(`[data-order-status="${status}"]`)).toHaveClass("order-status-other");
+    }
   });
 
   it("shows the requested verified canteen name and check indicator", () => {

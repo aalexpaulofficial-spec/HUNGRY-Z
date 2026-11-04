@@ -88,7 +88,7 @@
   #hungry-thermal-print.hungry-receipt-paper-58 { width: 48mm !important; max-width: 100% !important; }
   #hungry-thermal-print.hungry-receipt-paper-80 { width: 70mm !important; max-width: 100% !important; }
   .hungry-receipt-header { border-bottom: 1px dashed #000; padding-bottom: 3mm; text-align: center; }
-  .hungry-receipt-header img { display: block; width: 18mm; height: 18mm; margin: 0 auto 1mm; object-fit: contain; }
+  .hungry-receipt-header img { display: block; width: 18mm; height: 18mm; max-width: 100%; margin: 0 auto 1mm; object-fit: contain; object-position: center; }
   .hungry-receipt-header h1 { margin: 0 0 1mm; font-size: 24px; font-size: clamp(20px, 8cqw, 27px); font-weight: 900; letter-spacing: 1.5px; }
   .hungry-receipt-header p { margin: 0.7mm 0; font-size: 9px; font-size: clamp(8px, 3.2cqw, 10px); font-weight: 800; }
   .hungry-receipt-meta { padding: 2mm 0; border-bottom: 1px dashed #000; }
@@ -223,17 +223,17 @@ html[data-theme="light"] {
   --shadow-device: 0 40px 80px -40px oklch(0.2 0 0 / 0.25), 0 0 60px -30px color-mix(in oklab, var(--primary) 24%, transparent);
 }
 
-.status-collected {
-  border-color: rgb(34 197 94 / 0.35);
-  background-color: rgb(34 197 94 / 0.12);
-  color: #15803d;
-}
+.order-card-placed { border-color: rgb(34 197 94 / 0.65) !important; }
+.order-card-other { border-color: rgb(239 68 68 / 0.65) !important; }
+.order-status-placed { border: 1px solid rgb(34 197 94 / 0.55); background: rgb(34 197 94 / 0.12); color: #15803d; }
+.order-status-other { border: 1px solid rgb(239 68 68 / 0.55); background: rgb(239 68 68 / 0.12); color: #b91c1c; }
+.order-status-dot-placed { background: #16a34a; }
+.order-status-dot-other { background: #dc2626; }
 
-html[data-theme="dark"] .status-collected {
-  border-color: rgb(74 222 128 / 0.34);
-  background-color: rgb(74 222 128 / 0.12);
-  color: #86efac;
-}
+html[data-theme="dark"] .order-status-placed { color: #86efac; }
+html[data-theme="dark"] .order-status-other { color: #fca5a5; }
+html[data-theme="dark"] .order-status-dot-placed { background: #4ade80; }
+html[data-theme="dark"] .order-status-dot-other { background: #f87171; }
 
 .verified-canteen-indicator {
   color: #15803d;

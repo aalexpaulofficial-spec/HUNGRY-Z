@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
+import { List, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { createFacultyEvent, publishFacultyEvent, requestFacultyEventCapacity, resolveFacultyEventCapacity, reviewFacultyEventRequest, updateFacultyEvent } from "@/lib/hungry.functions";
 
@@ -33,6 +34,7 @@ export function EventCapacityPanel({ mode, canteenId, canteenName }: { mode: "fa
   const [menuPrices, setMenuPrices] = useState<Record<string, number>>({});
   const [menuItems, setMenuItems] = useState<EventMenuItem[]>([]);
   const [menuLoading, setMenuLoading] = useState(true);
+  const [menuDialogOpen, setMenuDialogOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -180,9 +182,11 @@ export function EventCapacityPanel({ mode, canteenId, canteenName }: { mode: "fa
           <input required type="number" min={1} max={100000} value={capacity} onChange={(event) => setCapacity(event.currentTarget.value)} aria-label="Initial token capacity" className="mt-1 w-full rounded-2xl border border-input bg-ink-soft px-4 py-3 text-sm text-foreground" />
         </label>
         <div className="space-y-2">
-          <h3 className="text-sm font-semibold text-foreground">Food preparation request</h3>
-          <p className="text-xs text-muted-foreground">Choose items from {canteenName}’s available menu and set the quantities you need.</p>
-          <MenuQuantityPicker items={menuItems} loading={menuLoading} quantities={foodSelection} onChange={setFoodSelection} label="Available menu items" />
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div><h3 className="text-sm font-semibold text-foreground">Food preparation request</h3><p className="mt-1 text-xs text-muted-foreground">Selected canteen: <strong className="font-semibold text-foreground">{canteenName}</strong></p></div>
+            <button type="button" onClick={() => setMenuDialogOpen(true)} aria-label={`Open ${canteenName} menu`} className="inline-flex min-h-10 items-center gap-2 rounded-full border border-primary/40 bg-primary/5 px-4 py-2 text-sm font-bold tracking-wide text-foreground transition hover:border-primary hover:bg-primary/10"><List className="h-4 w-4 text-primary" /> MENU</button>
+          </div>
+          <FoodQuantitySummary quantities={foodSelection} title="Selected items" />
         </div>
         <button disabled={busy} className="rounded-full bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground disabled:opacity-60">{busy ? "Sending…" : "Send Event Request"}</button>
       </form>}
@@ -257,6 +261,13 @@ export function EventCapacityPanel({ mode, canteenId, canteenName }: { mode: "fa
           </div>)}
         </article>;
       })}
+      {mode === "faculty" && menuDialogOpen && <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/75 p-3 sm:p-6" onMouseDown={(event) => { if (event.target === event.currentTarget) setMenuDialogOpen(false); }}>
+        <section role="dialog" aria-modal="true" aria-labelledby="faculty-canteen-menu-title" className="glass-red max-h-[90dvh] w-full max-w-2xl overflow-y-auto rounded-3xl p-4 shadow-2xl sm:p-6">
+          <div className="mb-4 flex items-start justify-between gap-3"><div><h3 id="faculty-canteen-menu-title" className="display text-xl">{canteenName} Menu</h3><p className="mt-1 text-xs text-muted-foreground">Choose available items and adjust each requested quantity.</p></div><button type="button" aria-label="Close canteen menu" onClick={() => setMenuDialogOpen(false)} className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-border text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button></div>
+          <MenuQuantityPicker items={menuItems} loading={menuLoading} quantities={foodSelection} onChange={setFoodSelection} label="Available menu items" />
+          <div className="sticky bottom-0 mt-4 flex justify-end bg-card/95 pt-3"><button type="button" onClick={() => setMenuDialogOpen(false)} className="rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground">Done</button></div>
+        </section>
+      </div>}
     </section>
   );
 }
