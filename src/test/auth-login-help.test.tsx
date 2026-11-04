@@ -39,7 +39,7 @@ describe("HUNGRY Z authentication", () => {
     fireEvent.change(screen.getByLabelText("Enter your registered email address."), { target: { value: "student@example.com" } });
     fireEvent.click(screen.getByRole("button", { name: "Send reset link" }));
 
-    await waitFor(() => expect(resetPasswordForEmail).toHaveBeenCalledWith("student@example.com", { redirectTo: "http://localhost:3000/reset-password" }));
+    await waitFor(() => expect(resetPasswordForEmail).toHaveBeenCalledWith("student@example.com", { redirectTo: "https://hungryz.vercel.app/reset-password" }));
     expect(await screen.findByRole("status")).toHaveTextContent("If an account exists for that email, we’ve sent a password reset link.");
     expect(dialog).toBeInTheDocument();
   });
@@ -87,12 +87,21 @@ describe("HUNGRY Z authentication", () => {
   });
 
   it("validates matching passwords and updates the password through Supabase", async () => {
+    window.history.replaceState({}, "", "/reset-password#access_token=reset-token&type=recovery");
     getSession.mockResolvedValue({ data: { session: { user: { id: "user-1" } } } });
     onAuthStateChange.mockReturnValue({ data: { subscription: { unsubscribe: vi.fn() } } });
     updateUser.mockResolvedValue({ error: null });
     render(<ResetPasswordPage />);
     const newPassword = await screen.findByLabelText("New Password");
     const confirmPassword = screen.getByLabelText("Confirm Password");
+    fireEvent.click(screen.getByRole("button", { name: "Show new password" }));
+    expect(newPassword).toHaveAttribute("type", "text");
+    expect(confirmPassword).toHaveAttribute("type", "password");
+    fireEvent.click(screen.getByRole("button", { name: "Show confirm password" }));
+    expect(confirmPassword).toHaveAttribute("type", "text");
+    expect(screen.getByRole("button", { name: "Hide new password" })).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(screen.getByRole("button", { name: "Hide new password" }));
+    expect(newPassword).toHaveAttribute("type", "password");
     fireEvent.change(newPassword, { target: { value: "correct-pass-123" } });
     fireEvent.change(confirmPassword, { target: { value: "different-pass" } });
     fireEvent.click(screen.getByRole("button", { name: "Update Password" }));
@@ -103,6 +112,16 @@ describe("HUNGRY Z authentication", () => {
     fireEvent.click(screen.getByRole("button", { name: "Update Password" }));
     await waitFor(() => expect(updateUser).toHaveBeenCalledWith({ password: "correct-pass-123" }));
     expect(await screen.findByRole("status")).toHaveTextContent("Your password has been updated.");
+    window.history.replaceState({}, "", "/");
+  });
+
+  it("rejects expired reset links even if a regular session exists", async () => {
+    window.history.replaceState({}, "", "/reset-password#error=access_denied&error_code=otp_expired");
+    getSession.mockResolvedValue({ data: { session: { user: { id: "already-signed-in" } } } });
+    render(<ResetPasswordPage />);
+    expect(await screen.findByRole("alert")).toHaveTextContent("invalid, expired, or has already been used");
+    expect(screen.queryByLabelText("New Password")).not.toBeInTheDocument();
+    window.history.replaceState({}, "", "/");
   });
 
   it("keeps the existing login and social destinations", () => {

@@ -17,6 +17,8 @@ import { readStoredDashboardLanguage, translateDashboardText } from "@/lib/dashb
 import { LegalDialog } from "@/components/foodexa/LegalDialog";
 import { privacyPolicy, termsConditions } from "@/content/legal";
 
+export const PASSWORD_RESET_REDIRECT_URL = "https://hungryz.vercel.app/reset-password";
+
 export const Route = createFileRoute("/auth")({
   validateSearch: z.object({ mode: z.enum(["login", "signup"]).optional(), orderId: z.string().uuid().optional() }),
   head: () => ({
@@ -318,9 +320,8 @@ function ForgotPasswordDialog({ initialEmail, onClose }: { initialEmail: string;
     const parsed = z.string().trim().email("Enter a valid email address.").safeParse(email);
     if (!parsed.success) return setError(parsed.error.issues[0]?.message ?? "Enter a valid email address.");
     setBusy(true);
-    const redirectTo = new URL("/reset-password", window.location.origin).toString();
     try {
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(parsed.data, { redirectTo });
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(parsed.data, { redirectTo: PASSWORD_RESET_REDIRECT_URL });
       if (resetError) return setError("We couldn't send the reset email right now. Please try again later.");
       setSent(true);
     } catch {
