@@ -4,6 +4,7 @@ import { CalendarDays, List, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { collectFacultyEventToken, createFacultyEvent, publishFacultyEvent, requestFacultyEventCapacity, resolveAdditionalFacultyEventTokens, resolveFacultyEventCapacity, reviewFacultyEventQuotation, reviewFacultyEventRequest, submitFacultyEventQuotation, updateFacultyEvent, updateFacultyEventLogo, updateFacultyEventServedQuantities } from "@/lib/hungry.functions";
 import { FACULTY_EVENT_LOGO_BUCKET, FACULTY_EVENT_LOGO_MAX_BYTES, facultyEventLogoObjectPath, getFacultyEventLogoUrls } from "@/lib/faculty-event-logos";
+import { createCroppedEventLogoFile, EventLogoCropAdjust, EventLogoImage, type EventLogoCrop } from "@/components/foodexa/FacultyEventLogo";
 
 type EventRow = {
   id: string; faculty_user_id: string; canteen_id: string; name: string; event_code: string; token_prefix: string;
@@ -36,6 +37,7 @@ export function EventCapacityPanel({ mode, canteenId, canteenName, userId }: { m
   const [foodRequestMessage, setFoodRequestMessage] = useState("");
   const [eventLogoFile, setEventLogoFile] = useState<File | null>(null);
   const [eventLogoPreview, setEventLogoPreview] = useState("");
+  const [eventLogoCrop, setEventLogoCrop] = useState<EventLogoCrop | null>(null);
   const eventLogoInput = useRef<HTMLInputElement>(null);
   const [additional, setAdditional] = useState<Record<string, string>>({});
   const [foodSelection, setFoodSelection] = useState<Record<string, number>>({});
@@ -65,6 +67,7 @@ export function EventCapacityPanel({ mode, canteenId, canteenName, userId }: { m
   const reviewQuotation = useServerFn(reviewFacultyEventQuotation);
   const collectToken = useServerFn(collectFacultyEventToken);
   const saveServed = useServerFn(updateFacultyEventServedQuantities);
+  const handleLogoCropChange = useCallback((crop: EventLogoCrop | null) => setEventLogoCrop(crop), []);
 
   const load = useCallback(async () => {
     const [eventResult, requestResult, tokenResult, menuResult, studentRequestResult] = await Promise.all([
@@ -133,19 +136,27 @@ export function EventCapacityPanel({ mode, canteenId, canteenName, userId }: { m
         try {
           if (!userId) throw new Error("Your faculty account is unavailable.");
           const path = facultyEventLogoObjectPath(userId, result.id, eventLogoFile);
-          const { error: uploadError } = await supabase.storage.from(FACULTY_EVENT_LOGO_BUCKET).upload(path, eventLogoFile, { contentType: eventLogoFile.type, cacheControl: "3600", upsert: false });
-          if (uploadError) throw uploadError;
+          let fileToSave = eventLogoFile;
+          let originalSourcePath: string | null = null;
+          if (eventLogoCrop) {
+            originalSourcePath = path.replace(/([^/]+)$/, "source-$1");
+            const { error: originalError } = await supabase.storage.from(FACULTY_EVENT_LOGO_BUCKET).upload(originalSourcePath, eventLogoFile, { contentType: eventLogoFile.type, cacheControl: "3600", upsert: false });
+            if (originalError) throw originalError;
+            fileToSave = await createCroppedEventLogoFile(eventLogoFile, eventLogoCrop);
+          }
           uploadedPath = path;
+          const { error: uploadError } = await supabase.storage.from(FACULTY_EVENT_LOGO_BUCKET).upload(path, fileToSave, { contentType: fileToSave.type, cacheControl: "3600", upsert: false });
+          if (uploadError) throw uploadError;
           const { oldPath } = await updateEventLogo({ data: { eventId: result.id, imagePath: path } });
-          if (oldPath) await supabase.storage.from(FACULTY_EVENT_LOGO_BUCKET).remove([oldPath]);
+          if (oldPath) await supabase.storage.from(FACULTY_EVENT_LOGO_BUCKET).remove([oldPath, oldPath.replace(/([^/]+)$/, "source-$1")]);
         } catch (logoError) {
           logoFailed = true;
-          if (uploadedPath) await supabase.storage.from(FACULTY_EVENT_LOGO_BUCKET).remove([uploadedPath]);
+          if (uploadedPath) await supabase.storage.from(FACULTY_EVENT_LOGO_BUCKET).remove([uploadedPath, uploadedPath.replace(/([^/]+)$/, "source-$1")]);
           logoFailureMessage = logoError instanceof Error ? `The event request was sent, but the logo could not be saved: ${logoError.message}` : "The event request was sent, but the logo could not be saved.";
         }
       }
       setMessage(`Event request sent to ${canteenName}. Event Code: ${result.event_code}. The canteen will review the request and send a quotation.`); setName(""); setEventCode(""); setDescription(""); setEventDate(""); setVenue(""); setFoodRequestMessage(""); setFoodSelection({});
-      if (!logoFailed) { setEventLogoFile(null); if (eventLogoInput.current) eventLogoInput.current.value = ""; }
+      if (!logoFailed) { setEventLogoFile(null); setEventLogoCrop(null); if (eventLogoInput.current) eventLogoInput.current.value = ""; }
       await load();
       if (logoFailureMessage) setError(logoFailureMessage);
     } catch (caught) { setError(caught instanceof Error ? caught.message : "Could not create the event."); }
@@ -334,9 +345,12 @@ export function EventCapacityPanel({ mode, canteenId, canteenName, userId }: { m
             {eventLogoFile && <div className="flex flex-wrap items-center gap-2" aria-live="polite">
               <p className="min-w-0 flex-1 truncate text-xs text-foreground"><span className="font-semibold">Selected file:</span> {eventLogoFile.name}</p>
               <button type="button" onClick={() => { if (eventLogoInput.current) { eventLogoInput.current.value = ""; eventLogoInput.current.click(); } }} className="rounded-full border border-primary/40 px-3 py-2 text-xs font-semibold text-primary">Replace image</button>
-              <button type="button" onClick={() => { setEventLogoFile(null); setError(""); if (eventLogoInput.current) eventLogoInput.current.value = ""; }} className="rounded-full border border-border px-3 py-2 text-xs font-semibold text-muted-foreground">Remove image</button>
+              <button type="button" onClick={() => { setEventLogoFile(null); setEventLogoCrop(null); setError(""); if (eventLogoInput.current) eventLogoInput.current.value = ""; }} className="rounded-full border border-border px-3 py-2 text-xs font-semibold text-muted-foreground">Remove image</button>
             </div>}
-            {eventLogoPreview && <img src={eventLogoPreview} alt="Event logo preview" className="max-h-36 max-w-full rounded-xl border border-border bg-background p-2 object-contain" />}
+            {eventLogoPreview && <>
+              <EventLogoImage src={eventLogoPreview} alt="Event logo preview" className="max-h-56" />
+              <EventLogoCropAdjust key={eventLogoFile?.name ?? "event-logo"} src={eventLogoPreview} onCropChange={handleLogoCropChange} />
+            </>}
           </div>
           <div className="grid gap-2 sm:grid-cols-2">
             <label className="block text-xs text-muted-foreground">Event date<input required type="date" value={eventDate} onChange={(event) => setEventDate(event.currentTarget.value)} aria-label="Event date" className="mt-1 w-full rounded-xl border border-input bg-ink-soft px-3 py-3 text-sm text-foreground" /></label>
@@ -393,7 +407,7 @@ export function EventCapacityPanel({ mode, canteenId, canteenName, userId }: { m
         const eventRequests = requestsByEvent.get(event.id) ?? [];
         const pending = eventRequests.some((request) => request.status === "pending");
         return <article key={event.id} className="rounded-3xl border border-border bg-card p-5">
-          {eventLogoUrls[event.id] && <img src={eventLogoUrls[event.id]} alt={`${event.name} event logo`} className="mb-4 max-h-40 w-full rounded-2xl bg-ink-soft p-3 object-contain" />}
+          {eventLogoUrls[event.id] && <EventLogoImage src={eventLogoUrls[event.id]} alt={`${event.name} event logo`} className="mb-4" />}
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div><span className={`inline-flex rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] ${eventStatusClass(event.status)}`}>{eventStatusLabel(event.status)}</span><p data-no-translate className="mt-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">{canteenName}</p><h3 data-no-translate className="display mt-1 text-xl">{event.name}</h3><p className="mt-1 text-xs text-muted-foreground">Event Code: <span data-no-translate className="font-mono font-bold tracking-widest text-foreground">{event.event_code}</span></p></div>
             <span className="rounded-full border border-border px-3 py-1 text-xs font-semibold">{issued}/{event.approved_capacity} tokens issued</span>

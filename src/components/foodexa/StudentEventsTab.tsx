@@ -5,6 +5,7 @@ import { QRCodeCanvas } from "qrcode.react";
 import { supabase } from "@/integrations/supabase/client";
 import { issueFacultyEventToken, requestAdditionalFacultyEventTokens } from "@/lib/hungry.functions";
 import { getFacultyEventLogoUrls } from "@/lib/faculty-event-logos";
+import { EventLogoImage } from "@/components/foodexa/FacultyEventLogo";
 
 type EventRow = {
   id: string; name: string; event_code: string; description: string;
@@ -106,7 +107,7 @@ export function StudentEventsTab({ canteenId, canteenName, userId }: { canteenId
     <div><h2 className="display text-2xl">Faculty Events</h2><p className="mt-1 text-sm text-muted-foreground">Enter the seven-digit Event Code to view event details and generate your participation token.</p></div>
     {loading && <p role="status" className="text-sm text-muted-foreground">Loading events…</p>}
     {!loading && events.length === 0 && <p className="rounded-3xl border border-border bg-card p-6 text-center text-sm text-muted-foreground">No published events for this canteen yet.</p>}
-    {events.length > 0 && <div className="grid gap-2 sm:grid-cols-2">{events.map((event) => <button key={event.id} type="button" onClick={() => { setPicked(event); setOpened(null); setToken(null); setCode(""); setError(""); }} className={`rounded-2xl border p-4 text-left ${picked?.id === event.id ? "border-primary bg-primary/10" : "border-border bg-card"}`}>{event.event_logo_url && <img src={event.event_logo_url} alt={`${event.name} event logo`} className="mb-3 max-h-32 w-full rounded-xl bg-ink-soft p-2 object-contain" />}<span data-no-translate className="block font-semibold">{event.name}</span><span className="mt-1 block text-xs text-muted-foreground">{event.capacity_available ? `${event.tokens_remaining} tokens remaining` : "Availability refreshing"}</span></button>)}</div>}
+    {events.length > 0 && <div className="grid min-w-0 gap-3 sm:grid-cols-2">{events.map((event) => <button key={event.id} type="button" onClick={() => { setPicked(event); setOpened(null); setToken(null); setCode(""); setError(""); }} className={`min-w-0 rounded-2xl border p-3 text-left sm:p-4 ${picked?.id === event.id ? "border-primary bg-primary/10" : "border-border bg-card"}`}>{event.event_logo_url && <EventLogoImage src={event.event_logo_url} alt={`${event.name} event logo`} className="mb-3 min-h-24 max-h-36 sm:min-h-28" />}<span data-no-translate className="block font-semibold">{event.name}</span><span className="mt-1 block text-xs text-muted-foreground">{event.capacity_available ? `${event.tokens_remaining} tokens remaining` : "Availability refreshing"}</span></button>)}</div>}
     {!!events.length && <form onSubmit={openEvent} className="flex gap-2">
       <input required inputMode="numeric" pattern="[0-9]{7}" maxLength={7} value={code} onChange={(event) => setCode(event.currentTarget.value.replace(/\D/g, "").slice(0, 7))} placeholder="7-digit Event Code" aria-label="7-digit Event Code" className="min-w-0 flex-1 rounded-full border border-input bg-ink-soft px-4 py-3 text-center font-mono tracking-[0.3em]" />
       <button disabled={!picked} className="rounded-full bg-primary px-5 py-3 text-xs font-semibold text-primary-foreground disabled:opacity-50">Open Event</button>
@@ -116,7 +117,7 @@ export function StudentEventsTab({ canteenId, canteenName, userId }: { canteenId
       <section role="dialog" aria-modal="true" aria-labelledby="event-dialog-title" className="relative my-auto max-h-[90dvh] w-full max-w-lg overflow-y-auto rounded-3xl border border-primary/30 bg-card p-5 sm:p-6">
         <button type="button" aria-label="Close event" onClick={() => { setOpened(null); setToken(null); }} className="absolute right-4 top-4 grid h-9 w-9 place-items-center rounded-full border border-border text-muted-foreground"><X className="h-4 w-4" /></button>
         <div className="grid h-12 w-12 place-items-center rounded-2xl bg-primary/10 text-primary"><Ticket className="h-6 w-6" /></div>
-        {opened.event_logo_url && <img src={opened.event_logo_url} alt={`${opened.name} event logo`} className="mt-4 max-h-48 w-full rounded-2xl bg-ink-soft p-3 object-contain" />}
+        {opened.event_logo_url && <EventLogoImage src={opened.event_logo_url} alt={`${opened.name} event logo`} className="mt-4 max-h-52" />}
         <p className="mt-4 text-[10px] font-bold uppercase tracking-[0.2em] text-primary">Event details</p>
         <h3 data-no-translate id="event-dialog-title" className="display mt-1 pr-9 text-2xl">{opened.name}</h3>
         {opened.description && <p data-no-translate className="mt-3 whitespace-pre-wrap text-sm text-muted-foreground">{opened.description}</p>}

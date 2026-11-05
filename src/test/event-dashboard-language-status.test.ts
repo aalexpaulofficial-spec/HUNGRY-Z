@@ -51,7 +51,7 @@ describe("event dashboard language and status presentation", () => {
 
   it("translates the optional logo upload controls", () => {
     for (const language of ["hi", "kn"] as const) {
-      for (const label of ["EVENT LOGO (OPTIONAL)", "PNG, JPG or JPEG · maximum 8 MB", "Selected file:", "Replace image", "Remove image"]) {
+      for (const label of ["EVENT LOGO (OPTIONAL)", "PNG, JPG or JPEG · maximum 8 MB", "Selected file:", "Replace image", "Remove image", "Crop / Adjust Image (optional)", "Crop shape", "Original proportions", "Wide (16:9)", "Square (1:1)"]) {
         expect(translateDashboardText(label, language), `${language}: ${label}`).not.toBe(label);
       }
     }

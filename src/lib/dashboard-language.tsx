@@ -290,6 +290,13 @@ Object.assign(eventDashboardTranslations.hi, {
   "Replace image": "तस्वीर बदलें",
   "Remove image": "तस्वीर हटाएँ",
   "Choose a JPG or PNG image.": "JPG या PNG तस्वीर चुनें।",
+  "Crop / Adjust Image (optional)": "तस्वीर क्रॉप / समायोजित करें (वैकल्पिक)",
+  "Drag the image to reposition it. The original upload is kept unchanged.": "तस्वीर की जगह बदलने के लिए उसे खींचें। मूल अपलोड अपरिवर्तित रहेगा।",
+  "Crop shape": "क्रॉप का आकार",
+  "Original proportions": "मूल अनुपात",
+  "Wide (16:9)": "चौड़ा (16:9)",
+  "Square (1:1)": "वर्गाकार (1:1)",
+  "Zoom:": "ज़ूम:",
 });
 
 Object.assign(eventDashboardTranslations.kn, {
@@ -299,6 +306,13 @@ Object.assign(eventDashboardTranslations.kn, {
   "Replace image": "ಚಿತ್ರ ಬದಲಾಯಿಸಿ",
   "Remove image": "ಚಿತ್ರ ತೆಗೆದುಹಾಕಿ",
   "Choose a JPG or PNG image.": "JPG ಅಥವಾ PNG ಚಿತ್ರ ಆಯ್ಕೆಮಾಡಿ.",
+  "Crop / Adjust Image (optional)": "ಚಿತ್ರ ಕ್ರಾಪ್ / ಹೊಂದಿಸಿ (ಐಚ್ಛಿಕ)",
+  "Drag the image to reposition it. The original upload is kept unchanged.": "ಸ್ಥಾನ ಬದಲಿಸಲು ಚಿತ್ರವನ್ನು ಎಳೆಯಿರಿ. ಮೂಲ ಅಪ್‌ಲೋಡ್ ಹಾಗೆಯೇ ಉಳಿಯುತ್ತದೆ.",
+  "Crop shape": "ಕ್ರಾಪ್ ಆಕಾರ",
+  "Original proportions": "ಮೂಲ ಅನುಪಾತ",
+  "Wide (16:9)": "ಅಗಲ (16:9)",
+  "Square (1:1)": "ಚೌಕ (1:1)",
+  "Zoom:": "ಝೂಮ್:",
 });
 
 export function translateDashboardText(input: string, language: DashboardLanguage): string {

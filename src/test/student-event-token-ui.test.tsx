@@ -71,10 +71,15 @@ describe("student event participation", () => {
     fixtures.signed.mockResolvedValue({ data: [{ path: logoPath, signedUrl: "https://storage.example/student-logo" }], error: null });
     render(<StudentEventsTab canteenId="canteen-1" canteenName="FLAMES" userId="student-1" />);
 
-    expect(await screen.findByAltText("Hackathon event logo")).toHaveAttribute("src", "https://storage.example/student-logo");
+    const cardLogo = await screen.findByAltText("Hackathon event logo");
+    expect(cardLogo).toHaveAttribute("src", "https://storage.example/student-logo");
+    expect(cardLogo).toHaveClass("object-contain", "max-h-52", "max-w-full");
+    expect(cardLogo.parentElement).toHaveClass("max-h-56", "overflow-hidden", "rounded-2xl");
     fireEvent.click(screen.getByRole("button", { name: /Hackathon/ }));
     fireEvent.change(screen.getByLabelText("7-digit Event Code"), { target: { value: "1234567" } });
     fireEvent.click(screen.getByRole("button", { name: "Open Event" }));
-    expect(await screen.findAllByAltText("Hackathon event logo")).toHaveLength(2);
+    const displayedLogos = await screen.findAllByAltText("Hackathon event logo");
+    expect(displayedLogos).toHaveLength(2);
+    displayedLogos.forEach((logo) => expect(logo).toHaveClass("object-contain", "max-h-52", "max-w-full"));
   });
 });
