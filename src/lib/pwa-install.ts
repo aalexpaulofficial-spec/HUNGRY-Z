@@ -187,17 +187,19 @@ export function getInstallFallback(app: HungryApp) {
     return "This Chrome version cannot install a second PWA directly from this page. The dashboard has not been installed.";
   }
   if (/android/i.test(ua)) {
-    return app === "canteen"
-      ? "Chrome did not offer the Canteen Dashboard install prompt. In Chrome, open the menu and choose Install app or Add to Home screen."
-      : "Chrome did not offer its install prompt. In Chrome, open the menu and choose Install app or Add to Home screen.";
+    if (/SamsungBrowser/i.test(ua)) return "In Samsung Internet, open the menu, choose Add page to, then Home screen.";
+    if (/EdgA/i.test(ua)) return "In Microsoft Edge, open the menu and choose Add to phone or Install app if shown.";
+    if (/Chrome\//i.test(ua) && !/EdgA|OPR\//i.test(ua)) return "In Chrome for Android, open the menu and choose Install app or Add to Home screen.";
+    return `Open this page in Chrome for Android, then use its menu to choose Install app or Add to Home screen for ${appName}.`;
   }
   if (/safari/i.test(ua) && !/chrome|chromium|edg/i.test(ua)) {
     return `In Safari, choose File, then Add to Dock to install ${appName}.`;
   }
-  if (/chrome|edg/i.test(ua)) {
-    return app === "canteen"
-      ? "Chrome did not offer the Canteen Dashboard install prompt. Use the install icon in the address bar if it is available."
-      : "Chrome did not offer its install prompt. Use the install icon in the address bar if it is available.";
+  if (/edg\//i.test(ua)) {
+    return `In Microsoft Edge, use the install icon in the address bar or open the menu and choose Apps, then Install ${appName}.`;
+  }
+  if (/chrome\//i.test(ua) && !/opr\//i.test(ua)) {
+    return `In Chrome, use the install icon in the address bar or open the menu and choose Install ${appName}.`;
   }
   return `This browser did not offer an install prompt. Open this page in Chrome, Edge, or Safari to install ${appName}.`;
 }

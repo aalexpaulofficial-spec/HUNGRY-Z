@@ -28,6 +28,7 @@ export function HeroInstallButton({ app }: { app: HungryApp; dedicatedInstallPag
   const [installed, setInstalled] = useState(false);
   const [showInstalledDialog, setShowInstalledDialog] = useState(false);
   const [showInstallGuide, setShowInstallGuide] = useState(false);
+  const [installDismissed, setInstallDismissed] = useState(false);
   const [installAvailability, setInstallAvailability] = useState<"checking" | "native" | "guide">("checking");
   const installCheckRevision = useRef(0);
   const label = copy[app];
@@ -59,6 +60,7 @@ export function HeroInstallButton({ app }: { app: HungryApp; dedicatedInstallPag
       updateInstalled();
       if (app === "student" && getDeferredInstallPrompt(app)) {
         if (promptFallbackTimer !== undefined) window.clearTimeout(promptFallbackTimer);
+        setInstallDismissed(false);
         setInstallAvailability("native");
       }
     };
@@ -120,6 +122,7 @@ export function HeroInstallButton({ app }: { app: HungryApp; dedicatedInstallPag
 
     const promptEvent = getDeferredInstallPrompt("student");
     if (!promptEvent) {
+      setInstallDismissed(false);
       setInstallAvailability("guide");
       setShowInstallGuide(true);
       return;
@@ -132,7 +135,9 @@ export function HeroInstallButton({ app }: { app: HungryApp; dedicatedInstallPag
       clearDeferredInstallPrompt(promptEvent);
       if (choice.outcome === "dismissed") {
         setPendingInstallApp(null);
+        setInstallDismissed(true);
         setInstallAvailability("guide");
+        setShowInstallGuide(true);
         return;
       }
       await promptResult;
@@ -140,11 +145,13 @@ export function HeroInstallButton({ app }: { app: HungryApp; dedicatedInstallPag
         setPendingInstallApp(null);
         setInstalled(true);
       } else {
+        setInstallDismissed(false);
         setInstallAvailability("guide");
       }
     } catch {
       setPendingInstallApp(null);
       clearDeferredInstallPrompt(promptEvent);
+      setInstallDismissed(false);
       setInstallAvailability("guide");
       setShowInstallGuide(true);
     }
@@ -173,7 +180,7 @@ export function HeroInstallButton({ app }: { app: HungryApp; dedicatedInstallPag
         </button>
       )}
       {app === "student" && showInstalledDialog && <AlreadyInstalledDialog onClose={() => setShowInstalledDialog(false)} />}
-      {app === "student" && showInstallGuide && <HungryInstallGuideDialog onClose={() => setShowInstallGuide(false)} />}
+      {app === "student" && showInstallGuide && <HungryInstallGuideDialog dismissed={installDismissed} onClose={() => setShowInstallGuide(false)} />}
     </div>
   );
 }

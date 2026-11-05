@@ -1,5 +1,5 @@
 const CACHE_PREFIX = "hungry-public-";
-const CACHE_NAME = `${CACHE_PREFIX}v2`;
+const CACHE_NAME = `${CACHE_PREFIX}v3`;
 const PRECACHE_URLS = [
   "/offline.html",
   "/manifest-student.webmanifest",
@@ -10,6 +10,8 @@ const PRECACHE_URLS = [
   "/Red%20Social%20Media%20Icons%20Trio.png",
   "/icons/canteen-192.png",
   "/icons/canteen-512.png",
+  "/icons/student-192.png",
+  "/icons/student-512.png",
 ];
 
 self.addEventListener("install", (event) => {

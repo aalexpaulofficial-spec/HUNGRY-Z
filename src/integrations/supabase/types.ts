@@ -21,9 +21,11 @@ export type Database = {
           contact_email: string
           created_at: string
           fssai_license: string
+          fssai_license_document_path: string | null
           id: string
           notes: string | null
           owner_id_proof: string
+          owner_id_document_path: string | null
           owner_name: string
           owner_phone: string
           reviewed_at: string | null
@@ -36,9 +38,11 @@ export type Database = {
           contact_email: string
           created_at?: string
           fssai_license: string
+          fssai_license_document_path?: string | null
           id?: string
           notes?: string | null
           owner_id_proof: string
+          owner_id_document_path?: string | null
           owner_name: string
           owner_phone: string
           reviewed_at?: string | null
@@ -51,9 +55,11 @@ export type Database = {
           contact_email?: string
           created_at?: string
           fssai_license?: string
+          fssai_license_document_path?: string | null
           id?: string
           notes?: string | null
           owner_id_proof?: string
+          owner_id_document_path?: string | null
           owner_name?: string
           owner_phone?: string
           reviewed_at?: string | null

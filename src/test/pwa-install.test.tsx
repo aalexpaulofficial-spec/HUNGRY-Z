@@ -68,7 +68,8 @@ describe("independent HUNGRY Z PWA install flows", () => {
     expect(studentManifest.scope).toBe("/");
     expect(canteenManifest.scope).toBe("/");
     expect(studentManifest.icons.map((icon) => icon.src)).not.toEqual(canteenManifest.icons.map((icon) => icon.src));
-    expect(studentManifest.icons[0]?.src).toBe("/HUNGRY%20Z%20Q%20LOGO.png");
+    expect(studentManifest.icons.map((icon) => icon.sizes)).toContain("192x192");
+    expect(studentManifest.icons.map((icon) => icon.sizes)).toContain("512x512");
     expect(canteenManifest.display).toBe("standalone");
     expect(canteenManifest.icons.map((icon) => icon.sizes)).toContain("192x192");
     expect(canteenManifest.icons.map((icon) => icon.sizes)).toContain("512x512");
@@ -197,9 +198,36 @@ describe("independent HUNGRY Z PWA install flows", () => {
     const guideButton = await screen.findByRole("button", { name: "Show the HUNGRY Z installation guide" });
     fireEvent.click(guideButton);
     expect(screen.getByRole("dialog", { name: "Install HUNGRY Z" })).toBeInTheDocument();
-    expect(screen.getByText(/Chrome has not offered its install prompt yet/)).toBeInTheDocument();
+    expect(screen.getByText(/Your browser has not offered an installation prompt/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Got it" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Already Installed" })).not.toBeInTheDocument();
+  });
+
+  it("opens installation instructions when the user dismisses Chrome's native prompt", async () => {
+    Object.defineProperty(navigator, "getInstalledRelatedApps", { configurable: true, value: vi.fn().mockResolvedValue([]) });
+    const event = Object.assign(new Event("beforeinstallprompt", { cancelable: true }), {
+      prompt: vi.fn().mockResolvedValue(undefined),
+      userChoice: Promise.resolve({ outcome: "dismissed" as const, platform: "web" }),
+    }) as InstallPromptEvent;
+    window.dispatchEvent(event);
+    render(<HeroInstallButton app="student" />);
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Download HUNGRY Z for Students, Faculty and Guests" }));
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(event.prompt).toHaveBeenCalledOnce();
+    expect(screen.getByRole("dialog", { name: "Install HUNGRY Z" })).toBeInTheDocument();
+    expect(screen.getByText(/prompt was dismissed, so HUNGRY Z was not installed/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Already Installed" })).not.toBeInTheDocument();
+  });
+
+  it("gives browser-specific installation guidance on Android and desktop", () => {
+    vi.stubGlobal("navigator", { userAgent: "Mozilla/5.0 (Linux; Android 15) AppleWebKit/537.36 Chrome/140.0.0.0 Mobile Safari/537.36", platform: "Linux armv8l", maxTouchPoints: 0 });
+    expect(getInstallFallback("student")).toContain("Chrome for Android");
+
+    vi.stubGlobal("navigator", { userAgent: "Mozilla/5.0 (Linux; Android 15) AppleWebKit/537.36 Chrome/140.0.0.0 EdgA/140.0 Mobile Safari/537.36", platform: "Linux armv8l", maxTouchPoints: 0 });
+    expect(getInstallFallback("student")).toContain("Microsoft Edge");
   });
 
   it("shows the existing HUNGRY Z installed popup and login destination", async () => {

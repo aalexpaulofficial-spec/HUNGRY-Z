@@ -105,7 +105,7 @@ function AdminLogin({ onDone, initialError = "" }: { onDone: () => Promise<void>
   );
 }
 
-type App = { id: string; owner_name: string; owner_phone: string; canteen_name: string; university_name: string; campus_location: string; contact_email: string; fssai_license: string; owner_id_proof: string; notes: string | null; status: string; created_at: string };
+type App = { id: string; owner_name: string; owner_phone: string; canteen_name: string; university_name: string; campus_location: string; contact_email: string; fssai_license: string; fssai_license_document_path: string | null; owner_id_proof: string; owner_id_document_path: string | null; notes: string | null; status: string; created_at: string };
 type Canteen = { id: string; code: string; name: string; university_name: string; contact_email: string; visibility: string; owner_user_id: string | null };
 
 function Dashboard({ onSignOut }: { onSignOut: () => void }) {
@@ -119,6 +119,7 @@ function Dashboard({ onSignOut }: { onSignOut: () => void }) {
   const [canteens, setCanteens] = useState<Canteen[]>([]);
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
+  const [documentLinks, setDocumentLinks] = useState<Record<string, string>>({});
 
   const load = useCallback(async () => {
     const [{ data: a }, { data: c }] = await Promise.all([
@@ -140,6 +141,20 @@ function Dashboard({ onSignOut }: { onSignOut: () => void }) {
       await load();
     } catch (e) {
       setMsg(e instanceof Error ? e.message : "Action failed");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function openApplicationDocument(key: string, path: string) {
+    setBusy(key);
+    setMsg("");
+    try {
+      const { data, error } = await supabase.storage.from("canteen-registration-documents").createSignedUrl(path, 300);
+      if (error || !data?.signedUrl) throw new Error("Could not create a secure document link. Check Storage admin access.");
+      setDocumentLinks((current) => ({ ...current, [key]: data.signedUrl }));
+    } catch (error) {
+      setMsg(error instanceof Error ? error.message : "Could not access this document.");
     } finally {
       setBusy(null);
     }
@@ -192,6 +207,15 @@ function Dashboard({ onSignOut }: { onSignOut: () => void }) {
                     <div key={k}><dt className="text-[10px] uppercase tracking-widest text-muted-foreground">{k}</dt><dd className="break-words">{v}</dd></div>
                   ))}
                 </dl>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {([ ["FSSAI licence PDF", a.fssai_license_document_path, "fssai"], ["Owner Aadhaar / PAN PDF", a.owner_id_document_path, "owner-id"] ] as const).map(([label, path, key]) => {
+                    const linkKey = `${a.id}:${key}`;
+                    return path ? documentLinks[linkKey]
+                      ? <a key={linkKey} href={documentLinks[linkKey]} target="_blank" rel="noopener noreferrer" className="rounded-full border border-border px-4 py-2 text-xs font-semibold text-foreground hover:border-primary">View {label}</a>
+                      : <button key={linkKey} disabled={busy === linkKey} onClick={() => void openApplicationDocument(linkKey, path)} className="rounded-full border border-border px-4 py-2 text-xs font-semibold text-foreground hover:border-primary disabled:opacity-50">{busy === linkKey ? "Preparing secure link…" : `Open ${label}`}</button>
+                      : <span key={linkKey} className="rounded-full border border-border px-4 py-2 text-xs text-muted-foreground">{label} not provided</span>;
+                  })}
+                </div>
                 {a.notes && <p className="mt-3 text-sm text-muted-foreground">“{a.notes}”</p>}
                 {a.status === "pending" && (
                   <div className="mt-5 flex gap-2">

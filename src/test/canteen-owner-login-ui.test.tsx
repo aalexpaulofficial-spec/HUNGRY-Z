@@ -14,6 +14,32 @@ import { CanteenSection } from "@/components/foodexa/CanteenSection";
 describe("canteen owner login UI", () => {
   afterEach(() => cleanup());
 
+  it("requires both registration PDFs and rejects non-PDF file selections", async () => {
+    render(<CanteenSection />);
+    const fssaiPdf = screen.getByLabelText(/FSSAI Licence Document/) as HTMLInputElement;
+    const ownerIdPdf = screen.getByLabelText(/Owner Government ID/) as HTMLInputElement;
+    expect(fssaiPdf.accept).toBe("application/pdf,.pdf");
+    expect(ownerIdPdf.accept).toBe("application/pdf,.pdf");
+
+    fireEvent.change(fssaiPdf, { target: { files: [new File(["not pdf"], "notes.txt", { type: "text/plain" })] } });
+    expect(await screen.findByText("Choose a PDF file.")).toBeInTheDocument();
+
+    for (const [label, value] of [
+      ["Owner full name", "Alex Paul"],
+      ["Owner phone number", "+919876543210"],
+      ["Contact email", "owner@example.com"],
+      ["Canteen name", "Campus Cafe"],
+      ["University / campus name", "Example University"],
+      ["Campus address / city", "Campus Road"],
+      ["FSSAI licence number", "FSSAI12345"],
+      ["Owner government ID (Aadhaar / PAN no.)", "ABCD1234"],
+    ]) fireEvent.change(screen.getByLabelText(label), { target: { value } });
+    fireEvent.click(screen.getByRole("button", { name: "Submit application" }));
+
+    expect(await screen.findByText("Upload the FSSAI licence document PDF.")).toBeInTheDocument();
+    expect(screen.getByText("Upload the owner's Aadhaar / PAN PDF.")).toBeInTheDocument();
+  });
+
   it("shows separate labeled owner credentials and preserves the registration link below them", async () => {
     render(<CanteenSection />);
     fireEvent.click(screen.getByRole("button", { name: /canteen login/i }));

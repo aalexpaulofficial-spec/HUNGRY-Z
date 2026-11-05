@@ -1,16 +1,11 @@
-import { useEffect } from "react";
+﻿import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { LogoMark } from "@/components/foodexa/LogoMark";
+import { getInstallFallback } from "@/lib/pwa-install";
 
-export function HungryInstallGuideDialog({ onClose }: { onClose: () => void }) {
-  const isAndroid = /android/i.test(navigator.userAgent);
-  const isChrome = /chrome|chromium|edg/i.test(navigator.userAgent);
-  const instructions = isAndroid
-    ? "In Chrome, open the ⋮ menu and choose Install app. If that option is not shown, choose Add to Home screen."
-    : isChrome
-      ? "In Chrome, select the install icon in the address bar, or open the ⋮ menu and choose Install HUNGRY Z."
-      : "Open this page in Chrome, then choose Install app or Add to Home screen from the browser menu.";
+export function HungryInstallGuideDialog({ onClose, dismissed = false }: { onClose: () => void; dismissed?: boolean }) {
+  const instructions = getInstallFallback("student");
 
   useEffect(() => {
     const originalOverflow = document.body.style.overflow;
@@ -31,10 +26,10 @@ export function HungryInstallGuideDialog({ onClose }: { onClose: () => void }) {
           <LogoMark className="pwa-installed-logo" />
         </div>
         <h2 className="pwa-installed-title" id="pwa-install-guide-title">Install HUNGRY Z</h2>
-        <p className="pwa-installed-message">Chrome has not offered its install prompt yet. You can install HUNGRY Z from your browser menu.</p>
-        <div className="rounded-2xl border border-primary/25 bg-black/35 px-4 py-4 text-left text-sm leading-relaxed text-white/80">
-          <p className="font-semibold text-white">{instructions}</p>
-          <p className="mt-2 text-xs text-white/55">After installation, open HUNGRY Z from your Home Screen or app launcher.</p>
+        <p className="pwa-installed-message">{dismissed ? "The installation prompt was dismissed, so HUNGRY Z was not installed. You can install it later using the browser steps below." : "Your browser has not offered an installation prompt. Follow the steps for your browser below."}</p>
+        <div className="rounded-2xl border border-primary/25 bg-card px-4 py-4 text-left text-sm leading-relaxed text-card-foreground">
+          <p className="font-semibold">{instructions}</p>
+          <p className="mt-2 text-xs text-muted-foreground">After installation, open HUNGRY Z from your Home Screen or app launcher.</p>
         </div>
         <button className="pwa-installed-secondary" onClick={onClose} type="button">Got it</button>
       </section>
