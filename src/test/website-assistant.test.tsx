@@ -1,11 +1,11 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+﻿import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { WebsiteHelpChat } from "@/components/foodexa/WebsiteHelpChat";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { getWebsiteAssistantAnswer } from "@/lib/website-assistant";
 
-beforeEach(() => { document.documentElement.dataset.theme = "dark"; });
-afterEach(() => cleanup());
+beforeEach(() => { document.documentElement.dataset.theme = "dark"; localStorage.removeItem("hungry:assistant-language"); });
+afterEach(() => { cleanup(); localStorage.removeItem("hungry:assistant-language"); });
 
 describe("HUNGRY Z website help chat", () => {
   it("answers common questions from the live ordering, event and refund workflows", () => {
@@ -22,28 +22,33 @@ describe("HUNGRY Z website help chat", () => {
     expect(getWebsiteAssistantAnswer("ಮರುಪಾವತಿ ಎಷ್ಟು ದಿನಗಳಲ್ಲಿ ಬರುತ್ತದೆ?", "kn")).toContain("5–7 ವ್ಯವಹಾರಿಕ ಕೆಲಸದ ದಿನಗಳಲ್ಲಿ");
   });
 
-  it("shows example prompts and returns Hindi and Kannada answers after language switches", () => {
+  it("runs English, Hindi and Kannada conversations using localized suggested questions", () => {
     render(<WebsiteHelpChat />);
     fireEvent.click(screen.getByRole("button", { name: "Ask HUNGRY Z" }));
     expect(screen.getByRole("dialog", { name: "HUNGRY Z Help" })).toHaveClass("w-[min(25rem,calc(100vw-2rem))]");
-    expect(screen.getByRole("button", { name: "How do I place an order?" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "How can I register my canteen?" }));
+    expect(screen.getByText(/Register Your Canteen to submit/)).toBeInTheDocument();
+    cleanup();
+    localStorage.removeItem("hungry:assistant-language");
 
-    fireEvent.click(screen.getByRole("button", { name: "\u0939\u093f\u0928\u094d\u0926\u0940" }));
-    expect(screen.getByRole("button", { name: "\u0939\u093f\u0928\u094d\u0926\u0940" })).toHaveAttribute("aria-pressed", "true");
-    fireEvent.click(screen.getAllByRole("button", { name: "How do I place an order?" })[0]);
-    expect(screen.getByText(/\u0938\u093e\u0907\u0928 \u0907\u0928 \u0915\u0930\u0947\u0902/)).toBeInTheDocument();
+    render(<WebsiteHelpChat />);
+    fireEvent.click(screen.getByRole("button", { name: "Ask HUNGRY Z" }));
+    fireEvent.click(screen.getByRole("button", { name: "हिन्दी" }));
+    expect(screen.getByRole("button", { name: "मैं खाना कैसे ऑर्डर करूँ?" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "मैं खाना कैसे ऑर्डर करूँ?" }));
+    expect(screen.getByText(/साइन इन करें/)).toBeInTheDocument();
+    cleanup();
+    localStorage.removeItem("hungry:assistant-language");
 
-    fireEvent.click(screen.getByRole("button", { name: "\u0c95\u0ca8\u0ccd\u0ca8\u0ca1" }));
-    expect(screen.getByRole("button", { name: "\u0c95\u0ca8\u0ccd\u0ca8\u0ca1" })).toHaveAttribute("aria-pressed", "true");
-    fireEvent.change(screen.getByRole("textbox"), { target: { value: "How do event tokens work?" } });
+    render(<WebsiteHelpChat />);
+    fireEvent.click(screen.getByRole("button", { name: "Ask HUNGRY Z" }));
+    fireEvent.click(screen.getByRole("button", { name: "ಕನ್ನಡ" }));
+    expect(screen.getByRole("button", { name: "ನಾನು ಆಹಾರವನ್ನು ಹೇಗೆ ಆರ್ಡರ್ ಮಾಡಲಿ?" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "ನಾನು ಆಹಾರವನ್ನು ಹೇಗೆ ಆರ್ಡರ್ ಮಾಡಲಿ?" }));
+    expect(screen.getByText(/ಸೈನ್ ಇನ್ ಮಾಡಿ/)).toBeInTheDocument();
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: "ಮರುಪಾವತಿ ಎಷ್ಟು ದಿನಗಳಲ್ಲಿ ಬರುತ್ತದೆ?" } });
     fireEvent.submit(screen.getByRole("textbox").closest("form")!);
-    expect(screen.getByText(/\u0c95\u0cbe\u0cb0\u0ccd\u0caf\u0c95\u0ccd\u0cb0\u0cae\u0ca6/)).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: "\u0939\u093f\u0928\u094d\u0926\u0940" }));
-    fireEvent.change(screen.getByRole("textbox"), { target: { value: "रिफंड में कितना समय लगता है?" } });
-    fireEvent.submit(screen.getByRole("textbox").closest("form")!);
-    expect(screen.getByText(/\u0c95\u0cbe\u0cb0\u0ccd\u0caf\u0c95\u0ccd\u0cb0\u0cae\u0ca6/)).toBeInTheDocument();
-    expect(screen.getByText(/5–7 \u0935\u094d\u092f\u093e\u0935\u0938\u093e\u092f\u093f\u0915 \u0915\u093e\u0930\u094d\u092f\u0926\u093f\u0935\u0938/)).toBeInTheDocument();
+    expect(screen.getByText(/5–7 ವ್ಯವಹಾರಿಕ ಕೆಲಸದ ದಿನಗಳಲ್ಲಿ/)).toBeInTheDocument();
   });
 
   it("keeps chat surfaces readable through theme switches and viewport-bounded on small screens", () => {

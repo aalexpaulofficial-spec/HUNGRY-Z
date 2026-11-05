@@ -1,14 +1,14 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-const fixtures = vi.hoisted(() => ({ events: [] as Record<string, unknown>[] }));
+const fixtures = vi.hoisted(() => ({ events: [] as Record<string, unknown>[], realtimeCallbacks: [] as Array<() => unknown>, upload: vi.fn(async () => ({ data: { path: "" }, error: null })), signed: vi.fn(async (_paths: string[]) => ({ data: [] as Array<{ path: string; signedUrl: string }>, error: null as Error | null })), remove: vi.fn(async () => ({ data: [], error: null })) }));
 
 vi.mock("@tanstack/react-start", () => ({ useServerFn: (fn: unknown) => fn }));
 vi.mock("@/lib/hungry.functions", () => ({
   collectFacultyEventToken: vi.fn(), createFacultyEvent: vi.fn(), publishFacultyEvent: vi.fn(),
   requestFacultyEventCapacity: vi.fn(), resolveAdditionalFacultyEventTokens: vi.fn(), resolveFacultyEventCapacity: vi.fn(),
   reviewFacultyEventQuotation: vi.fn(), reviewFacultyEventRequest: vi.fn(), submitFacultyEventQuotation: vi.fn(),
-  updateFacultyEvent: vi.fn(), updateFacultyEventServedQuantities: vi.fn(),
+  updateFacultyEvent: vi.fn(), updateFacultyEventLogo: vi.fn(), updateFacultyEventServedQuantities: vi.fn(),
 }));
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
@@ -23,15 +23,16 @@ vi.mock("@/integrations/supabase/client", () => ({
       query.then = (resolve: (value: unknown) => unknown, reject?: (reason: unknown) => unknown) => Promise.resolve(result).then(resolve, reject);
       return query;
     },
-    channel: () => ({ on() { return this; }, subscribe() { return this; } }),
+    channel: () => ({ on(_event: unknown, _filter: unknown, callback: () => unknown) { fixtures.realtimeCallbacks.push(callback); return this; }, subscribe() { return this; } }),
+    storage: { from: () => ({ upload: fixtures.upload, createSignedUrls: fixtures.signed, remove: fixtures.remove }) },
     removeChannel: vi.fn(),
   },
 }));
 
 import { EventCapacityPanel } from "@/components/foodexa/EventCapacityPanel";
-import { reviewFacultyEventQuotation, submitFacultyEventQuotation } from "@/lib/hungry.functions";
+import { createFacultyEvent, reviewFacultyEventQuotation, submitFacultyEventQuotation, updateFacultyEventLogo, updateFacultyEventServedQuantities } from "@/lib/hungry.functions";
 
-afterEach(() => { cleanup(); vi.clearAllMocks(); fixtures.events = []; });
+afterEach(() => { cleanup(); vi.clearAllMocks(); fixtures.events = []; fixtures.realtimeCallbacks = []; });
 
 function event(overrides: Record<string, unknown> = {}) {
   return {
@@ -93,5 +94,93 @@ describe("manual quotation for message-only faculty requests", () => {
     expect(screen.getByRole("button", { name: "Request changes" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Approve quotation" }));
     await waitFor(() => expect(reviewFacultyEventQuotation).toHaveBeenCalledWith({ data: { eventId: "event-1", approve: true, note: "" } }));
+  });
+
+  it("shows persisted actual manual quantities and refreshes the faculty card from Realtime", async () => {
+    fixtures.events = [event({
+      status: "published", food_requirements: {},
+      food_confirmation: { quantities: { "Chicken Biryani": 10 }, prices: { "Chicken Biryani": 120 } },
+      served_food_quantities: {}, served_food_updated_at: null,
+    })];
+    render(<EventCapacityPanel mode="faculty" canteenId="canteen-1" canteenName="FLAMES" userId="faculty-1" />);
+
+    const servedSummary = await screen.findByRole("region", { name: "Actual food quantities served" });
+    expect(servedSummary).toHaveTextContent("Chicken Biryani");
+    expect(servedSummary).toHaveTextContent("Originally requested: Not specified");
+    expect(servedSummary).toHaveTextContent("Actual served: 0");
+    expect(servedSummary).toHaveTextContent("Last updated: Not updated yet");
+
+    fixtures.events = [event({
+      status: "published", food_requirements: {},
+      food_confirmation: { quantities: { "Chicken Biryani": 10 }, prices: { "Chicken Biryani": 120 } },
+      served_food_quantities: { "Chicken Biryani": 12 }, served_food_updated_at: "2026-11-05T10:00:00.000Z",
+    })];
+    fixtures.realtimeCallbacks.forEach((callback) => callback());
+    await waitFor(() => expect(servedSummary).toHaveTextContent("Actual served: 12"));
+    expect(servedSummary).toHaveTextContent("2026");
+  });
+
+  it("lets the canteen update saved manual items independently of the current menu", async () => {
+    fixtures.events = [event({
+      status: "published", food_requirements: {},
+      food_confirmation: { quantities: { "Chicken Biryani": 10 }, prices: { "Chicken Biryani": 120 } },
+      served_food_quantities: {}, served_food_updated_at: null,
+    })];
+    vi.mocked(updateFacultyEventServedQuantities).mockResolvedValue({ ok: true } as never);
+    render(<EventCapacityPanel mode="canteen" canteenId="canteen-1" canteenName="FLAMES" />);
+
+    const quantity = await screen.findByLabelText("Served quantity for Chicken Biryani");
+    fireEvent.change(quantity, { target: { value: "12" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save served quantities" }));
+    await waitFor(() => expect(updateFacultyEventServedQuantities).toHaveBeenCalledWith({
+      data: { eventId: "event-1", quantities: { "Chicken Biryani": 12 } },
+    }));
+  });
+
+  it("uploads an optional faculty event logo to private storage and saves its event path", async () => {
+    vi.mocked(createFacultyEvent).mockResolvedValue({ id: "event-2", event_code: "7654321" } as never);
+    vi.mocked(updateFacultyEventLogo).mockResolvedValue({ oldPath: null } as never);
+    fixtures.upload.mockResolvedValue({ data: { path: "" }, error: null });
+    const { container } = render(<EventCapacityPanel mode="faculty" canteenId="canteen-1" canteenName="FLAMES" userId="faculty-1" />);
+
+    fireEvent.change(screen.getByLabelText("Event name"), { target: { value: "Faculty Fellowship" } });
+    fireEvent.change(screen.getByLabelText("Faculty event details"), { target: { value: "Annual gathering" } });
+    fireEvent.change(screen.getByLabelText("Event date"), { target: { value: "2026-12-01" } });
+    fireEvent.change(screen.getByLabelText("Event venue"), { target: { value: "Main Hall" } });
+    fireEvent.change(screen.getByLabelText("7-digit Event Code"), { target: { value: "7654321" } });
+    fireEvent.change(screen.getByLabelText("Message to Canteen (Optional)"), { target: { value: "Prepare lunch" } });
+    const logo = new File(["logo"], "event.png", { type: "image/png" });
+    const logoInput = screen.getByLabelText("Upload event logo") as HTMLInputElement;
+    expect(logoInput.accept).toBe("image/png,image/jpeg,.png,.jpg,.jpeg");
+    expect(logoInput.closest("div[aria-label='Event logo upload']")!.compareDocumentPosition(screen.getByLabelText("Event date")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    fireEvent.change(logoInput, { target: { files: [logo] } });
+    expect(screen.getByText("Selected file:").parentElement).toHaveTextContent("event.png");
+    expect(container.querySelector('img[alt="Event logo preview"]')).toBeInTheDocument();
+
+    fireEvent.change(logoInput, { target: { files: [new File(["new logo"], "replacement.jpg", { type: "image/jpeg" })] } });
+    expect(screen.getByText("Selected file:").parentElement).toHaveTextContent("replacement.jpg");
+    fireEvent.click(screen.getByRole("button", { name: "Remove image" }));
+    expect(screen.queryByText(/Selected file:/)).not.toBeInTheDocument();
+    expect(container.querySelector('img[alt="Event logo preview"]')).not.toBeInTheDocument();
+    fireEvent.change(logoInput, { target: { files: [logo] } });
+    fireEvent.click(screen.getByRole("button", { name: "6. Submit Food Request" }));
+
+    await waitFor(() => expect(fixtures.upload).toHaveBeenCalledWith(
+      expect.stringMatching(/^faculty-1\/event-2\/[0-9a-f-]+\.png$/), logo,
+      { contentType: "image/png", cacheControl: "3600", upsert: false },
+    ));
+    expect(updateFacultyEventLogo).toHaveBeenCalledWith({ data: { eventId: "event-2", imagePath: expect.stringMatching(/^faculty-1\/event-2\/[0-9a-f-]+\.png$/) } });
+  });
+
+  it("renders signed event logos in Faculty and Canteen event cards", async () => {
+    const path = "faculty-1/event-1/550e8400-e29b-41d4-a716-446655440000.png";
+    fixtures.events = [event({ status: "published", event_logo_path: path })];
+    fixtures.signed.mockResolvedValue({ data: [{ path, signedUrl: "https://storage.example/signed-logo" }], error: null });
+    const { unmount } = render(<EventCapacityPanel mode="faculty" canteenId="canteen-1" canteenName="FLAMES" userId="faculty-1" />);
+    expect(await screen.findByAltText("Revival Meeting event logo")).toHaveAttribute("src", "https://storage.example/signed-logo");
+    unmount();
+
+    render(<EventCapacityPanel mode="canteen" canteenId="canteen-1" canteenName="FLAMES" />);
+    expect(await screen.findByAltText("Revival Meeting event logo")).toHaveAttribute("src", "https://storage.example/signed-logo");
   });
 });

@@ -4,6 +4,7 @@ import { HUNGRY_SOCIAL_LINKS } from "@/lib/social-links";
 export const ADMIN_ALERT_EMAIL = "hungryofficialx@gmail.com";
 
 export type EmailKind =
+  | "registration_confirmation"
   | "welcome"
   | "order_confirmation"
   | "payment_pending"
@@ -66,6 +67,16 @@ export type OrderEmailData = {
   counter: string;
   prepMinutes: number;
 };
+
+export function registrationConfirmationEmail(d: { name: string }): EmailContent {
+  const greeting = d.name.trim() ? `Hi ${d.name.trim()},` : "Hello,";
+  const confirmation = "Thank you for registering with HUNGRY Z. We have received your registration using this email address. For canteen applications, this message confirms receipt only; the application remains subject to admin review.";
+  return {
+    subject: "Thank you for registering with HUNGRY Z",
+    text: `${greeting}\n\n${confirmation}\n\n— Team HUNGRY Z`,
+    html: wrap("Thank you for registering", `<p>${esc(greeting)}</p><p>${esc(confirmation)}</p>`),
+  };
+}
 
 function linesHtml(lines: OrderEmailData["lines"]) {
   return `<table style="width:100%;border-collapse:collapse;margin:12px 0">${lines

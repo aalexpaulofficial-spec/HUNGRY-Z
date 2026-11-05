@@ -119,7 +119,7 @@ export const submitCanteenApplicationWithDocuments = createServerFn({ method: "P
       await removeCanteenDocuments([data.fssaiDocumentPath, data.ownerIdDocumentPath]);
       throw new Error("You already have applications under review for this email.");
     }
-    const { error } = await db.from("canteen_applications").insert({
+    const { data: application, error } = await db.from("canteen_applications").insert({
       owner_name: data.application.ownerName,
       owner_phone: data.application.ownerPhone,
       canteen_name: data.application.canteenName,
@@ -131,12 +131,25 @@ export const submitCanteenApplicationWithDocuments = createServerFn({ method: "P
       fssai_license_document_path: data.fssaiDocumentPath,
       owner_id_document_path: data.ownerIdDocumentPath,
       notes: data.application.notes || null,
-    });
+    }).select("id").single();
     if (error) {
       await removeCanteenDocuments([data.fssaiDocumentPath, data.ownerIdDocumentPath]);
       throw new Error("Could not submit your application. Please try again.");
     }
-    return { ok: true };
+    try {
+      const { registrationConfirmationEmail } = await import("@/lib/email-templates");
+      const { sendEmailOnce } = await import("@/lib/mailer.server");
+      const email = await sendEmailOnce(
+        "registration_confirmation",
+        data.application.contactEmail,
+        registrationConfirmationEmail({ name: data.application.ownerName }),
+        `canteen-registration:${application.id}`,
+      );
+      return { ok: true, emailSent: email.sent };
+    } catch (emailError) {
+      console.error("[registration] could not confirm canteen application email", emailError instanceof Error ? emailError.message : emailError);
+      return { ok: true, emailSent: false };
+    }
   });
 
 const eventFoodQuantities = z.record(z.string().trim().min(1).max(120), z.number().int().min(0).max(100000));
@@ -205,6 +218,22 @@ export const updateFacultyEvent = createServerFn({ method: "POST" })
     const { error } = await db.from("faculty_events").update({ name: data.name, description: data.description, event_date: data.eventDate, venue: data.venue, food_request_message: data.foodRequestMessage, food_requirements: data.foodRequirements, updated_at: new Date().toISOString() }).eq("id", data.eventId).in("status", ["requested", "accepted", "changes_requested"]);
     if (error) throw new Error("Could not update the event.");
     return { ok: true };
+  });
+
+export const updateFacultyEventLogo = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ eventId: z.string().uuid(), imagePath: z.string().min(1).max(300) }).parse(input))
+  .handler(async ({ data, context }) => {
+    const prefix = `${context.userId}/${data.eventId}/`;
+    if (!data.imagePath.startsWith(prefix) || !/^[0-9a-f-]{36}\/[0-9a-f-]{36}\/[0-9a-f-]{36}\.(jpg|jpeg|png|webp|avif)$/.test(data.imagePath)) {
+      throw new Error("Invalid faculty event logo path.");
+    }
+    const db = await admin();
+    const { data: event, error: readError } = await db.from("faculty_events").select("id,faculty_user_id,event_logo_path").eq("id", data.eventId).maybeSingle();
+    if (readError || event?.faculty_user_id !== context.userId) throw new Error("You cannot change this event logo.");
+    const { error } = await db.from("faculty_events").update({ event_logo_path: data.imagePath, updated_at: new Date().toISOString() }).eq("id", data.eventId);
+    if (error) throw new Error("Could not save the faculty event logo.");
+    return { oldPath: event.event_logo_path as string | null };
   });
 
 export const requestFacultyEventCapacity = createServerFn({ method: "POST" })
@@ -308,6 +337,44 @@ export const issueFacultyEventToken = createServerFn({ method: "POST" })
     return token;
   });
 
+export const requestAdditionalFacultyEventTokens = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ eventId: z.string().uuid(), requestedCount: z.number().int().min(1).max(9999) }).parse(input))
+  .handler(async ({ data, context }) => {
+    const db = await admin();
+    const { data: result, error } = await db.rpc("hungry_request_faculty_event_tokens", {
+      p_event_id: data.eventId,
+      p_requester_user_id: context.userId,
+      p_requested_count: data.requestedCount,
+    });
+    if (error) {
+      if (error.message.includes("EVENT:insufficient_capacity")) throw new Error("There are not enough event places remaining for that request.");
+      if (error.message.includes("EVENT:request_pending")) throw new Error("You already have an additional token request waiting for the canteen.");
+      if (error.message.includes("EVENT:not_participant")) throw new Error("Join the participating canteen before requesting event tokens.");
+      throw new Error("Could not request additional event tokens. Please try again.");
+    }
+    return result as { request_id: string; status: string; requested_count: number; tokens_remaining: number };
+  });
+
+export const resolveAdditionalFacultyEventTokens = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ requestId: z.string().uuid(), approve: z.boolean(), note: z.string().trim().max(500).default("") }).parse(input))
+  .handler(async ({ data, context }) => {
+    const db = await admin();
+    const { data: result, error } = await db.rpc("hungry_resolve_faculty_event_token_request", {
+      p_request_id: data.requestId,
+      p_canteen_owner_id: context.userId,
+      p_approve: data.approve,
+      p_note: data.note,
+    });
+    if (error) {
+      if (error.message.includes("EVENT:insufficient_capacity")) throw new Error("There is no longer enough event capacity to approve this request.");
+      if (error.message.includes("EVENT:not_canteen_owner")) throw new Error("Only the participating canteen can review this token request.");
+      throw new Error("This token request was already handled or could not be updated.");
+    }
+    return result as { status: string; requester_user_id: string; tokens: { token_number: string }[] };
+  });
+
 export const collectFacultyEventToken = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ tokenId: z.string().uuid() }).parse(input))
@@ -320,7 +387,7 @@ export const collectFacultyEventToken = createServerFn({ method: "POST" })
 
 export const updateFacultyEventServedQuantities = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => z.object({ eventId: z.string().uuid(), quantities: eventFoodQuantities }).parse(input))
+  .inputValidator((input: unknown) => z.object({ eventId: z.string().uuid(), quantities: z.record(z.string().trim().min(1).max(120), z.number().int().min(0).max(999999)) }).parse(input))
   .handler(async ({ data, context }) => {
     const db = await admin();
     const { error } = await db.rpc("hungry_update_faculty_event_served_quantities", {
@@ -929,6 +996,30 @@ export const ensureWelcomeEmail = createServerFn({ method: "POST" })
   .handler(async ({ context }) => {
     const { sendWelcomeOnce } = await import("@/lib/orders.server");
     return sendWelcomeOnce(context.userId);
+  });
+
+/** Sends a registration receipt only for a persisted student or faculty account. */
+export const sendRegistrationConfirmation = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => z.object({ userId: z.string().uuid() }).parse(input))
+  .handler(async ({ data }) => {
+    const db = await admin();
+    const [{ data: authResult, error: authError }, { data: profile, error: profileError }] = await Promise.all([
+      db.auth.admin.getUserById(data.userId),
+      db.from("profiles").select("email,full_name,role").eq("id", data.userId).maybeSingle(),
+    ]);
+    if (authError || profileError || !authResult.user || !profile ||
+      !authResult.user.email || authResult.user.email.toLowerCase() !== profile.email.toLowerCase() ||
+      !["student", "faculty"].includes(profile.role)) {
+      return { sent: false, reason: "registration_not_verified" };
+    }
+    const { registrationConfirmationEmail } = await import("@/lib/email-templates");
+    const { sendEmailOnce } = await import("@/lib/mailer.server");
+    return sendEmailOnce(
+      "registration_confirmation",
+      profile.email,
+      registrationConfirmationEmail({ name: profile.full_name }),
+      `registration:${data.userId}`,
+    );
   });
 
 export const submitSupportRequest = createServerFn({ method: "POST" })

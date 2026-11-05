@@ -65,6 +65,7 @@ function RegisterForm() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
+  const [confirmationEmailSent, setConfirmationEmailSent] = useState(false);
   const [formErr, setFormErr] = useState("");
   const [fssaiDocument, setFssaiDocument] = useState<File | null>(null);
   const [ownerIdDocument, setOwnerIdDocument] = useState<File | null>(null);
@@ -156,11 +157,12 @@ function RegisterForm() {
         uploadPdf(urls.fssai.signedUrl, fssaiDocument, "fssaiDocument"),
         uploadPdf(urls.ownerId.signedUrl, ownerIdDocument, "ownerIdDocument"),
       ]);
-      await submitApplication({ data: {
+      const result = await submitApplication({ data: {
         application: parsed.data,
         fssaiDocumentPath: urls.fssai.path,
         ownerIdDocumentPath: urls.ownerId.path,
       } });
+      setConfirmationEmailSent(result.emailSent === true);
       setDone(true);
     } catch (err) {
       setFormErr(err instanceof Error ? err.message : "Could not submit. Try again.");
@@ -174,9 +176,15 @@ function RegisterForm() {
       <div className="py-8 text-center">
         <CheckCircle2 className="mx-auto h-12 w-12 text-primary-bright" />
         <p className="display mt-4 text-2xl">Application submitted!</p>
-        <p className="mx-auto mt-3 max-w-md text-sm text-muted-foreground">
-          Verification usually takes 1–8 hours. We'll email you when your application is reviewed.
-        </p>
+        {confirmationEmailSent ? (
+          <p role="status" className="mx-auto mt-3 max-w-md text-sm text-muted-foreground">
+            Thank you for registering with HUNGRY Z! A confirmation email has been sent to your registered email address. Please check your Inbox. If you cannot find it, kindly check your Spam or Junk folder.
+          </p>
+        ) : (
+          <p role="status" className="mx-auto mt-3 max-w-md text-sm text-amber-700 dark:text-amber-300">
+            Your application was submitted successfully, but delivery of the confirmation email could not be confirmed. Your application is awaiting admin verification. Please check your email later or contact HUNGRY Z support.
+          </p>
+        )}
       </div>
     );
 

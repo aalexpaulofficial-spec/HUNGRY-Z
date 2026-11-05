@@ -6,8 +6,9 @@ import { createFacultyEvent } from "@/lib/hungry.functions";
 vi.mock("@tanstack/react-start", () => ({ useServerFn: (fn: unknown) => fn }));
 vi.mock("@/lib/hungry.functions", () => ({
   createFacultyEvent: vi.fn(), publishFacultyEvent: vi.fn(), requestFacultyEventCapacity: vi.fn(),
+  resolveAdditionalFacultyEventTokens: vi.fn(),
   resolveFacultyEventCapacity: vi.fn(), reviewFacultyEventRequest: vi.fn(), updateFacultyEvent: vi.fn(),
-  submitFacultyEventQuotation: vi.fn(), reviewFacultyEventQuotation: vi.fn(), collectFacultyEventToken: vi.fn(),
+  submitFacultyEventQuotation: vi.fn(), reviewFacultyEventQuotation: vi.fn(), collectFacultyEventToken: vi.fn(), updateFacultyEventLogo: vi.fn(),
   updateFacultyEventServedQuantities: vi.fn(),
 }));
 
@@ -104,8 +105,8 @@ describe("faculty event food request menu", () => {
     fireEvent.click(screen.getByRole("button", { name: "Done" }));
 
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "FLAMES Menu" })).not.toBeInTheDocument());
-    expect(screen.getByText("DOSA × 1")).toBeInTheDocument();
-    expect(screen.getByText("WADA × 1")).toBeInTheDocument();
+    expect(screen.getByText((_content, node) => node?.textContent === "DOSA × 1")).toBeInTheDocument();
+    expect(screen.getByText((_content, node) => node?.textContent === "WADA × 1")).toBeInTheDocument();
     expect(screen.getByText("2 items · 2 total")).toBeInTheDocument();
 
     fireEvent.click(menuButton);

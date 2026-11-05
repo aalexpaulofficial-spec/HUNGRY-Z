@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { HUNGRY_SOCIAL_LINKS } from "@/lib/social-links";
 
 const { signInWithPassword, resetPasswordForEmail, signUp, signOut, updateUser, getSession, onAuthStateChange } = vi.hoisted(() => ({
@@ -11,6 +11,7 @@ const { signInWithPassword, resetPasswordForEmail, signUp, signOut, updateUser, 
   getSession: vi.fn(),
   onAuthStateChange: vi.fn(),
 }));
+const registrationConfirmation = vi.hoisted(() => vi.fn());
 
 vi.mock("@tanstack/react-router", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@tanstack/react-router")>()),
@@ -19,8 +20,9 @@ vi.mock("@tanstack/react-router", async (importOriginal) => ({
 }));
 vi.mock("@tanstack/react-start", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@tanstack/react-start")>()),
-  useServerFn: () => vi.fn().mockResolvedValue(undefined),
+  useServerFn: (serverFunction: string) => serverFunction === "registration-confirmation" ? registrationConfirmation : vi.fn().mockResolvedValue(undefined),
 }));
+vi.mock("@/lib/hungry.functions", () => ({ ensureWelcomeEmail: "welcome-email", sendRegistrationConfirmation: "registration-confirmation" }));
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: { auth: { signInWithPassword, resetPasswordForEmail, signUp, signOut, updateUser, getSession, onAuthStateChange } },
 }));
@@ -30,6 +32,9 @@ import { ResetPasswordPage } from "@/routes/reset-password";
 import { signupSchema } from "@/lib/access";
 
 describe("HUNGRY Z authentication", () => {
+  beforeEach(() => {
+    registrationConfirmation.mockReset().mockResolvedValue({ sent: true });
+  });
   it("requests a password reset without revealing whether the email exists", async () => {
     resetPasswordForEmail.mockResolvedValue({ error: null });
     render(<LoginForm language="en" />);
@@ -71,7 +76,7 @@ describe("HUNGRY Z authentication", () => {
   });
 
   it("sends a consent record with signup metadata after acceptance", async () => {
-    signUp.mockResolvedValue({ data: { session: null }, error: null });
+    signUp.mockResolvedValue({ data: { user: { id: "new-user-id" }, session: null }, error: null });
     signOut.mockResolvedValue({ error: null });
     render(<SignupForm language="en" onDone={vi.fn()} />);
     fireEvent.change(screen.getByPlaceholderText("Full name"), { target: { value: "Asha Student" } });
@@ -84,6 +89,22 @@ describe("HUNGRY Z authentication", () => {
     await waitFor(() => expect(signUp).toHaveBeenCalled());
     expect(signUp.mock.calls.at(-1)?.[0].options.data).toMatchObject({ accepted_terms: true, terms_version: "2026-11-04" });
     expect(await screen.findByText("Account created")).toBeInTheDocument();
+    expect(await screen.findByRole("status")).toHaveTextContent("Thank you for registering with HUNGRY Z! A confirmation email has been sent to your registered email address. Please check your Inbox. If you cannot find it, kindly check your Spam or Junk folder.");
+  });
+
+  it("reports successful account creation honestly when confirmation email delivery is not confirmed", async () => {
+    signUp.mockResolvedValue({ data: { user: { id: "new-faculty-id" }, session: null }, error: null });
+    registrationConfirmation.mockResolvedValue({ sent: false });
+    render(<SignupForm language="en" onDone={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: "faculty" }));
+    fireEvent.change(screen.getByPlaceholderText("Full name"), { target: { value: "Asha Faculty" } });
+    fireEvent.change(screen.getByPlaceholderText("Registration number"), { target: { value: "FAC123" } });
+    fireEvent.change(screen.getByPlaceholderText("Email"), { target: { value: "faculty@example.com" } });
+    fireEvent.change(screen.getByPlaceholderText("Password (8+ characters)"), { target: { value: "longpassword" } });
+    fireEvent.click(screen.getByRole("checkbox"));
+    fireEvent.click(screen.getByRole("button", { name: "Create Account" }));
+
+    expect(await screen.findByRole("status")).toHaveTextContent("Your account was created successfully, but delivery of the confirmation email could not be confirmed.");
   });
 
   it("validates matching passwords and updates the password through Supabase", async () => {

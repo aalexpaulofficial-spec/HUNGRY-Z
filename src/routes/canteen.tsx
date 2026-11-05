@@ -198,7 +198,7 @@ function ThermalReceipt({ job, paperWidth }: { job: ReceiptPrintJob; paperWidth:
   return (
     <section id="hungry-thermal-print" className={`hungry-print-only hungry-receipt-paper-${paperWidth}`} aria-label="HUNGRY Z receipt">
       <header className="hungry-receipt-header">
-        <img src="/HUNGRY%20Z%20Q%20LOGO.png" alt="HUNGRY Z official logo" width="160" height="160" decoding="sync" />
+        <img src="/HUNGRY%20Z%20Q%20LOGO.png" alt="HUNGRY Z official logo" width="160" height="160" decoding="sync" loading="eager" fetchPriority="high" />
         <h1>HUNGRY Z</h1>
         <p>NO QUEUES. SAVE FOOD.</p>
         <p>SMART CAMPUS FOOD ORDERING</p>
@@ -399,9 +399,13 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
       const logo = document.querySelector<HTMLImageElement>("#hungry-thermal-print .hungry-receipt-header img");
       if (!logo) throw new Error("The HUNGRY Z receipt logo is missing.");
       if (!logo.complete) await new Promise<void>((resolve, reject) => {
-        const timeout = window.setTimeout(() => reject(new Error("The receipt logo did not finish loading.")), 8000);
-        logo.addEventListener("load", () => { window.clearTimeout(timeout); resolve(); }, { once: true });
-        logo.addEventListener("error", () => { window.clearTimeout(timeout); reject(new Error("The receipt logo could not be loaded.")); }, { once: true });
+        const timeout = window.setTimeout(() => reject(new Error("The receipt logo did not finish loading.")), 10000);
+        const cleanup = () => { window.clearTimeout(timeout); logo.removeEventListener("load", onLoad); logo.removeEventListener("error", onError); };
+        const onLoad = () => { cleanup(); resolve(); };
+        const onError = () => { cleanup(); reject(new Error("The receipt logo could not be loaded.")); };
+        logo.addEventListener("load", onLoad, { once: true });
+        logo.addEventListener("error", onError, { once: true });
+        if (logo.complete) onLoad();
       });
       if (!logo.naturalWidth || !logo.naturalHeight) throw new Error("The receipt logo could not be loaded.");
       if (typeof logo.decode === "function") await logo.decode();

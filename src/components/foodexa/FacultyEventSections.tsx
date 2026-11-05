@@ -6,7 +6,7 @@ export function FacultyEventSections({ canteenId, canteenName, userId }: { cante
   return (
     <div className="space-y-8">
       <StudentEventsTab canteenId={canteenId} canteenName={canteenName} userId={userId} />
-      <EventCapacityPanel mode="faculty" canteenId={canteenId} canteenName={canteenName} />
+      <EventCapacityPanel mode="faculty" canteenId={canteenId} canteenName={canteenName} userId={userId} />
     </div>
   );
 }

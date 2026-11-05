@@ -50,6 +50,8 @@ CREATE PUBLICATION supabase_realtime;`);
     await db.exec(readFileSync(path.join(root, "drizzle/migrations/0011_faculty_event_quote_and_participation.sql"), "utf8"));
     await db.exec(readFileSync(path.join(root, "drizzle/migrations/0013_faculty_event_additional_token_requests.sql"), "utf8"));
     await db.exec(readFileSync(path.join(root, "drizzle/migrations/0014_faculty_event_manual_quotation.sql"), "utf8"));
+    await db.exec(readFileSync(path.join(root, "drizzle/migrations/0015_faculty_event_served_quantity_updates.sql"), "utf8"));
+    await db.exec(readFileSync(path.join(root, "drizzle/migrations/0016_faculty_event_logos.sql"), "utf8"));
 
     const failures: string[] = [];
     const ok = (c: boolean | undefined, m: string) => { if (!c) failures.push(m); };
@@ -68,6 +70,8 @@ CREATE PUBLICATION supabase_realtime;`);
     ok(!!(await err(`INSERT INTO auth.users (email,raw_user_meta_data) VALUES ('no-consent@x.com','{"role":"student","full_name":"No Consent","registration_number":"R2"}')`)), "student signup without consent is rejected by the auth.users trigger");
     const [event1] = await q(`INSERT INTO faculty_events (faculty_user_id,canteen_id,name,event_code,token_prefix,initial_capacity,approved_capacity,status,food_confirmation) VALUES ($1,$2,'Hackathon','1000001','H',100,100,'published','{"quantities":{"Tea":10},"prices":{"Tea":20}}') RETURNING id`, [faculty.id, c.id]);
     ok((await q(`SELECT initial_capacity=100 AND approved_capacity=100 AS initial FROM faculty_events WHERE id=$1`, [event1.id]))[0].initial, "faculty event starts with the requested capacity of 100");
+    const [logoBucket] = await q(`SELECT public,file_size_limit,allowed_mime_types FROM storage.buckets WHERE id='faculty-event-logos'`);
+    ok(logoBucket.public === false && logoBucket.file_size_limit === 8388608 && logoBucket.allowed_mime_types.includes("image/avif"), "event logos use a private, size-limited image bucket");
     const eventOrder = (event: string, code: string, user: string, key: string, number: string) => q(
       `SELECT * FROM hungry_place_event_order($1,$2,$3,$4,'Event participant',$5::jsonb,'dine_in','counter',20,null,0,$6,$7,'1234')`,
       [event, code, user, c.id, JSON.stringify([{ id: m2.id, qty: 1 }]), key, number],
@@ -96,6 +100,10 @@ CREATE PUBLICATION supabase_realtime;`);
     ok(manualQuote.status === "quotation_received" && manualQuote.estimated_budget === 2500 && manualQuote.food_confirmation.quantities["Chicken Biryani"] === 10 && manualQuote.food_confirmation.prices["Chicken Biryani"] === 250, "manual quotation items, quantities, prices and total are stored for faculty review");
     await q(`SELECT hungry_review_faculty_event_quotation($1,$2,true,'Approved')`, [manualEvent.id, faculty.id]);
     ok((await q(`SELECT hungry_publish_faculty_event($1,$2,'{"Chicken Biryani":10}'::jsonb,'{"Chicken Biryani":250}'::jsonb,'') status`, [manualEvent.id, owner.id]))[0].status === "published", "manual quotation remains compatible with faculty approval and event publication");
+    await q(`SELECT hungry_update_faculty_event_served_quantities($1,$2,'{"Chicken Biryani":12}'::jsonb)`, [manualEvent.id, owner.id]);
+    const [servedManualEvent] = await q(`SELECT served_food_quantities,served_food_updated_at FROM faculty_events WHERE id=$1`, [manualEvent.id]);
+    ok(servedManualEvent.served_food_quantities["Chicken Biryani"] === 12 && !!servedManualEvent.served_food_updated_at, "actual quantities persist with an update timestamp for historical manual quote items, even when served count exceeds planned count");
+    ok(!!(await err(`SELECT hungry_update_faculty_event_served_quantities($1,$2,'{"Removed menu item":1}'::jsonb)`, [manualEvent.id, owner.id])), "actual-quantity updates reject item names outside the saved event quotation snapshot");
     const [eventToken] = await q(`SELECT * FROM hungry_issue_faculty_event_token($1,'1000004',$2,$3)`, [requestedEvent.id, faculty.id, c.id]);
     ok(eventToken.token_number === "0001" && eventToken.approved_capacity === 5 && eventToken.tokens_remaining === 4, "published event issues an independent four-digit participation token within approved capacity");
     const [duplicateEventToken] = await q(`SELECT * FROM hungry_issue_faculty_event_token($1,'1000004',$2,$3)`, [requestedEvent.id, faculty.id, c.id]);
@@ -105,8 +113,8 @@ CREATE PUBLICATION supabase_realtime;`);
     ok((await q(`SELECT hungry_collect_faculty_event_token($1,$2) status`, [eventTokenRow.id, owner.id]))[0].status === "collected", "canteen owner verifies and records event-token serving");
     ok(!!(await err(`SELECT hungry_collect_faculty_event_token($1,$2)`, [eventTokenRow.id, a.id])), "only the participating canteen owner can mark an event token served");
     ok((await q(`SELECT hungry_update_faculty_event_served_quantities($1,$2,'{"Tea":3}'::jsonb) quantities`, [requestedEvent.id, owner.id]))[0].quantities.Tea === 3, "canteen records actual quantities served for final expenditure tracking");
-    ok(!!(await err(`SELECT hungry_update_faculty_event_served_quantities($1,$2,'{"Tea":6}'::jsonb)`, [requestedEvent.id, owner.id])), "served quantities cannot exceed the approved quotation quantities");
-    ok((await q(`SELECT (served_food_quantities->>'Tea')::int * (food_confirmation->'prices'->>'Tea')::int expenditure FROM faculty_events WHERE id=$1`, [requestedEvent.id]))[0].expenditure === 66, "final expenditure uses actual served quantities and approved prices");
+    ok((await q(`SELECT hungry_update_faculty_event_served_quantities($1,$2,'{"Tea":6}'::jsonb) quantities`, [requestedEvent.id, owner.id]))[0].quantities.Tea === 6, "canteen can record actual quantities above the approved estimate");
+    ok((await q(`SELECT (served_food_quantities->>'Tea')::int * (food_confirmation->'prices'->>'Tea')::int expenditure FROM faculty_events WHERE id=$1`, [requestedEvent.id]))[0].expenditure === 132, "final expenditure uses saved actual served quantities and approved prices");
     const [hackToken] = await eventOrder(event1.id, "1000001", a.id, "event-hack-001", "HG-EVT-1");
     ok(hackToken.token_number === "H001", "first event receives its own H001 sequence");
     const [duplicateHackToken] = await eventOrder(event1.id, "1000001", a.id, "event-hack-001", "HG-EVT-2");

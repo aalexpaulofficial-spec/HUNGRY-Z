@@ -45,8 +45,8 @@ const topicWords: Record<Topic, Record<AssistantLanguage, string[]>> = {
   },
   canteen: {
     en: ["canteen", "owner", "register a canteen", "canteen code", "owner id"],
-    hi: ["कैंटीन", "कैंटीन कोड", "मालिक", "रजिस्टर"],
-    kn: ["ಕ್ಯಾಂಟೀನ್", "ಕ್ಯಾಂಟೀನ್ ಕೋಡ್", "ಮಾಲೀಕ", "ನೋಂದಾಯಿಸಿ"],
+    hi: ["कैंटीन", "कैंटीन कोड", "मालिक", "रजिस्टर", "पंजीकृत"],
+    kn: ["ಕ್ಯಾಂಟೀನ್", "ಕ್ಯಾಂಟೀನ್ ಕೋಡ್", "ಮಾಲೀಕ", "ನೋಂದಾಯ", "ನೋಂದಣಿ"],
   },
   scanner: {
     en: ["scan", "scanner", "nutrition", "calorie", "photo"],
@@ -136,15 +136,15 @@ const fallback: Record<AssistantLanguage, string> = {
 
 export function getWebsiteAssistantAnswer(question: string, language: AssistantLanguage): string {
   const normalized = question.toLocaleLowerCase().normalize("NFC");
-  const topicOrder: Topic[] = ["event", "refund", "payment", "cancel", "fees", "order", "canteen", "account", "scanner", "privacy", "support", "features"];
+  const topicOrder: Topic[] = ["event", "refund", "payment", "cancel", "fees", "canteen", "order", "account", "scanner", "privacy", "support", "features"];
   const matched = topicOrder.find((topic) =>
     Object.values(topicWords[topic]).some((words) => words.some((word) => normalized.includes(word.toLocaleLowerCase()))),
   );
   return matched ? answers[matched][language] : fallback[language];
 }
 
-export const assistantUiText: Record<AssistantLanguage, { title: string; subtitle: string; greeting: string; placeholder: string; send: string; close: string; open: string; language: string }> = {
-  en: { title: "HUNGRY Z Help", subtitle: "Answers about the website", greeting: "Hi! Ask me about ordering, payments, events or your account.", placeholder: "Type your question…", send: "Send", close: "Close chat", open: "Ask HUNGRY Z", language: "Reply language" },
-  hi: { title: "HUNGRY Z सहायता", subtitle: "वेबसाइट के बारे में जवाब", greeting: "नमस्ते! ऑर्डर, भुगतान, कार्यक्रम या खाते के बारे में पूछें।", placeholder: "अपना सवाल लिखें…", send: "भेजें", close: "चैट बंद करें", open: "HUNGRY Z से पूछें", language: "जवाब की भाषा" },
-  kn: { title: "HUNGRY Z ಸಹಾಯ", subtitle: "ವೆಬ್‌ಸೈಟ್ ಕುರಿತು ಉತ್ತರಗಳು", greeting: "ನಮಸ್ಕಾರ! ಆರ್ಡರ್, ಪಾವತಿ, ಕಾರ್ಯಕ್ರಮ ಅಥವಾ ಖಾತೆ ಬಗ್ಗೆ ಕೇಳಿ.", placeholder: "ನಿಮ್ಮ ಪ್ರಶ್ನೆ ಬರೆಯಿರಿ…", send: "ಕಳುಹಿಸಿ", close: "ಚಾಟ್ ಮುಚ್ಚಿ", open: "HUNGRY Z ಅನ್ನು ಕೇಳಿ", language: "ಉತ್ತರದ ಭಾಷೆ" },
+export const assistantUiText: Record<AssistantLanguage, { title: string; subtitle: string; greeting: string; placeholder: string; send: string; close: string; open: string; language: string; error: string }> = {
+  en: { title: "HUNGRY Z Help", subtitle: "Answers about the website", greeting: "Hi! Ask me about ordering, payments, events or your account.", placeholder: "Type your question…", send: "Send", close: "Close chat", open: "Ask HUNGRY Z", language: "Reply language", error: "I couldn't prepare an answer. Please try another HUNGRY Z question or contact hungryofficialx@gmail.com." },
+  hi: { title: "HUNGRY Z सहायता", subtitle: "वेबसाइट के बारे में जवाब", greeting: "नमस्ते! ऑर्डर, भुगतान, कार्यक्रम या खाते के बारे में पूछें।", placeholder: "अपना सवाल लिखें…", send: "भेजें", close: "चैट बंद करें", open: "HUNGRY Z से पूछें", language: "जवाब की भाषा", error: "जवाब तैयार नहीं हो सका। HUNGRY Z के बारे में दूसरा सवाल पूछें या hungryofficialx@gmail.com पर संपर्क करें।" },
+  kn: { title: "HUNGRY Z ಸಹಾಯ", subtitle: "ವೆಬ್‌ಸೈಟ್ ಕುರಿತು ಉತ್ತರಗಳು", greeting: "ನಮಸ್ಕಾರ! ಆರ್ಡರ್, ಪಾವತಿ, ಕಾರ್ಯಕ್ರಮ ಅಥವಾ ಖಾತೆ ಬಗ್ಗೆ ಕೇಳಿ.", placeholder: "ನಿಮ್ಮ ಪ್ರಶ್ನೆ ಬರೆಯಿರಿ…", send: "ಕಳುಹಿಸಿ", close: "ಚಾಟ್ ಮುಚ್ಚಿ", open: "HUNGRY Z ಅನ್ನು ಕೇಳಿ", language: "ಉತ್ತರದ ಭಾಷೆ", error: "ಉತ್ತರ ಸಿದ್ಧಪಡಿಸಲಾಗಲಿಲ್ಲ. HUNGRY Z ಕುರಿತು ಮತ್ತೊಂದು ಪ್ರಶ್ನೆ ಕೇಳಿ ಅಥವಾ hungryofficialx@gmail.com ಸಂಪರ್ಕಿಸಿ." },
 };

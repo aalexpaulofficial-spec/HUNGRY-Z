@@ -988,9 +988,9 @@ export type Database = {
         Relationships: []
       }
       faculty_events: {
-          Row: { id: string; faculty_user_id: string; canteen_id: string; name: string; event_code: string; token_prefix: string; description: string; event_date: string | null; venue: string; faculty_note: string; estimated_budget: number; served_food_quantities: Json; food_requirements: Json; food_request_message: string; food_confirmation: Json; canteen_note: string; initial_capacity: number; approved_capacity: number; next_token_sequence: number; status: string; created_at: string; updated_at: string }
-          Insert: { id?: string; faculty_user_id: string; canteen_id: string; name: string; event_code: string; token_prefix: string; description?: string; event_date?: string | null; venue?: string; faculty_note?: string; estimated_budget?: number; served_food_quantities?: Json; food_requirements?: Json; food_request_message?: string; food_confirmation?: Json; canteen_note?: string; initial_capacity: number; approved_capacity: number; next_token_sequence?: number; status?: string; created_at?: string; updated_at?: string }
-          Update: { id?: string; faculty_user_id?: string; canteen_id?: string; name?: string; event_code?: string; token_prefix?: string; description?: string; event_date?: string | null; venue?: string; faculty_note?: string; estimated_budget?: number; served_food_quantities?: Json; food_requirements?: Json; food_request_message?: string; food_confirmation?: Json; canteen_note?: string; initial_capacity?: number; approved_capacity?: number; next_token_sequence?: number; status?: string; created_at?: string; updated_at?: string }
+          Row: { id: string; faculty_user_id: string; canteen_id: string; name: string; event_code: string; token_prefix: string; description: string; event_date: string | null; venue: string; faculty_note: string; estimated_budget: number; served_food_quantities: Json; served_food_updated_at: string | null; event_logo_path: string | null; food_requirements: Json; food_request_message: string; food_confirmation: Json; canteen_note: string; initial_capacity: number; approved_capacity: number; next_token_sequence: number; status: string; created_at: string; updated_at: string }
+          Insert: { id?: string; faculty_user_id: string; canteen_id: string; name: string; event_code: string; token_prefix: string; description?: string; event_date?: string | null; venue?: string; faculty_note?: string; estimated_budget?: number; served_food_quantities?: Json; served_food_updated_at?: string | null; event_logo_path?: string | null; food_requirements?: Json; food_request_message?: string; food_confirmation?: Json; canteen_note?: string; initial_capacity: number; approved_capacity: number; next_token_sequence?: number; status?: string; created_at?: string; updated_at?: string }
+          Update: { id?: string; faculty_user_id?: string; canteen_id?: string; name?: string; event_code?: string; token_prefix?: string; description?: string; event_date?: string | null; venue?: string; faculty_note?: string; estimated_budget?: number; served_food_quantities?: Json; served_food_updated_at?: string | null; event_logo_path?: string | null; food_requirements?: Json; food_request_message?: string; food_confirmation?: Json; canteen_note?: string; initial_capacity?: number; approved_capacity?: number; next_token_sequence?: number; status?: string; created_at?: string; updated_at?: string }
         Relationships: []
       }
       faculty_event_capacity_requests: {
@@ -1003,6 +1003,12 @@ export type Database = {
           Row: { id: string; event_id: string; sequence_number: number; token_number: string; customer_id: string; canteen_id: string; order_id: string | null; status: string; created_at: string; collected_at: string | null; cancelled_at: string | null }
           Insert: { id?: string; event_id: string; sequence_number: number; token_number: string; customer_id: string; canteen_id: string; order_id?: string | null; status?: string; created_at?: string; collected_at?: string | null; cancelled_at?: string | null }
           Update: { id?: string; event_id?: string; sequence_number?: number; token_number?: string; customer_id?: string; canteen_id?: string; order_id?: string | null; status?: string; created_at?: string; collected_at?: string | null; cancelled_at?: string | null }
+        Relationships: []
+      }
+      faculty_event_token_requests: {
+        Row: { id: string; event_id: string; requester_user_id: string; requested_count: number; status: string; canteen_note: string; responded_by: string | null; created_at: string; responded_at: string | null }
+        Insert: { id?: string; event_id: string; requester_user_id: string; requested_count: number; status?: string; canteen_note?: string; responded_by?: string | null; created_at?: string; responded_at?: string | null }
+        Update: { id?: string; event_id?: string; requester_user_id?: string; requested_count?: number; status?: string; canteen_note?: string; responded_by?: string | null; created_at?: string; responded_at?: string | null }
         Relationships: []
       }
       faculty_event_audit: {
@@ -1045,6 +1051,8 @@ export type Database = {
         Returns: { order_id: string; already_existed: boolean; token_number: string }[]
       }
       hungry_get_event_capacity: { Args: { p_event_id: string }; Returns: { approved_capacity: number; issued_tokens: number; tokens_remaining: number; collected_tokens: number; cancelled_tokens: number }[] }
+      hungry_request_faculty_event_tokens: { Args: { p_event_id: string; p_requester_user_id: string; p_requested_count: number }; Returns: Json }
+      hungry_resolve_faculty_event_token_request: { Args: { p_request_id: string; p_canteen_owner_id: string; p_approve: boolean; p_note?: string }; Returns: Json }
         hungry_submit_faculty_event_quotation: { Args: { p_event_id: string; p_canteen_owner_id: string; p_quantities: Json; p_prices: Json; p_note?: string }; Returns: number }
         hungry_review_faculty_event_quotation: { Args: { p_event_id: string; p_faculty_user_id: string; p_approve: boolean; p_note?: string }; Returns: string }
         hungry_issue_faculty_event_token: { Args: { p_event_id: string; p_event_code: string; p_customer_user_id: string; p_canteen_id: string }; Returns: { token_number: string; approved_capacity: number; issued_tokens: number; tokens_remaining: number; already_issued: boolean }[] }

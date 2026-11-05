@@ -88,7 +88,7 @@
   #hungry-thermal-print.hungry-receipt-paper-58 { width: 48mm !important; max-width: 100% !important; }
   #hungry-thermal-print.hungry-receipt-paper-80 { width: 70mm !important; max-width: 100% !important; }
   .hungry-receipt-header { border-bottom: 1px dashed #000; padding-bottom: 3mm; text-align: center; }
-  .hungry-receipt-header img { display: block; width: 18mm; height: 18mm; max-width: 100%; margin: 0 auto 1mm; object-fit: contain; object-position: center; }
+  .hungry-receipt-header img { display: block; width: auto; height: auto; max-width: 18mm; max-height: 18mm; margin: 0 auto 1mm; object-fit: contain; object-position: center; }
   .hungry-receipt-header h1 { margin: 0 0 1mm; font-size: 24px; font-size: clamp(20px, 8cqw, 27px); font-weight: 900; letter-spacing: 1.5px; }
   .hungry-receipt-header p { margin: 0.7mm 0; font-size: 9px; font-size: clamp(8px, 3.2cqw, 10px); font-weight: 800; }
   .hungry-receipt-meta { padding: 2mm 0; border-bottom: 1px dashed #000; }

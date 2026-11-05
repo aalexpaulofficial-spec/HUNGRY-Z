@@ -1,14 +1,15 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { CalendarDays, List, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { collectFacultyEventToken, createFacultyEvent, publishFacultyEvent, requestFacultyEventCapacity, resolveFacultyEventCapacity, reviewFacultyEventQuotation, reviewFacultyEventRequest, submitFacultyEventQuotation, updateFacultyEvent, updateFacultyEventServedQuantities } from "@/lib/hungry.functions";
+import { collectFacultyEventToken, createFacultyEvent, publishFacultyEvent, requestFacultyEventCapacity, resolveAdditionalFacultyEventTokens, resolveFacultyEventCapacity, reviewFacultyEventQuotation, reviewFacultyEventRequest, submitFacultyEventQuotation, updateFacultyEvent, updateFacultyEventLogo, updateFacultyEventServedQuantities } from "@/lib/hungry.functions";
+import { FACULTY_EVENT_LOGO_BUCKET, FACULTY_EVENT_LOGO_MAX_BYTES, facultyEventLogoObjectPath, getFacultyEventLogoUrls } from "@/lib/faculty-event-logos";
 
 type EventRow = {
   id: string; faculty_user_id: string; canteen_id: string; name: string; event_code: string; token_prefix: string;
   description: string; event_date: string | null; venue: string; food_request_message: string; faculty_note: string;
   food_requirements: Record<string, number>; initial_capacity: number; approved_capacity: number; estimated_budget: number;
-  served_food_quantities: Record<string, number>; status: string; canteen_note: string;
+  served_food_quantities: Record<string, number>; served_food_updated_at: string | null; event_logo_path: string | null; status: string; canteen_note: string;
   food_confirmation: { quantities?: Record<string, number>; prices?: Record<string, number> }; created_at: string;
 };
 type RequestRow = {
@@ -16,13 +17,16 @@ type RequestRow = {
   status: string; canteen_note: string; created_at: string;
 };
 type TokenRow = { id: string; event_id: string; status: string; token_number: string; customer_id: string; created_at: string };
+type StudentTokenRequest = { id: string; event_id: string; requester_user_id: string; requested_count: number; status: string; canteen_note: string; created_at: string };
 type EventMenuItem = { id: string; name: string; price: number; image: string | null; category: string; stock: number | null };
 type ManualQuotationItem = { name: string; quantity: string; price: string };
 
-export function EventCapacityPanel({ mode, canteenId, canteenName }: { mode: "faculty" | "canteen"; canteenId: string; canteenName: string }) {
+export function EventCapacityPanel({ mode, canteenId, canteenName, userId }: { mode: "faculty" | "canteen"; canteenId: string; canteenName: string; userId?: string }) {
   const [events, setEvents] = useState<EventRow[]>([]);
+  const [eventLogoUrls, setEventLogoUrls] = useState<Record<string, string>>({});
   const [requests, setRequests] = useState<RequestRow[]>([]);
   const [tokens, setTokens] = useState<TokenRow[]>([]);
+  const [studentTokenRequests, setStudentTokenRequests] = useState<StudentTokenRequest[]>([]);
   const [name, setName] = useState("");
   const [eventCode, setEventCode] = useState("");
   const [capacity, setCapacity] = useState("100");
@@ -30,10 +34,12 @@ export function EventCapacityPanel({ mode, canteenId, canteenName }: { mode: "fa
   const [eventDate, setEventDate] = useState("");
   const [venue, setVenue] = useState("");
   const [foodRequestMessage, setFoodRequestMessage] = useState("");
+  const [eventLogoFile, setEventLogoFile] = useState<File | null>(null);
+  const [eventLogoPreview, setEventLogoPreview] = useState("");
+  const eventLogoInput = useRef<HTMLInputElement>(null);
   const [additional, setAdditional] = useState<Record<string, string>>({});
   const [foodSelection, setFoodSelection] = useState<Record<string, number>>({});
   const [editFoodSelection, setEditFoodSelection] = useState<Record<string, Record<string, number>>>({});
-  const [additionalFoodSelection, setAdditionalFoodSelection] = useState<Record<string, Record<string, number>>>({});
   const [confirmedFoodSelection, setConfirmedFoodSelection] = useState<Record<string, Record<string, number>>>({});
   const [confirmedPrices, setConfirmedPrices] = useState<Record<string, Record<string, string>>>({});
   const [manualQuotationItems, setManualQuotationItems] = useState<Record<string, ManualQuotationItem[]>>({});
@@ -48,7 +54,9 @@ export function EventCapacityPanel({ mode, canteenId, canteenName }: { mode: "fa
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const create = useServerFn(createFacultyEvent);
+  const updateEventLogo = useServerFn(updateFacultyEventLogo);
   const requestCapacity = useServerFn(requestFacultyEventCapacity);
+  const resolveStudentTokens = useServerFn(resolveAdditionalFacultyEventTokens);
   const resolve = useServerFn(resolveFacultyEventCapacity);
   const review = useServerFn(reviewFacultyEventRequest);
   const publish = useServerFn(publishFacultyEvent);
@@ -59,15 +67,22 @@ export function EventCapacityPanel({ mode, canteenId, canteenName }: { mode: "fa
   const saveServed = useServerFn(updateFacultyEventServedQuantities);
 
   const load = useCallback(async () => {
-    const [eventResult, requestResult, tokenResult, menuResult] = await Promise.all([
+    const [eventResult, requestResult, tokenResult, menuResult, studentRequestResult] = await Promise.all([
       supabase.from("faculty_events").select("*").eq("canteen_id", canteenId).order("created_at", { ascending: false }),
       supabase.from("faculty_event_capacity_requests").select("*").order("created_at", { ascending: false }),
       supabase.from("faculty_event_tokens").select("id,event_id,status,token_number,customer_id,created_at").eq("canteen_id", canteenId),
       supabase.from("menu_items").select("id,name,price,image,category,stock").eq("canteen_id", canteenId).eq("available", true).order("category").order("name"),
+      supabase.from("faculty_event_token_requests").select("id,event_id,requester_user_id,requested_count,status,canteen_note,created_at").order("created_at", { ascending: false }),
     ]);
-    if (eventResult.data) setEvents(eventResult.data as EventRow[]);
+    if (eventResult.data) {
+      const eventRows = eventResult.data as EventRow[];
+      setEvents(eventRows);
+      const signedUrls = await getFacultyEventLogoUrls(eventRows.map((event) => event.event_logo_path));
+      setEventLogoUrls(Object.fromEntries(eventRows.flatMap((event) => event.event_logo_path && signedUrls[event.event_logo_path] ? [[event.id, signedUrls[event.event_logo_path]]] : [])));
+    }
     if (requestResult.data) setRequests(requestResult.data as RequestRow[]);
     if (tokenResult.data) setTokens(tokenResult.data as TokenRow[]);
+    if (studentRequestResult.data) setStudentTokenRequests(studentRequestResult.data as StudentTokenRequest[]);
     if (menuResult.data) {
       const items = menuResult.data as EventMenuItem[];
       setMenuItems(items);
@@ -79,10 +94,18 @@ export function EventCapacityPanel({ mode, canteenId, canteenName }: { mode: "fa
   }, [canteenId]);
 
   useEffect(() => {
+    if (!eventLogoFile) { setEventLogoPreview(""); return; }
+    const previewUrl = URL.createObjectURL(eventLogoFile);
+    setEventLogoPreview(previewUrl);
+    return () => URL.revokeObjectURL(previewUrl);
+  }, [eventLogoFile]);
+
+  useEffect(() => {
     void load();
     const channel = supabase.channel(`event-capacity-${mode}-${canteenId}-${Math.random().toString(36).slice(2)}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "faculty_events", filter: `canteen_id=eq.${canteenId}` }, load)
       .on("postgres_changes", { event: "*", schema: "public", table: "faculty_event_capacity_requests" }, load)
+      .on("postgres_changes", { event: "*", schema: "public", table: "faculty_event_token_requests" }, load)
       .on("postgres_changes", { event: "*", schema: "public", table: "faculty_event_tokens", filter: `canteen_id=eq.${canteenId}` }, load)
       .on("postgres_changes", { event: "*", schema: "public", table: "menu_items", filter: `canteen_id=eq.${canteenId}` }, load)
       .subscribe();
@@ -103,19 +126,37 @@ export function EventCapacityPanel({ mode, canteenId, canteenName }: { mode: "fa
     setBusy(true);
     try {
       const result = await create({ data: { name, eventCode, description, eventDate, venue, foodRequestMessage, initialCapacity: Number(capacity), foodRequirements: food } });
+      let logoFailed = false;
+      let logoFailureMessage = "";
+      if (eventLogoFile) {
+        let uploadedPath: string | null = null;
+        try {
+          if (!userId) throw new Error("Your faculty account is unavailable.");
+          const path = facultyEventLogoObjectPath(userId, result.id, eventLogoFile);
+          const { error: uploadError } = await supabase.storage.from(FACULTY_EVENT_LOGO_BUCKET).upload(path, eventLogoFile, { contentType: eventLogoFile.type, cacheControl: "3600", upsert: false });
+          if (uploadError) throw uploadError;
+          uploadedPath = path;
+          const { oldPath } = await updateEventLogo({ data: { eventId: result.id, imagePath: path } });
+          if (oldPath) await supabase.storage.from(FACULTY_EVENT_LOGO_BUCKET).remove([oldPath]);
+        } catch (logoError) {
+          logoFailed = true;
+          if (uploadedPath) await supabase.storage.from(FACULTY_EVENT_LOGO_BUCKET).remove([uploadedPath]);
+          logoFailureMessage = logoError instanceof Error ? `The event request was sent, but the logo could not be saved: ${logoError.message}` : "The event request was sent, but the logo could not be saved.";
+        }
+      }
       setMessage(`Event request sent to ${canteenName}. Event Code: ${result.event_code}. The canteen will review the request and send a quotation.`); setName(""); setEventCode(""); setDescription(""); setEventDate(""); setVenue(""); setFoodRequestMessage(""); setFoodSelection({});
+      if (!logoFailed) { setEventLogoFile(null); if (eventLogoInput.current) eventLogoInput.current.value = ""; }
       await load();
+      if (logoFailureMessage) setError(logoFailureMessage);
     } catch (caught) { setError(caught instanceof Error ? caught.message : "Could not create the event."); }
     finally { setBusy(false); }
   }
 
   async function sendCapacityRequest(event: React.FormEvent<HTMLFormElement>, item: EventRow) {
     event.preventDefault(); setError(""); setMessage("");
-    const food = Object.fromEntries(Object.entries(additionalFoodSelection[item.id] ?? item.food_requirements).filter(([, quantity]) => quantity > 0));
-    if (!Object.keys(food).length) return setError("Select at least one food item and set its revised quantity.");
     setBusy(true);
     try {
-      const result = await requestCapacity({ data: { eventId: item.id, additionalTokens: Number(additional[item.id]), revisedFoodQuantities: food } });
+      const result = await requestCapacity({ data: { eventId: item.id, additionalTokens: Number(additional[item.id]), revisedFoodQuantities: item.food_requirements } });
       setMessage(`Additional capacity request sent. Proposed capacity: ${result.proposedCapacity}.`);
       await load();
     } catch (caught) { setError(caught instanceof Error ? caught.message : "Could not send the capacity request."); }
@@ -138,6 +179,16 @@ export function EventCapacityPanel({ mode, canteenId, canteenName }: { mode: "fa
       setMessage(result.status === "approved" ? "Additional capacity approved and activated." : "Capacity request rejected.");
       await load();
     } catch (caught) { setError(caught instanceof Error ? caught.message : "Could not update this request."); }
+    finally { setBusy(false); }
+  }
+
+  async function respondToStudentTokenRequest(request: StudentTokenRequest, approve: boolean) {
+    setError(""); setMessage(""); setBusy(true);
+    try {
+      const result = await resolveStudentTokens({ data: { requestId: request.id, approve, note: notes[request.id] ?? "" } });
+      setMessage(result.status === "approved" ? `${request.requested_count} additional event token${request.requested_count === 1 ? "" : "s"} approved and issued.` : "Additional token request rejected.");
+      await load();
+    } catch (caught) { setError(caught instanceof Error ? caught.message : "Could not update this token request."); }
     finally { setBusy(false); }
   }
 
@@ -235,8 +286,9 @@ export function EventCapacityPanel({ mode, canteenId, canteenName }: { mode: "fa
     <section className="space-y-5" aria-label="Event token management">
       {mode === "faculty" ? (
         <div>
-          <h2 className="display text-2xl">Manage My Events</h2>
-          <p className="mt-1 text-sm text-muted-foreground">Create an event request, review the canteen quotation and track participation through serving.</p>
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">Event management</p>
+          <h2 className="display mt-1 text-2xl">Manage My Events</h2>
+          <p className="mt-1 text-sm text-muted-foreground">Create event requests, review canteen quotations and follow token capacity and serving progress.</p>
         </div>
       ) : (
         <div className="rounded-3xl border border-primary/25 bg-primary/[0.04] p-5">
@@ -268,6 +320,24 @@ export function EventCapacityPanel({ mode, canteenId, canteenName }: { mode: "fa
             <span className="block text-xs font-bold tracking-[0.14em] text-primary">FACULTY EVENT DETAILS</span>
             <textarea id="faculty-event-details" maxLength={1000} value={description} onChange={(event) => setDescription(event.currentTarget.value)} placeholder="Describe the event" aria-label="Faculty event details" className="min-h-20 w-full resize-y rounded-xl border border-primary/25 bg-background/75 px-4 py-3 text-sm leading-relaxed text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" rows={2} />
           </label>
+          <div className="space-y-3 rounded-2xl border border-border bg-card/70 p-3" aria-label="Event logo upload">
+            <label className="block space-y-2 text-xs text-muted-foreground">
+              <span className="block font-bold uppercase tracking-wider text-primary">EVENT LOGO (OPTIONAL)</span>
+              <input ref={eventLogoInput} type="file" accept="image/png,image/jpeg,.png,.jpg,.jpeg" aria-label="Upload event logo" onChange={(event) => {
+                const file = event.currentTarget.files?.[0] ?? null;
+                if (file && !["image/jpeg", "image/png"].includes(file.type)) { setError("Choose a JPG or PNG image."); event.currentTarget.value = ""; return; }
+                if (file && file.size > FACULTY_EVENT_LOGO_MAX_BYTES) { setError("Event logos must be 8 MB or smaller."); event.currentTarget.value = ""; return; }
+                setError(""); setEventLogoFile(file);
+              }} className="block min-h-11 w-full cursor-pointer rounded-xl border border-input bg-ink-soft px-3 py-2 text-sm text-foreground file:mr-3 file:rounded-full file:border-0 file:bg-primary file:px-4 file:py-2 file:text-xs file:font-semibold file:text-primary-foreground" />
+              <span className="block">PNG, JPG or JPEG · maximum 8 MB</span>
+            </label>
+            {eventLogoFile && <div className="flex flex-wrap items-center gap-2" aria-live="polite">
+              <p className="min-w-0 flex-1 truncate text-xs text-foreground"><span className="font-semibold">Selected file:</span> {eventLogoFile.name}</p>
+              <button type="button" onClick={() => { if (eventLogoInput.current) { eventLogoInput.current.value = ""; eventLogoInput.current.click(); } }} className="rounded-full border border-primary/40 px-3 py-2 text-xs font-semibold text-primary">Replace image</button>
+              <button type="button" onClick={() => { setEventLogoFile(null); setError(""); if (eventLogoInput.current) eventLogoInput.current.value = ""; }} className="rounded-full border border-border px-3 py-2 text-xs font-semibold text-muted-foreground">Remove image</button>
+            </div>}
+            {eventLogoPreview && <img src={eventLogoPreview} alt="Event logo preview" className="max-h-36 max-w-full rounded-xl border border-border bg-background p-2 object-contain" />}
+          </div>
           <div className="grid gap-2 sm:grid-cols-2">
             <label className="block text-xs text-muted-foreground">Event date<input required type="date" value={eventDate} onChange={(event) => setEventDate(event.currentTarget.value)} aria-label="Event date" className="mt-1 w-full rounded-xl border border-input bg-ink-soft px-3 py-3 text-sm text-foreground" /></label>
             <label className="block text-xs text-muted-foreground">Venue<input required minLength={2} maxLength={200} value={venue} onChange={(event) => setVenue(event.currentTarget.value)} placeholder="Building, hall or location" aria-label="Event venue" className="mt-1 w-full rounded-xl border border-input bg-ink-soft px-3 py-3 text-sm text-foreground" /></label>
@@ -295,6 +365,23 @@ export function EventCapacityPanel({ mode, canteenId, canteenName }: { mode: "fa
       {(error || message) && <p role={error ? "alert" : "status"} className={`rounded-2xl border p-3 text-sm ${error ? "border-red-500/40 bg-red-500/10 text-red-500" : "border-emerald-500/30 bg-emerald-500/10 text-emerald-600"}`}>{error || message}</p>}
       {!events.length && <p className="rounded-3xl border border-border bg-card p-6 text-center text-sm text-muted-foreground">No events for {canteenName} yet.</p>}
 
+      {mode === "faculty" && events.length > 0 && <section className="space-y-3" aria-label="Faculty event requests">
+        <div><h3 className="display text-xl">Event Requests</h3><p className="mt-1 text-xs text-muted-foreground">Review each canteen response, quotation, budget and publication stage.</p></div>
+        <div className="grid gap-3 sm:grid-cols-2">{events.map((event) => {
+          const eventTokens = tokens.filter((token) => token.event_id === event.id && token.status !== "cancelled");
+          const quotationQuantities = event.food_confirmation.quantities ?? {};
+          return <article key={`request-summary-${event.id}`} className="rounded-2xl border border-border bg-card p-4">
+            <div className="flex flex-wrap items-start justify-between gap-2"><h4 data-no-translate className="font-semibold">{event.name}</h4><span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase ${eventStatusClass(event.status)}`}>{eventStatusLabel(event.status)}</span></div>
+            <p className="mt-2 text-xs text-muted-foreground">Canteen response: {event.canteen_note || "Waiting for the canteen"}</p>
+            {Object.keys(quotationQuantities).length > 0 && <p className="mt-2 text-xs text-muted-foreground">Quotation: {Object.entries(quotationQuantities).map(([food, quantity]) => `${food} × ${quantity}`).join(" · ")}</p>}
+            <div className="mt-3 grid grid-cols-2 gap-2 text-xs"><Metric label="Estimated budget" value={`₹${event.estimated_budget || 0}`} /><Metric label="Token capacity" value={`${tokens.filter((token) => token.event_id === event.id && token.status !== "cancelled").length} / ${event.approved_capacity}`} /></div>
+            <p className="mt-2 text-[10px] text-muted-foreground">Publication status: {eventStatusLabel(event.status)}</p>
+          </article>;
+        })}</div>
+      </section>}
+
+      {mode === "faculty" && events.length > 0 && <div className="border-t border-border pt-5"><p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">Below · Manage Events</p><h3 className="display mt-1 text-xl">Manage Events</h3><p className="mt-1 text-xs text-muted-foreground">Open an event to edit its details, review tokens, or monitor participants and expenditure.</p></div>}
+
       {events.map((event) => {
         const eventTokens = tokens.filter((token) => token.event_id === event.id);
         const issued = eventTokens.filter((token) => token.status !== "cancelled").length;
@@ -306,15 +393,16 @@ export function EventCapacityPanel({ mode, canteenId, canteenName }: { mode: "fa
         const eventRequests = requestsByEvent.get(event.id) ?? [];
         const pending = eventRequests.some((request) => request.status === "pending");
         return <article key={event.id} className="rounded-3xl border border-border bg-card p-5">
+          {eventLogoUrls[event.id] && <img src={eventLogoUrls[event.id]} alt={`${event.name} event logo`} className="mb-4 max-h-40 w-full rounded-2xl bg-ink-soft p-3 object-contain" />}
           <div className="flex flex-wrap items-start justify-between gap-3">
-            <div><span className={`inline-flex rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] ${eventStatusClass(event.status)}`}>{eventStatusLabel(event.status)}</span><p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">{canteenName}</p><h3 className="display mt-1 text-xl">{event.name}</h3><p className="mt-1 text-xs text-muted-foreground">Event Code: <span className="font-mono font-bold tracking-widest text-foreground">{event.event_code}</span></p></div>
-            <span className="rounded-full border border-border px-3 py-1 text-xs font-semibold">{eventTokens.length}/{event.approved_capacity} tokens</span>
+            <div><span className={`inline-flex rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] ${eventStatusClass(event.status)}`}>{eventStatusLabel(event.status)}</span><p data-no-translate className="mt-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">{canteenName}</p><h3 data-no-translate className="display mt-1 text-xl">{event.name}</h3><p className="mt-1 text-xs text-muted-foreground">Event Code: <span data-no-translate className="font-mono font-bold tracking-widest text-foreground">{event.event_code}</span></p></div>
+            <span className="rounded-full border border-border px-3 py-1 text-xs font-semibold">{issued}/{event.approved_capacity} tokens issued</span>
           </div>
-          {event.description && <p className="mt-3 text-sm text-muted-foreground">{event.description}</p>}
-          <div className="mt-3 grid gap-2 rounded-2xl bg-ink-soft p-3 text-xs sm:grid-cols-3"><p><CalendarDays className="mr-1 inline h-3.5 w-3.5 text-primary" />{event.event_date ? new Date(`${event.event_date}T00:00:00`).toLocaleDateString() : "Date not set"}</p><p><strong>Venue:</strong> {event.venue || "Not set"}</p><p><strong>Expected participants:</strong> {event.initial_capacity}</p></div>
-          {mode === "canteen" && event.food_request_message && <div className="mt-3 rounded-2xl border border-primary/30 bg-primary/10 p-4"><p className="text-[10px] font-bold uppercase tracking-widest text-primary">Faculty instructions</p><p className="mt-1 whitespace-pre-wrap text-sm text-foreground">{event.food_request_message}</p></div>}
-          {mode === "canteen" && event.faculty_note && <div className="mt-2 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-3"><p className="text-[10px] font-bold uppercase tracking-widest text-amber-700">Faculty response</p><p className="mt-1 whitespace-pre-wrap text-sm text-foreground">{event.faculty_note}</p></div>}
-          {mode === "faculty" && event.faculty_note && <p className="mt-3 rounded-xl bg-ink-soft p-3 text-xs text-muted-foreground">Your note to canteen: {event.faculty_note}</p>}
+          {event.description && <p data-no-translate className="mt-3 text-sm text-muted-foreground">{event.description}</p>}
+          <div className="mt-3 grid gap-2 rounded-2xl bg-ink-soft p-3 text-xs sm:grid-cols-3"><p><CalendarDays className="mr-1 inline h-3.5 w-3.5 text-primary" />{event.event_date ? new Date(`${event.event_date}T00:00:00`).toLocaleDateString() : "Date not set"}</p><p><strong>Venue:</strong> <span data-no-translate>{event.venue || "Not set"}</span></p><p><strong>Expected participants:</strong> {event.initial_capacity}</p></div>
+          {mode === "canteen" && event.food_request_message && <div className="mt-3 rounded-2xl border border-primary/50 bg-primary/10 p-4 shadow-[0_0_24px_hsl(var(--primary)/0.06)]"><p className="text-[10px] font-bold uppercase tracking-widest text-primary">Faculty instructions</p><p data-no-translate className="mt-1 whitespace-pre-wrap text-base font-medium text-foreground">{event.food_request_message}</p></div>}
+          {mode === "canteen" && event.faculty_note && <div className="mt-2 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-3"><p className="text-[10px] font-bold uppercase tracking-widest text-amber-700">Faculty response</p><p data-no-translate className="mt-1 whitespace-pre-wrap text-sm text-foreground">{event.faculty_note}</p></div>}
+          {mode === "faculty" && event.faculty_note && <p className="mt-3 rounded-xl bg-ink-soft p-3 text-xs text-muted-foreground">Your note to canteen: <span data-no-translate>{event.faculty_note}</span></p>}
           {mode === "faculty" && <button type="button" onClick={() => { if (editingEvent !== event.id) setEditFoodSelection((current) => ({ ...current, [event.id]: event.food_requirements })); setEditingEvent((current) => current === event.id ? null : event.id); }} className="mt-3 rounded-full border border-border px-4 py-2 text-xs font-semibold text-muted-foreground">{editingEvent === event.id ? "Close event editor" : "Change event details"}</button>}
           {mode === "faculty" && editingEvent === event.id && <form onSubmit={(formEvent) => saveDetails(event, formEvent)} className="mt-3 space-y-2 rounded-2xl border border-border p-4">
             <input name="name" defaultValue={event.name} required minLength={2} maxLength={120} aria-label="Edit event name" className="w-full rounded-xl border border-input bg-ink-soft px-3 py-2 text-sm" />
@@ -329,22 +417,35 @@ export function EventCapacityPanel({ mode, canteenId, canteenName }: { mode: "fa
             <Metric label="Expected participants" value={event.initial_capacity} />
             <Metric label="Approved capacity" value={event.approved_capacity} />
             <Metric label="Tokens issued" value={issued} />
-            <Metric label="Tokens remaining" value={Math.max(0, event.approved_capacity - eventTokens.length)} />
+            <Metric label="Tokens remaining" value={Math.max(0, event.approved_capacity - issued)} />
             <Metric label="Tokens collected" value={collected} />
             <Metric label="Cancelled tokens" value={cancelled} />
-            <Metric label="Canteen allocation" value={`${eventTokens.length} / ${event.approved_capacity}`} />
+            <Metric label="Canteen allocation" value={`${issued} / ${event.approved_capacity}`} />
             <Metric label="Estimated budget" value={`₹${event.estimated_budget || 0}`} />
             <Metric label="Final expenditure" value={`₹${finalExpenditure}`} />
           </div>
           <div className="mt-3"><FoodQuantitySummary quantities={event.food_requirements} title="Faculty food request" /></div>
           {Object.keys(quotationQuantities).length > 0 && <div className="mt-2"><FoodQuantitySummary quantities={quotationQuantities} prices={quotationPrices} title="Canteen quotation and confirmed food" /></div>}
+          {mode === "faculty" && event.status === "published" && Object.keys(quotationQuantities).length > 0 && <ActualFoodQuantitiesSummary requested={event.food_requirements} planned={quotationQuantities} served={event.served_food_quantities ?? {}} updatedAt={event.served_food_updated_at} />}
           {event.canteen_note && <p className="mt-2 rounded-xl bg-ink-soft p-3 text-xs text-muted-foreground">Canteen response: {event.canteen_note}</p>}
+
+          {studentTokenRequests.filter((request) => request.event_id === event.id).length > 0 && <section className="mt-4 space-y-2 rounded-2xl border border-border p-4" aria-label={`Additional student token requests for ${event.name}`}>
+            <h4 className="text-sm font-bold">Student additional token requests</h4>
+            {studentTokenRequests.filter((request) => request.event_id === event.id).map((request) => <div key={request.id} className="rounded-xl bg-ink-soft p-3">
+              <p className="text-sm font-semibold">{request.requested_count} additional token{request.requested_count === 1 ? "" : "s"} · <span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-bold ${eventStatusClass(request.status)}`}>{eventStatusLabel(request.status)}</span></p>
+              <p className="mt-1 text-[11px] text-muted-foreground">Requested {new Date(request.created_at).toLocaleString()} · account …{request.requester_user_id.slice(-6)}{request.canteen_note ? ` · Canteen: ${request.canteen_note}` : ""}</p>
+              {mode === "canteen" && request.status === "pending" && <div className="mt-3 space-y-2">
+                <input maxLength={500} placeholder="Optional note for student and faculty" aria-label={`Token request note for ${event.name}`} value={notes[request.id] ?? ""} onChange={(formEvent) => setNotes({ ...notes, [request.id]: formEvent.currentTarget.value })} className="w-full rounded-xl border border-input bg-card px-3 py-2 text-sm" />
+                <div className="flex flex-wrap gap-2"><button type="button" disabled={busy} onClick={() => respondToStudentTokenRequest(request, true)} className="rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50">Approve and issue tokens</button><button type="button" disabled={busy} onClick={() => respondToStudentTokenRequest(request, false)} className="rounded-full border border-border px-4 py-2 text-xs font-semibold text-muted-foreground disabled:opacity-50">Reject request</button></div>
+              </div>}
+            </div>)}
+          </section>}
 
           {mode === "canteen" && event.status === "published" && <section className="mt-4 space-y-3 rounded-2xl border border-border p-4" aria-label={`Serving progress for ${event.name}`}>
             <h4 className="text-sm font-bold">Token verification and serving progress</h4>
-            <p className="text-xs text-muted-foreground">{collected} of {issued} issued tokens served · {Math.max(0, event.approved_capacity - eventTokens.length)} tokens remain available.</p>
+            <p className="text-xs text-muted-foreground">{collected} of {issued} issued tokens served · {Math.max(0, event.approved_capacity - issued)} tokens remain available.</p>
             <div className="max-h-52 space-y-2 overflow-y-auto">{eventTokens.map((token) => <div key={token.id} className="flex items-center justify-between gap-3 rounded-xl bg-ink-soft p-3"><div><p className="font-mono text-sm font-bold tracking-widest">{token.token_number}</p><p className="text-[10px] text-muted-foreground">{token.status.toUpperCase()}</p></div>{token.status === "issued" && <button type="button" disabled={busy} onClick={() => markTokenCollected(token)} className="rounded-full bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50">Verify &amp; mark served</button>}</div>)}</div>
-            <div className="rounded-xl border border-border p-3"><p className="mb-2 text-xs font-semibold">Actual food quantities served</p><MenuServedEditor items={menuItems} planned={quotationQuantities} quantities={servedFoodSelection[event.id] ?? event.served_food_quantities ?? {}} onChange={(value) => setServedFoodSelection((current) => ({ ...current, [event.id]: value }))} /></div>
+            <div className="rounded-xl border border-border p-3"><p className="mb-2 text-xs font-semibold">Actual food quantities served</p><MenuServedEditor planned={quotationQuantities} quantities={servedFoodSelection[event.id] ?? event.served_food_quantities ?? {}} onChange={(value) => setServedFoodSelection((current) => ({ ...current, [event.id]: value }))} /></div>
             <button type="button" disabled={busy} onClick={() => saveServedQuantities(event)} className="rounded-full border border-primary/40 px-4 py-2 text-xs font-semibold text-primary disabled:opacity-50">Save served quantities</button>
           </section>}
 
@@ -386,14 +487,14 @@ export function EventCapacityPanel({ mode, canteenId, canteenName }: { mode: "fa
             <div className="grid gap-2 sm:grid-cols-2">
               <input required type="number" min={1} max={9999} placeholder="Additional tokens" aria-label={`Additional tokens for ${event.name}`} value={additional[event.id] ?? ""} onChange={(formEvent) => setAdditional({ ...additional, [event.id]: formEvent.currentTarget.value })} className="rounded-xl border border-input bg-ink-soft px-3 py-2 text-sm" />
             </div>
-            <MenuQuantityPicker items={menuItems} loading={menuLoading} quantities={additionalFoodSelection[event.id] ?? event.food_requirements} onChange={(value) => setAdditionalFoodSelection((current) => ({ ...current, [event.id]: value }))} label="Revised food quantities" />
-            <button disabled={busy || pending} className="rounded-full border border-primary/50 px-4 py-2 text-xs font-semibold text-primary-bright disabled:opacity-50">Send canteen confirmation request</button>
-            {eventRequests.map((request) => <p key={request.id} className="text-xs text-muted-foreground">+{request.additional_tokens} requested · proposed {request.proposed_capacity} · {request.status}{request.canteen_note ? ` — ${request.canteen_note}` : ""}</p>)}
+            <p className="text-xs text-muted-foreground">This asks the canteen to expand the overall event capacity. No new food items are selected here.</p>
+            <button disabled={busy || pending} className="rounded-full border border-primary/50 px-4 py-2 text-xs font-semibold text-primary-bright disabled:opacity-50">Send capacity request</button>
+            {eventRequests.map((request) => <p key={request.id} className="text-xs text-muted-foreground">+{request.additional_tokens} requested · proposed {request.proposed_capacity} · <span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-bold ${eventStatusClass(request.status)}`}>{eventStatusLabel(request.status)}</span>{request.canteen_note ? ` — ${request.canteen_note}` : ""}</p>)}
           </form>}
 
           {mode === "canteen" && eventRequests.filter((request) => request.status === "pending").map((request) => <div key={request.id} className="mt-4 space-y-3 rounded-2xl border border-primary/30 bg-primary/5 p-4">
             <h4 className="text-sm font-bold">Additional quantity confirmation</h4>
-            <p className="text-xs text-muted-foreground">Faculty requested +{request.additional_tokens} tokens. Proposed capacity: {request.proposed_capacity}. Currently approved: {event.approved_capacity}. Tokens issued: {issued}. Remaining: {Math.max(0, event.approved_capacity - eventTokens.length)}.</p>
+            <p className="text-xs text-muted-foreground">Faculty requested +{request.additional_tokens} tokens. Proposed capacity: {request.proposed_capacity}. Currently approved: {event.approved_capacity}. Tokens issued: {issued}. Remaining: {Math.max(0, event.approved_capacity - issued)}.</p>
             <FoodQuantitySummary quantities={request.revised_food_quantities} title="Faculty requested quantities" />
             <MenuConfirmationEditor items={menuItems} quantities={request.revised_food_quantities} confirmedQuantities={confirmedFoodSelection[request.id] ?? request.revised_food_quantities} prices={confirmedPrices[request.id] ?? {}} onQuantityChange={(food, quantity) => setConfirmedFoodSelection((current) => ({ ...current, [request.id]: { ...(current[request.id] ?? request.revised_food_quantities), [food]: quantity } }))} onPriceChange={(food, price) => setConfirmedPrices((current) => ({ ...current, [request.id]: { ...(current[request.id] ?? {}), [food]: price } }))} />
             <input maxLength={500} placeholder="Note for faculty (optional)" aria-label={`Confirmation note for ${event.name}`} value={notes[request.id] ?? ""} onChange={(formEvent) => setNotes({ ...notes, [request.id]: formEvent.currentTarget.value })} className="w-full rounded-xl border border-input bg-ink-soft px-3 py-2 text-sm" />
@@ -440,8 +541,8 @@ function MenuQuantityPicker({ items, loading, quantities, onChange, label }: {
         const quantity = quantities[item.name] ?? 0;
         return <article key={item.id} className={`flex min-w-0 items-center gap-3 rounded-2xl border p-3 transition-colors ${quantity ? "border-primary/50 bg-primary/5" : "border-border bg-card"}`}>
           {item.image && <img src={item.image} alt="" loading="lazy" className="h-14 w-14 shrink-0 rounded-xl bg-ink-soft object-cover" />}
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold text-foreground">{item.name}</p>
+            <div className="min-w-0 flex-1">
+              <p data-no-translate className="truncate text-sm font-semibold text-foreground">{item.name}</p>
             <p className="mt-0.5 text-xs text-muted-foreground">{item.category || "Menu item"} · ₹{Number(item.price).toFixed(0)}</p>
           </div>
           <div className="flex shrink-0 items-center gap-2">
@@ -471,7 +572,7 @@ function MenuConfirmationEditor({ items, quantities, confirmedQuantities, prices
       return <div key={item.id} className={`grid items-center gap-2 rounded-xl border p-3 sm:grid-cols-[minmax(0,1fr)_120px_130px] ${quantity ? "border-primary/40 bg-primary/5" : "border-border"}`}>
         <div className="flex min-w-0 items-center gap-2">
           {item.image && <img src={item.image} alt="" loading="lazy" className="h-10 w-10 shrink-0 rounded-lg object-cover" />}
-          <div className="min-w-0"><p className="truncate text-sm font-semibold text-foreground">{item.name}</p><p className="text-[11px] text-muted-foreground">{requested ? `Faculty requested: ${requested}` : "Alternative menu item"}</p></div>
+          <div className="min-w-0"><p data-no-translate className="truncate text-sm font-semibold text-foreground">{item.name}</p><p className="text-[11px] text-muted-foreground">{requested ? `Faculty requested: ${requested}` : "Alternative menu item"}</p></div>
         </div>
         <div className="flex items-center justify-center gap-2" aria-label={`${item.name} quotation quantity`}>
           <button type="button" aria-label={`Remove one quoted ${item.name}`} disabled={!quantity} onClick={() => onQuantityChange(item.name, Math.max(0, quantity - 1))} className="grid h-8 w-8 place-items-center rounded-full border border-border text-lg disabled:opacity-40">-</button>
@@ -511,12 +612,30 @@ function ManualQuotationEditor({ items, onChange }: { items: ManualQuotationItem
   </section>;
 }
 
-function MenuServedEditor({ items, planned, quantities, onChange }: { items: EventMenuItem[]; planned: Record<string, number>; quantities: Record<string, number>; onChange: (value: Record<string, number>) => void }) {
+function MenuServedEditor({ planned, quantities, onChange }: { planned: Record<string, number>; quantities: Record<string, number>; onChange: (value: Record<string, number>) => void }) {
   return <div className="space-y-2">{Object.entries(planned).map(([name, max]) => {
-    const item = items.find((entry) => entry.name === name);
     const served = quantities[name] ?? 0;
-    return <label key={name} className="grid grid-cols-[minmax(0,1fr)_100px] items-center gap-2 text-xs"><span className="truncate">{name} ? max {max}</span><input type="number" min={0} max={max} value={served} aria-label={`Served quantity for ${name}`} onChange={(event) => onChange({ ...quantities, [name]: Math.max(0, Math.min(max, Number(event.currentTarget.value))) })} className="w-full rounded-lg border border-input bg-ink-soft px-2 py-2 text-sm" />{!item && <span className="col-span-2 text-amber-600">This item is no longer on the menu.</span>}</label>;
+    return <label key={name} className="grid grid-cols-[minmax(0,1fr)_100px] items-center gap-2 text-xs"><span className="truncate">{name} · planned {max}</span><input type="number" min={0} max={999999} value={served} aria-label={`Served quantity for ${name}`} onChange={(event) => onChange({ ...quantities, [name]: Math.max(0, Math.min(999999, Number(event.currentTarget.value))) })} className="w-full rounded-lg border border-input bg-ink-soft px-2 py-2 text-sm" /></label>;
   })}</div>;
+}
+
+function ActualFoodQuantitiesSummary({ requested, planned, served, updatedAt }: { requested: Record<string, number>; planned: Record<string, number>; served: Record<string, number>; updatedAt: string | null }) {
+  return <section className="mt-3 rounded-2xl border border-primary/35 bg-primary/[0.04] p-4" aria-label="Actual food quantities served">
+    <h4 className="text-xs font-bold uppercase tracking-wider text-primary">Actual Food Quantities Served</h4>
+    <div className="mt-3 space-y-2">
+      {Object.entries(planned).map(([name]) => {
+        const actual = served[name] ?? 0;
+        const originalRequest = requested[name];
+        return <div key={name} className="grid gap-1 rounded-xl bg-ink-soft p-3 text-xs sm:grid-cols-4">
+          <p className="font-semibold text-foreground" data-no-translate>{name}</p>
+          <p className="text-muted-foreground">Originally requested: <strong className="text-foreground">{originalRequest ?? "Not specified"}</strong></p>
+          <p className="text-muted-foreground">Actual served: <strong className="text-foreground">{actual}</strong></p>
+          {originalRequest !== undefined && <p className="text-muted-foreground">Remaining: <strong className="text-foreground">{Math.max(0, originalRequest - actual)}</strong></p>}
+        </div>;
+      })}
+    </div>
+    <p className="mt-2 text-[10px] text-muted-foreground">Last updated: {updatedAt ? new Date(updatedAt).toLocaleString() : "Not updated yet"}</p>
+  </section>;
 }
 
 function QuotationBudget({ quantities, prices }: { quantities: Record<string, number>; prices: Record<string, number | string> }) {
@@ -524,16 +643,18 @@ function QuotationBudget({ quantities, prices }: { quantities: Record<string, nu
   return <p className="rounded-xl bg-ink-soft p-3 text-sm font-semibold">Estimated quotation total: ?{total}</p>;
 }
 
-function eventStatusLabel(status: string) {
-  const labels: Record<string, string> = { requested: "PENDING", accepted: "QUOTATION DUE", quotation_received: "QUOTATION RECEIVED", changes_requested: "CHANGES REQUESTED", approved: "APPROVED", published: "ACCEPTED & PUBLISHED", rejected: "REJECTED", closed: "CLOSED" };
+export function eventStatusLabel(status: string) {
+  const labels: Record<string, string> = { requested: "PENDING", pending: "PENDING", accepted: "ACCEPTED", quotation_received: "QUOTATION RECEIVED", changes_requested: "CHANGES REQUESTED", approved: "APPROVED", published: "ACCEPTED & PUBLISHED", rejected: "REJECTED", cancelled: "CANCELLED", closed: "COMPLETED", completed: "COMPLETED" };
   return labels[status] ?? status.toUpperCase().replaceAll("_", " ");
 }
 
-function eventStatusClass(status: string) {
-  if (status === "requested") return "border-amber-500/40 bg-amber-500/10 text-amber-700";
-  if (status === "quotation_received" || status === "changes_requested" || status === "accepted") return "border-primary/40 bg-primary/10 text-primary";
-  if (status === "approved" || status === "published") return "border-emerald-500/40 bg-emerald-500/10 text-emerald-700";
-  if (status === "rejected" || status === "closed") return "border-border bg-ink-soft text-muted-foreground";
+export function eventStatusClass(status: string) {
+  if (status === "requested" || status === "pending") return "border-orange-500/40 bg-orange-500/10 text-orange-700 dark:text-orange-300";
+  if (status === "accepted" || status === "approved" || status === "published") return "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300";
+  if (status === "rejected" || status === "cancelled") return "border-red-500/40 bg-red-500/10 text-red-700 dark:text-red-300";
+  if (status === "completed" || status === "closed") return "border-border bg-ink-soft text-muted-foreground";
+  if (status === "changes_requested") return "border-orange-500/40 bg-orange-500/10 text-orange-700 dark:text-orange-300";
+  if (status === "quotation_received") return "border-sky-500/40 bg-sky-500/10 text-sky-700 dark:text-sky-300";
   return "border-border bg-ink-soft text-foreground";
 }
 
@@ -542,6 +663,6 @@ function FoodQuantitySummary({ quantities, prices, title }: { quantities: Record
   const total = entries.reduce((sum, [, quantity]) => sum + quantity, 0);
   return <div className="rounded-xl bg-ink-soft p-3">
     <div className="flex items-center justify-between gap-2"><p className="text-xs font-semibold text-foreground">{title}</p><p className="text-[11px] text-muted-foreground">{entries.length} items · {total} total</p></div>
-    {entries.length ? <ul className="mt-2 flex flex-wrap gap-2">{entries.map(([name, quantity]) => <li key={name} className="rounded-full border border-border px-3 py-1 text-xs text-foreground">{name} × {quantity}{prices?.[name] !== undefined ? ` · ₹${prices[name]}` : ""}</li>)}</ul> : <p className="mt-2 text-xs text-muted-foreground">No items selected yet.</p>}
+    {entries.length ? <ul className="mt-2 flex flex-wrap gap-2">{entries.map(([name, quantity]) => <li key={name} className="rounded-full border border-border px-3 py-1 text-xs text-foreground"><span data-no-translate>{name}</span> × {quantity}{prices?.[name] !== undefined ? ` · ₹${prices[name]}` : ""}</li>)}</ul> : <p className="mt-2 text-xs text-muted-foreground">No items selected yet.</p>}
   </div>;
 }

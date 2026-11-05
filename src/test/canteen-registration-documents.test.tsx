@@ -73,7 +73,8 @@ describe("canteen registration PDF uploads", () => {
     serverMocks.submitApplication.mockReset();
   });
 
-  it("uploads both selected PDFs and submits their private storage references", async () => {
+  it.each([true, false])("uploads both PDFs and reports confirmation email status (%s)", async (emailSent) => {
+    serverMocks.submitApplication.mockResolvedValue({ ok: true, emailSent });
     render(<CanteenSection />);
 
     expect(screen.getAllByRole("button", { name: "Choose PDF / Upload Document" })).toHaveLength(2);
@@ -102,6 +103,11 @@ describe("canteen registration PDF uploads", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Submit application" }));
     expect(await screen.findByText("Application submitted!")).toBeInTheDocument();
+    if (emailSent) {
+      expect(await screen.findByRole("status")).toHaveTextContent("Thank you for registering with HUNGRY Z! A confirmation email has been sent to your registered email address.");
+    } else {
+      expect(await screen.findByRole("status")).toHaveTextContent("Your application was submitted successfully, but delivery of the confirmation email could not be confirmed.");
+    }
     expect(serverMocks.createUploadUrls).toHaveBeenCalledOnce();
     expect(uploadedFiles).toEqual(expect.arrayContaining([fssaiPdf, ownerIdPdf]));
     expect(requestHeaders).toContainEqual({ "Content-Type": "application/pdf" });

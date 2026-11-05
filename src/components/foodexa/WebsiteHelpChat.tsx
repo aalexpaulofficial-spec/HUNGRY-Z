@@ -8,16 +8,24 @@ const languages: { value: AssistantLanguage; label: string }[] = [
   { value: "hi", label: "\u0939\u093f\u0928\u094d\u0926\u0940" },
   { value: "kn", label: "\u0c95\u0ca8\u0ccd\u0ca8\u0ca1" },
 ];
+const ASSISTANT_LANGUAGE_KEY = "hungry:assistant-language";
+
+function readAssistantLanguage(): AssistantLanguage {
+  try {
+    const stored = window.localStorage.getItem(ASSISTANT_LANGUAGE_KEY);
+    return stored === "hi" || stored === "kn" ? stored : "en";
+  } catch { return "en"; }
+}
 
 const sampleQuestions: Record<AssistantLanguage, string[]> = {
   en: ["How do I place an order?", "How do event tokens work?", "How can I register my canteen?", "How do I track my order?", "How can I contact support?"],
-  hi: ["How do I place an order?", "How do event tokens work?", "How can I register my canteen?", "How do I track my order?", "How can I contact support?"],
-  kn: ["How do I place an order?", "How do event tokens work?", "How can I register my canteen?", "How do I track my order?", "How can I contact support?"],
+  hi: ["मैं खाना कैसे ऑर्डर करूँ?", "कार्यक्रम टोकन कैसे काम करते हैं?", "मैं कैंटीन कैसे पंजीकृत करूँ?", "मैं अपना ऑर्डर कैसे ट्रैक करूँ?", "सहायता से कैसे संपर्क करूँ?"],
+  kn: ["ನಾನು ಆಹಾರವನ್ನು ಹೇಗೆ ಆರ್ಡರ್ ಮಾಡಲಿ?", "ಕಾರ್ಯಕ್ರಮದ ಟೋಕನ್ ಹೇಗೆ ಕೆಲಸ ಮಾಡುತ್ತದೆ?", "ಕ್ಯಾಂಟೀನ್ ಅನ್ನು ಹೇಗೆ ನೋಂದಾಯಿಸಲಿ?", "ನನ್ನ ಆರ್ಡರ್ ಸ್ಥಿತಿಯನ್ನು ಹೇಗೆ ನೋಡಲಿ?", "ಸಹಾಯವನ್ನು ಹೇಗೆ ಸಂಪರ್ಕಿಸಲಿ?"],
 };
 
 export function WebsiteHelpChat() {
   const [open, setOpen] = useState(false);
-  const [language, setLanguage] = useState<AssistantLanguage>("en");
+  const [language, setLanguage] = useState<AssistantLanguage>(readAssistantLanguage);
   const [question, setQuestion] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const nextId = useRef(0);
@@ -30,6 +38,7 @@ export function WebsiteHelpChat() {
 
   function chooseLanguage(value: AssistantLanguage) {
     setLanguage(value);
+    try { window.localStorage.setItem(ASSISTANT_LANGUAGE_KEY, value); } catch { /* Keep the current page selection in memory. */ }
     if (messages.length === 0) setMessages([{ id: nextId.current++, role: "assistant", text: assistantUiText[value].greeting }]);
   }
 
@@ -37,10 +46,13 @@ export function WebsiteHelpChat() {
     const cleanQuestion = value.trim();
     if (!cleanQuestion) return;
     const id = nextId.current++;
+    let answer = "";
+    try { answer = getWebsiteAssistantAnswer(cleanQuestion, language) || assistantUiText[language].error; }
+    catch { answer = assistantUiText[language].error; }
     setMessages((current) => [
       ...current,
       { id, role: "user", text: cleanQuestion },
-      { id: id + 1, role: "assistant", text: getWebsiteAssistantAnswer(cleanQuestion, language) },
+      { id: id + 1, role: "assistant", text: answer },
     ]);
     nextId.current += 1;
     setQuestion("");
@@ -51,7 +63,7 @@ export function WebsiteHelpChat() {
     ask(question);
   }
 
-  return <div className="fixed bottom-5 right-4 z-[60] flex flex-col items-end gap-3 sm:bottom-6 sm:right-6">
+  return <div data-no-translate className="fixed bottom-5 right-4 z-[60] flex flex-col items-end gap-3 sm:bottom-6 sm:right-6">
     {open && <section id="website-help-chat" role="dialog" aria-label={text.title} aria-modal="false" className="flex max-h-[min(34rem,calc(100dvh-7rem))] w-[min(25rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-3xl border border-primary/30 bg-card shadow-2xl shadow-black/40">
       <header className="flex items-start justify-between gap-3 border-b border-border bg-ink-soft/80 p-4">
         <div><h2 className="display text-lg text-foreground">{text.title}</h2><p className="mt-1 text-xs text-muted-foreground">{text.subtitle}</p></div>

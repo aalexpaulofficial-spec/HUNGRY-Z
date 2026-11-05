@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { loginSchema, signupSchema, roles, type Role } from "@/lib/access";
 import { cn } from "@/lib/utils";
 import { useServerFn } from "@tanstack/react-start";
-import { ensureWelcomeEmail } from "@/lib/hungry.functions";
+import { ensureWelcomeEmail, sendRegistrationConfirmation } from "@/lib/hungry.functions";
 import { backendConfigured } from "@/lib/backend-config";
 import { SetupNotice } from "@/components/SetupNotice";
 import { Eye, EyeOff } from "lucide-react";
@@ -122,12 +122,13 @@ export function SignupForm({ onDone, orderId, language }: { onDone: () => void; 
   const [role, setRole] = useState<Role>("student");
   const [errors, setErrors] = useState<Partial<Record<"fullName"|"registrationNumber"|"email"|"password"|"accessCode"|"role"|"acceptedTerms", string>>>({});
   const [busy, setBusy] = useState(false);
-  const [sent, setSent] = useState<string | null>(null);
+  const [sent, setSent] = useState<{ email: string; confirmationSent?: boolean } | null>(null);
   const [formError, setFormError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [legalPage, setLegalPage] = useState<"privacy" | "terms" | null>(null);
   const welcome = useServerFn(ensureWelcomeEmail);
+  const registrationConfirmation = useServerFn(sendRegistrationConfirmation);
 
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -163,21 +164,43 @@ export function SignupForm({ onDone, orderId, language }: { onDone: () => void; 
       setBusy(false);
       return setFormError(error.message);
     }
-    // Registration succeeded. Send the welcome email now if we have a session;
-    // otherwise it is sent on the first login (after email confirmation).
+    // The profile is created by the auth.users trigger. Send a registration receipt
+    // only after Supabase has accepted the account creation.
+    let confirmationSent: boolean | undefined;
+    if ((v.role === "student" || v.role === "faculty") && signed.user?.id) {
+      try {
+        const result = await registrationConfirmation({ data: { userId: signed.user.id } });
+        confirmationSent = result.sent;
+      } catch {
+        confirmationSent = false;
+      }
+    } else if (v.role === "student" || v.role === "faculty") {
+      confirmationSent = false;
+    }
+    // The existing welcome email remains tied to the first authenticated session.
     if (signed.session) await welcome().catch(() => {});
     setBusy(false);
     await supabase.auth.signOut();
-    setSent(v.email);
+    setSent({ email: v.email, confirmationSent });
   }
 
   if (sent)
     return (
       <div className="py-6 text-center">
         <div className="display text-2xl">Account created</div>
-        <p className="mt-3 text-sm text-muted-foreground">
-          {t("Log in with")} <span className="text-foreground">{sent}</span> {t("and your password to continue.")}
-        </p>
+        {sent.confirmationSent === true ? (
+          <p role="status" className="mt-3 text-sm text-muted-foreground">
+            Thank you for registering with HUNGRY Z! A confirmation email has been sent to your registered email address. Please check your Inbox. If you cannot find it, kindly check your Spam or Junk folder.
+          </p>
+        ) : sent.confirmationSent === false ? (
+          <p role="status" className="mt-3 text-sm text-amber-700 dark:text-amber-300">
+            Your account was created successfully, but delivery of the confirmation email could not be confirmed. Please check your email later or contact HUNGRY Z support.
+          </p>
+        ) : (
+          <p className="mt-3 text-sm text-muted-foreground">
+            {t("Log in with")} <span className="text-foreground">{sent.email}</span> {t("and your password to continue.")}
+          </p>
+        )}
         <button onClick={onDone} className="mt-6 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground">
           {t("Go to Login")}
         </button>

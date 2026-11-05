@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 export type DashboardLanguage = "en" | "hi" | "kn";
@@ -130,14 +130,214 @@ const authTranslations: Record<Exclude<DashboardLanguage, "en">, Record<string, 
 
 const dictionaries: Record<DashboardLanguage, Record<string, string>> = { en: {}, hi: { ...hi, ...hiExtra, ...scannerAndStatusTranslations.hi, ...studentDashboardTranslations.hi, ...scannerProductTranslations.hi, ...authTranslations.hi }, kn: { ...kn, ...knExtra, ...scannerAndStatusTranslations.kn, ...studentDashboardTranslations.kn, ...scannerProductTranslations.kn, ...authTranslations.kn } };
 
+const eventDashboardTranslations: Record<Exclude<DashboardLanguage, "en">, Record<string, string>> = {
+  hi: {
+    "Faculty Events": "संकाय कार्यक्रम", "Manage My Events": "मेरे कार्यक्रम प्रबंधित करें", "Event management": "कार्यक्रम प्रबंधन",
+    "Enter the seven-digit Event Code to view event details and generate your participation token.": "कार्यक्रम का विवरण देखने और भागीदारी टोकन बनाने के लिए सात अंकों का कोड दर्ज करें।",
+    "Loading events…": "कार्यक्रम लोड हो रहे हैं…", "No published events for this canteen yet.": "इस कैंटीन के लिए अभी कोई प्रकाशित कार्यक्रम नहीं है।",
+    "7-digit Event Code": "7 अंकों का कार्यक्रम कोड", "Open Event": "कार्यक्रम खोलें", "Event details": "कार्यक्रम का विवरण",
+    "Event Code verified": "कार्यक्रम कोड सत्यापित", "places remaining": "स्थान शेष", "Your event tokens": "आपके कार्यक्रम टोकन",
+    "Your existing token": "आपका मौजूदा टोकन", "Your event token": "आपका कार्यक्रम टोकन", "Generate Token": "टोकन बनाएँ",
+    "EVENT FULL": "कार्यक्रम के सभी स्थान भर गए", "Additional tokens": "अतिरिक्त टोकन", "Request Additional Tokens": "अतिरिक्त टोकन का अनुरोध करें",
+    "Request extra event entry tokens. No food selection or order is involved. ": "कार्यक्रम में प्रवेश के लिए अतिरिक्त टोकन माँगें। इसमें भोजन चुनना या ऑर्डर करना शामिल नहीं है। ",
+    "Sending request…": "अनुरोध भेजा जा रहा है…", "Remove one additional token": "एक अतिरिक्त टोकन घटाएँ", "Add one additional token": "एक अतिरिक्त टोकन बढ़ाएँ",
+    "Faculty Event Requests": "संकाय कार्यक्रम अनुरोध", "Review event details and instructions, confirm food and pricing, then publish after faculty approval.": "कार्यक्रम का विवरण और निर्देश देखें, भोजन व कीमत तय करें, फिर संकाय की मंज़ूरी के बाद प्रकाशित करें।",
+    "Create a Faculty Event": "संकाय कार्यक्रम बनाएँ", "Follow these steps to submit your event for canteen review.": "कैंटीन की समीक्षा के लिए कार्यक्रम भेजने हेतु ये चरण पूरे करें।",
+    "1 · Event information": "1 · कार्यक्रम की जानकारी", "FACULTY EVENT DETAILS": "संकाय कार्यक्रम का विवरण", "Describe the event": "कार्यक्रम का विवरण लिखें",
+    "Event name": "कार्यक्रम का नाम", "Event date": "कार्यक्रम की तारीख", Venue: "स्थान", "Building, hall or location": "भवन, सभागार या स्थान",
+    "2 · Expected participants": "2 · अपेक्षित प्रतिभागी", "Expected participants": "अपेक्षित प्रतिभागी", "3 · Seven-digit Event Access Code": "3 · सात अंकों का कार्यक्रम प्रवेश कोड",
+    "This event will be sent privately to ": "यह कार्यक्रम निजी रूप से यहाँ भेजा जाएगा: ", ". It becomes visible to users after approval and publication.": "। मंज़ूरी और प्रकाशन के बाद यह उपयोगकर्ताओं को दिखाई देगा।",
+    "4 · Food menu selection": "4 · भोजन मेनू चयन", "Food preparation request": "भोजन तैयार करने का अनुरोध", "Selected canteen:": "चुनी गई कैंटीन:", MENU: "मेनू", "Selected items": "चुनी गई चीज़ें",
+    "5 · Message to Canteen (Optional)": "5 · कैंटीन के लिए संदेश (वैकल्पिक)", "Special instructions or notes for the canteen": "कैंटीन के लिए विशेष निर्देश या संदेश",
+    "6. Submit Food Request": "6. भोजन अनुरोध भेजें", "Submit Food Request": "भोजन अनुरोध भेजें", "Sending…": "भेजा जा रहा है…",
+    "Event Requests": "कार्यक्रम अनुरोध", "Review each canteen response, quotation, budget and publication stage.": "कैंटीन का जवाब, कोटेशन, बजट और प्रकाशन की स्थिति देखें।",
+    "Canteen response:": "कैंटीन का जवाब:", "Waiting for the canteen": "कैंटीन के जवाब की प्रतीक्षा है", "Quotation:": "कोटेशन:",
+    "Estimated budget": "अनुमानित बजट", "Token capacity": "टोकन क्षमता", "Publication status:": "प्रकाशन की स्थिति:", "Below · Manage Events": "नीचे · कार्यक्रम प्रबंधित करें", "Manage Events": "कार्यक्रम प्रबंधित करें",
+    "Open an event to edit its details, review tokens, or monitor participants and expenditure.": "कार्यक्रम का विवरण बदलने, टोकन देखने या प्रतिभागियों और खर्च की निगरानी के लिए कार्यक्रम खोलें।",
+    PENDING: "लंबित", ACCEPTED: "स्वीकृत", "QUOTATION DUE": "कोटेशन देना बाकी", "QUOTATION RECEIVED": "कोटेशन प्राप्त",
+    "CHANGES REQUESTED": "बदलाव का अनुरोध", APPROVED: "मंज़ूर", "ACCEPTED & PUBLISHED": "स्वीकृत और प्रकाशित", REJECTED: "अस्वीकृत", CANCELLED: "रद्द", COMPLETED: "पूरा हुआ", CLOSED: "बंद",
+    "Student additional token requests": "छात्रों के अतिरिक्त टोकन अनुरोध", "Approve and issue tokens": "मंज़ूर करके टोकन जारी करें", "Reject request": "अनुरोध अस्वीकार करें",
+    "Optional note for student and faculty": "छात्र और संकाय के लिए वैकल्पिक संदेश", "Additional quantity confirmation": "अतिरिक्त मात्रा की पुष्टि",
+    "Faculty requested quantities": "संकाय द्वारा माँगी गई मात्रा", "Confirm preparation capacity": "तैयारी की क्षमता की पुष्टि करें", "Additional capacity request sent.": "अतिरिक्त क्षमता का अनुरोध भेजा गया।",
+    "Request additional tokens": "अतिरिक्त टोकन माँगें", "Send capacity request": "क्षमता अनुरोध भेजें", "A capacity request is already awaiting the canteen.": "क्षमता अनुरोध कैंटीन की प्रतीक्षा में है।",
+    "Faculty food request": "संकाय का भोजन अनुरोध", "Canteen quotation and confirmed food": "कैंटीन का कोटेशन और तय भोजन", "Faculty instructions": "संकाय के निर्देश", "Faculty response": "संकाय का जवाब",
+    "Event Code:": "कार्यक्रम कोड:", "Change event details": "कार्यक्रम का विवरण बदलें", "Close event editor": "कार्यक्रम संपादक बंद करें", "Save event details": "कार्यक्रम का विवरण सहेजें",
+    "Approved capacity": "मंज़ूर क्षमता", "Tokens issued": "जारी टोकन", "Tokens remaining": "शेष टोकन", "Tokens collected": "एकत्र टोकन", "Cancelled tokens": "रद्द टोकन", "Canteen allocation": "कैंटीन आवंटन", "Final expenditure": "अंतिम खर्च",
+    "Token verification and serving progress": "टोकन सत्यापन और परोसने की प्रगति", "Verify & mark served": "सत्यापित करके परोसा हुआ दर्ज करें", "Actual food quantities served": "परोसे गए भोजन की वास्तविक मात्रा", "Save served quantities": "परोसी गई मात्रा सहेजें",
+    "Faculty event request": "संकाय कार्यक्रम अनुरोध", "Accept or reject this request. Accepted events stay private until you confirm quantities and pricing and publish.": "इस अनुरोध को स्वीकार या अस्वीकार करें। मात्रा और कीमत तय करके प्रकाशित करने तक स्वीकृत कार्यक्रम निजी रहेगा।",
+    "Accept event request": "कार्यक्रम अनुरोध स्वीकार करें", "Prepare event quotation": "कार्यक्रम का कोटेशन तैयार करें", "Select requested dishes or alternatives, confirm quantities, and enter event prices. Faculty must approve before publishing.": "माँगे गए व्यंजन या विकल्प चुनें, मात्रा तय करें और कार्यक्रम की कीमत भरें। प्रकाशित करने से पहले संकाय की मंज़ूरी ज़रूरी है।",
+    "Send quotation to Faculty": "संकाय को कोटेशन भेजें", "Canteen quotation received": "कैंटीन का कोटेशन प्राप्त हुआ", "Proposed food and prices": "प्रस्तावित भोजन और कीमतें",
+    "Request changes": "बदलाव माँगें", "Approve quotation": "कोटेशन मंज़ूर करें", "Faculty approved the quotation": "संकाय ने कोटेशन मंज़ूर किया",
+    "Confirm and Publish": "पुष्टि करके प्रकाशित करें", "Note for Faculty (optional)": "संकाय के लिए संदेश (वैकल्पिक)", "Note for faculty (optional)": "संकाय के लिए संदेश (वैकल्पिक)",
+    "Quotation note for ": "कोटेशन पर जवाब — ", "Review note for ": "समीक्षा संदेश — ", "Canteen note:": "कैंटीन का संदेश:",
+    "Items requested:": "माँगी गई चीज़ें:", "Faculty requested:": "संकाय ने माँगा:", "Alternative menu item": "मेनू का वैकल्पिक व्यंजन", "Event price (INR)": "कार्यक्रम की कीमत (₹)",
+    "Estimated quotation total:": "कोटेशन का अनुमानित कुल:", "No items selected yet.": "अभी कोई चीज़ नहीं चुनी गई।", "Loading available menu items…": "उपलब्ध मेनू लोड हो रहा है…",
+    "This canteen has no available menu items right now.": "इस कैंटीन में अभी मेनू की कोई चीज़ उपलब्ध नहीं है।", "Items": "चीज़ें", "total": "कुल",
+    "There are not enough event places remaining for that request.": "इस अनुरोध के लिए कार्यक्रम में पर्याप्त स्थान शेष नहीं हैं।", "Could not request additional event tokens.": "अतिरिक्त कार्यक्रम टोकन का अनुरोध नहीं भेजा जा सका।",
+    "You already have an additional token request waiting for the canteen.": "आपका एक अतिरिक्त टोकन अनुरोध पहले से कैंटीन की प्रतीक्षा में है।",
+    "Additional token request rejected.": "अतिरिक्त टोकन अनुरोध अस्वीकार किया गया।", "There is no longer enough event capacity to approve this request.": "इस अनुरोध को मंज़ूर करने के लिए अब पर्याप्त कार्यक्रम क्षमता नहीं है।",
+    "This token request was already handled or could not be updated.": "यह टोकन अनुरोध पहले ही पूरा हो चुका है या अपडेट नहीं हो सका।",
+    "Event availability is temporarily unavailable. Please try again shortly.": "कार्यक्रम की उपलब्धता अभी नहीं दिख रही है। थोड़ी देर बाद फिर प्रयास करें।",
+    "That Event Code is invalid or this event is not published for the canteen.": "यह कार्यक्रम कोड गलत है या कार्यक्रम इस कैंटीन के लिए प्रकाशित नहीं है।",
+    "Could not load events. Reconnecting…": "कार्यक्रम लोड नहीं हुए। फिर से जोड़ रहे हैं…", "Event availability is temporarily unavailable. Refreshing automatically…": "कार्यक्रम की उपलब्धता अभी नहीं दिख रही है। अपने आप रीफ़्रेश हो रही है…",
+  },
+  kn: {
+    "Faculty Events": "ಅಧ್ಯಾಪಕರ ಕಾರ್ಯಕ್ರಮಗಳು", "Manage My Events": "ನನ್ನ ಕಾರ್ಯಕ್ರಮಗಳನ್ನು ನಿರ್ವಹಿಸಿ", "Event management": "ಕಾರ್ಯಕ್ರಮ ನಿರ್ವಹಣೆ",
+    "Enter the seven-digit Event Code to view event details and generate your participation token.": "ಕಾರ್ಯಕ್ರಮದ ವಿವರಗಳನ್ನು ನೋಡಲು ಮತ್ತು ಭಾಗವಹಿಸುವ ಟೋಕನ್ ಪಡೆಯಲು ಏಳು ಅಂಕಿಗಳ ಕೋಡ್ ನಮೂದಿಸಿ.",
+    "Loading events…": "ಕಾರ್ಯಕ್ರಮಗಳನ್ನು ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ…", "No published events for this canteen yet.": "ಈ ಕ್ಯಾಂಟೀನ್‌ಗೆ ಇನ್ನೂ ಪ್ರಕಟಿತ ಕಾರ್ಯಕ್ರಮಗಳಿಲ್ಲ.",
+    "7-digit Event Code": "7 ಅಂಕಿಗಳ ಕಾರ್ಯಕ್ರಮ ಕೋಡ್", "Open Event": "ಕಾರ್ಯಕ್ರಮ ತೆರೆಯಿರಿ", "Event details": "ಕಾರ್ಯಕ್ರಮದ ವಿವರಗಳು",
+    "Event Code verified": "ಕಾರ್ಯಕ್ರಮ ಕೋಡ್ ಪರಿಶೀಲಿಸಲಾಗಿದೆ", "places remaining": "ಸ್ಥಳಗಳು ಉಳಿದಿವೆ", "Your event tokens": "ನಿಮ್ಮ ಕಾರ್ಯಕ್ರಮದ ಟೋಕನ್‌ಗಳು",
+    "Your existing token": "ನಿಮ್ಮ ಈಗಿನ ಟೋಕನ್", "Your event token": "ನಿಮ್ಮ ಕಾರ್ಯಕ್ರಮದ ಟೋಕನ್", "Generate Token": "ಟೋಕನ್ ರಚಿಸಿ",
+    "EVENT FULL": "ಕಾರ್ಯಕ್ರಮದ ಎಲ್ಲಾ ಸ್ಥಳಗಳು ಭರ್ತಿಯಾಗಿವೆ", "Additional tokens": "ಹೆಚ್ಚುವರಿ ಟೋಕನ್‌ಗಳು", "Request Additional Tokens": "ಹೆಚ್ಚುವರಿ ಟೋಕನ್‌ಗಳನ್ನು ಕೇಳಿ",
+    "Request extra event entry tokens. No food selection or order is involved. ": "ಕಾರ್ಯಕ್ರಮ ಪ್ರವೇಶಕ್ಕೆ ಹೆಚ್ಚುವರಿ ಟೋಕನ್‌ಗಳನ್ನು ಕೇಳಿ. ಆಹಾರ ಆಯ್ಕೆ ಅಥವಾ ಆರ್ಡರ್ ಇಲ್ಲ. ",
+    "Sending request…": "ವಿನಂತಿ ಕಳುಹಿಸಲಾಗುತ್ತಿದೆ…", "Remove one additional token": "ಒಂದು ಹೆಚ್ಚುವರಿ ಟೋಕನ್ ಕಡಿಮೆ ಮಾಡಿ", "Add one additional token": "ಒಂದು ಹೆಚ್ಚುವರಿ ಟೋಕನ್ ಸೇರಿಸಿ",
+    "Faculty Event Requests": "ಅಧ್ಯಾಪಕರ ಕಾರ್ಯಕ್ರಮದ ವಿನಂತಿಗಳು", "Review event details and instructions, confirm food and pricing, then publish after faculty approval.": "ಕಾರ್ಯಕ್ರಮದ ವಿವರ ಮತ್ತು ಸೂಚನೆಗಳನ್ನು ಪರಿಶೀಲಿಸಿ, ಆಹಾರ ಮತ್ತು ಬೆಲೆ ದೃಢಪಡಿಸಿ, ಅಧ್ಯಾಪಕರ ಅನುಮೋದನೆಯ ನಂತರ ಪ್ರಕಟಿಸಿ.",
+    "Create a Faculty Event": "ಅಧ್ಯಾಪಕರ ಕಾರ್ಯಕ್ರಮ ರಚಿಸಿ", "Follow these steps to submit your event for canteen review.": "ಕ್ಯಾಂಟೀನ್ ಪರಿಶೀಲನೆಗೆ ಕಾರ್ಯಕ್ರಮ ಕಳುಹಿಸಲು ಈ ಹಂತಗಳನ್ನು ಅನುಸರಿಸಿ.",
+    "1 · Event information": "1 · ಕಾರ್ಯಕ್ರಮದ ಮಾಹಿತಿ", "FACULTY EVENT DETAILS": "ಅಧ್ಯಾಪಕರ ಕಾರ್ಯಕ್ರಮದ ವಿವರಗಳು", "Describe the event": "ಕಾರ್ಯಕ್ರಮವನ್ನು ವಿವರಿಸಿ",
+    "Event name": "ಕಾರ್ಯಕ್ರಮದ ಹೆಸರು", "Event date": "ಕಾರ್ಯಕ್ರಮದ ದಿನಾಂಕ", Venue: "ಸ್ಥಳ", "Building, hall or location": "ಕಟ್ಟಡ, ಸಭಾಂಗಣ ಅಥವಾ ಸ್ಥಳ",
+    "2 · Expected participants": "2 · ನಿರೀಕ್ಷಿತ ಭಾಗವಹಿಸುವವರು", "Expected participants": "ನಿರೀಕ್ಷಿತ ಭಾಗವಹಿಸುವವರು", "3 · Seven-digit Event Access Code": "3 · ಏಳು ಅಂಕಿಗಳ ಕಾರ್ಯಕ್ರಮ ಪ್ರವೇಶ ಕೋಡ್",
+    "This event will be sent privately to ": "ಈ ಕಾರ್ಯಕ್ರಮವನ್ನು ಖಾಸಗಿಯಾಗಿ ಇವರಿಗೆ ಕಳುಹಿಸಲಾಗುತ್ತದೆ: ", ". It becomes visible to users after approval and publication.": ". ಅನುಮೋದಿಸಿ ಪ್ರಕಟಿಸಿದ ನಂತರ ಬಳಕೆದಾರರಿಗೆ ಕಾಣಿಸುತ್ತದೆ.",
+    "4 · Food menu selection": "4 · ಆಹಾರ ಮೆನು ಆಯ್ಕೆ", "Food preparation request": "ಆಹಾರ ತಯಾರಿಕೆಯ ವಿನಂತಿ", "Selected canteen:": "ಆಯ್ಕೆ ಮಾಡಿದ ಕ್ಯಾಂಟೀನ್:", MENU: "ಮೆನು", "Selected items": "ಆಯ್ಕೆ ಮಾಡಿದ ಪದಾರ್ಥಗಳು",
+    "5 · Message to Canteen (Optional)": "5 · ಕ್ಯಾಂಟೀನ್‌ಗೆ ಸಂದೇಶ (ಐಚ್ಛಿಕ)", "Special instructions or notes for the canteen": "ಕ್ಯಾಂಟೀನ್‌ಗೆ ವಿಶೇಷ ಸೂಚನೆ ಅಥವಾ ಟಿಪ್ಪಣಿ",
+    "6. Submit Food Request": "6. ಆಹಾರದ ವಿನಂತಿ ಸಲ್ಲಿಸಿ", "Submit Food Request": "ಆಹಾರದ ವಿನಂತಿ ಸಲ್ಲಿಸಿ", "Sending…": "ಕಳುಹಿಸಲಾಗುತ್ತಿದೆ…",
+    "Event Requests": "ಕಾರ್ಯಕ್ರಮದ ವಿನಂತಿಗಳು", "Review each canteen response, quotation, budget and publication stage.": "ಕ್ಯಾಂಟೀನ್ ಉತ್ತರ, ಉಲ್ಲೇಖ, ಬಜೆಟ್ ಮತ್ತು ಪ್ರಕಟಣೆ ಹಂತವನ್ನು ಪರಿಶೀಲಿಸಿ.",
+    "Canteen response:": "ಕ್ಯಾಂಟೀನ್ ಉತ್ತರ:", "Waiting for the canteen": "ಕ್ಯಾಂಟೀನ್ ಉತ್ತರಕ್ಕಾಗಿ ಕಾಯಲಾಗುತ್ತಿದೆ", "Quotation:": "ಉಲ್ಲೇಖ:",
+    "Estimated budget": "ಅಂದಾಜು ಬಜೆಟ್", "Token capacity": "ಟೋಕನ್ ಸಾಮರ್ಥ್ಯ", "Publication status:": "ಪ್ರಕಟಣೆ ಸ್ಥಿತಿ:", "Below · Manage Events": "ಕೆಳಗೆ · ಕಾರ್ಯಕ್ರಮ ನಿರ್ವಹಣೆ", "Manage Events": "ಕಾರ್ಯಕ್ರಮ ನಿರ್ವಹಿಸಿ",
+    "Open an event to edit its details, review tokens, or monitor participants and expenditure.": "ವಿವರ ಬದಲಾಯಿಸಲು, ಟೋಕನ್ ಪರಿಶೀಲಿಸಲು ಅಥವಾ ಭಾಗವಹಿಸುವವರು ಮತ್ತು ವೆಚ್ಚ ಗಮನಿಸಲು ಕಾರ್ಯಕ್ರಮ ತೆರೆಯಿರಿ.",
+    PENDING: "ಬಾಕಿ", ACCEPTED: "ಸ್ವೀಕರಿಸಲಾಗಿದೆ", "QUOTATION DUE": "ಉಲ್ಲೇಖ ಬಾಕಿ", "QUOTATION RECEIVED": "ಉಲ್ಲೇಖ ಬಂದಿದೆ",
+    "CHANGES REQUESTED": "ಬದಲಾವಣೆ ಕೇಳಲಾಗಿದೆ", APPROVED: "ಅನುಮೋದಿಸಲಾಗಿದೆ", "ACCEPTED & PUBLISHED": "ಸ್ವೀಕರಿಸಿ ಪ್ರಕಟಿಸಲಾಗಿದೆ", REJECTED: "ತಿರಸ್ಕರಿಸಲಾಗಿದೆ", CANCELLED: "ರದ್ದುಗೊಳಿಸಲಾಗಿದೆ", COMPLETED: "ಪೂರ್ಣಗೊಂಡಿದೆ", CLOSED: "ಮುಚ್ಚಲಾಗಿದೆ",
+    "Student additional token requests": "ವಿದ್ಯಾರ್ಥಿಗಳ ಹೆಚ್ಚುವರಿ ಟೋಕನ್ ವಿನಂತಿಗಳು", "Approve and issue tokens": "ಅನುಮೋದಿಸಿ ಟೋಕನ್ ನೀಡಿ", "Reject request": "ವಿನಂತಿ ತಿರಸ್ಕರಿಸಿ",
+    "Optional note for student and faculty": "ವಿದ್ಯಾರ್ಥಿ ಮತ್ತು ಅಧ್ಯಾಪಕರಿಗೆ ಐಚ್ಛಿಕ ಟಿಪ್ಪಣಿ", "Additional quantity confirmation": "ಹೆಚ್ಚುವರಿ ಪ್ರಮಾಣ ದೃಢೀಕರಣ",
+    "Faculty requested quantities": "ಅಧ್ಯಾಪಕರು ಕೇಳಿದ ಪ್ರಮಾಣ", "Confirm preparation capacity": "ತಯಾರಿ ಸಾಮರ್ಥ್ಯ ದೃಢೀಕರಿಸಿ", "Additional capacity request sent.": "ಹೆಚ್ಚುವರಿ ಸಾಮರ್ಥ್ಯದ ವಿನಂತಿ ಕಳುಹಿಸಲಾಗಿದೆ.",
+    "Request additional tokens": "ಹೆಚ್ಚುವರಿ ಟೋಕನ್ ಕೇಳಿ", "Send capacity request": "ಸಾಮರ್ಥ್ಯದ ವಿನಂತಿ ಕಳುಹಿಸಿ", "A capacity request is already awaiting the canteen.": "ಸಾಮರ್ಥ್ಯದ ವಿನಂತಿ ಈಗಾಗಲೇ ಕ್ಯಾಂಟೀನ್ ಪರಿಶೀಲನೆಗೆ ಕಾಯುತ್ತಿದೆ.",
+    "Faculty food request": "ಅಧ್ಯಾಪಕರ ಆಹಾರದ ವಿನಂತಿ", "Canteen quotation and confirmed food": "ಕ್ಯಾಂಟೀನ್ ಉಲ್ಲೇಖ ಮತ್ತು ದೃಢಪಡಿಸಿದ ಆಹಾರ", "Faculty instructions": "ಅಧ್ಯಾಪಕರ ಸೂಚನೆಗಳು", "Faculty response": "ಅಧ್ಯಾಪಕರ ಉತ್ತರ",
+    "Event Code:": "ಕಾರ್ಯಕ್ರಮ ಕೋಡ್:", "Change event details": "ಕಾರ್ಯಕ್ರಮದ ವಿವರ ಬದಲಾಯಿಸಿ", "Close event editor": "ಕಾರ್ಯಕ್ರಮ ಸಂಪಾದಕ ಮುಚ್ಚಿ", "Save event details": "ಕಾರ್ಯಕ್ರಮದ ವಿವರ ಉಳಿಸಿ",
+    "Approved capacity": "ಅನುಮೋದಿತ ಸಾಮರ್ಥ್ಯ", "Tokens issued": "ನೀಡಿದ ಟೋಕನ್‌ಗಳು", "Tokens remaining": "ಉಳಿದ ಟೋಕನ್‌ಗಳು", "Tokens collected": "ಪಡೆದ ಟೋಕನ್‌ಗಳು", "Cancelled tokens": "ರದ್ದಾದ ಟೋಕನ್‌ಗಳು", "Canteen allocation": "ಕ್ಯಾಂಟೀನ್ ಹಂಚಿಕೆ", "Final expenditure": "ಅಂತಿಮ ವೆಚ್ಚ",
+    "Token verification and serving progress": "ಟೋಕನ್ ಪರಿಶೀಲನೆ ಮತ್ತು ವಿತರಣೆ ಪ್ರಗತಿ", "Verify & mark served": "ಪರಿಶೀಲಿಸಿ ವಿತರಿಸಲಾಗಿದೆ ಎಂದು ಗುರುತಿಸಿ", "Actual food quantities served": "ವಿತರಿಸಿದ ಆಹಾರದ ನಿಜವಾದ ಪ್ರಮಾಣ", "Save served quantities": "ವಿತರಿಸಿದ ಪ್ರಮಾಣ ಉಳಿಸಿ",
+    "Faculty event request": "ಅಧ್ಯಾಪಕರ ಕಾರ್ಯಕ್ರಮದ ವಿನಂತಿ", "Accept or reject this request. Accepted events stay private until you confirm quantities and pricing and publish.": "ಈ ವಿನಂತಿ ಸ್ವೀಕರಿಸಿ ಅಥವಾ ತಿರಸ್ಕರಿಸಿ. ಪ್ರಮಾಣ ಮತ್ತು ಬೆಲೆ ದೃಢಪಡಿಸಿ ಪ್ರಕಟಿಸುವವರೆಗೆ ಸ್ವೀಕರಿಸಿದ ಕಾರ್ಯಕ್ರಮ ಖಾಸಗಿಯಾಗಿರುತ್ತದೆ.",
+    "Accept event request": "ಕಾರ್ಯಕ್ರಮದ ವಿನಂತಿ ಸ್ವೀಕರಿಸಿ", "Prepare event quotation": "ಕಾರ್ಯಕ್ರಮದ ಉಲ್ಲೇಖ ಸಿದ್ಧಪಡಿಸಿ", "Select requested dishes or alternatives, confirm quantities, and enter event prices. Faculty must approve before publishing.": "ಕೇಳಿದ ತಿನಿಸು ಅಥವಾ ಪರ್ಯಾಯ ಆಯ್ಕೆ ಮಾಡಿ, ಪ್ರಮಾಣ ದೃಢಪಡಿಸಿ ಮತ್ತು ಕಾರ್ಯಕ್ರಮದ ಬೆಲೆ ನಮೂದಿಸಿ. ಪ್ರಕಟಿಸುವ ಮೊದಲು ಅಧ್ಯಾಪಕರ ಅನುಮೋದನೆ ಅಗತ್ಯ.",
+    "Send quotation to Faculty": "ಅಧ್ಯಾಪಕರಿಗೆ ಉಲ್ಲೇಖ ಕಳುಹಿಸಿ", "Canteen quotation received": "ಕ್ಯಾಂಟೀನ್ ಉಲ್ಲೇಖ ಬಂದಿದೆ", "Proposed food and prices": "ಪ್ರಸ್ತಾಪಿತ ಆಹಾರ ಮತ್ತು ಬೆಲೆ",
+    "Request changes": "ಬದಲಾವಣೆ ಕೇಳಿ", "Approve quotation": "ಉಲ್ಲೇಖ ಅನುಮೋದಿಸಿ", "Faculty approved the quotation": "ಅಧ್ಯಾಪಕರು ಉಲ್ಲೇಖ ಅನುಮೋದಿಸಿದ್ದಾರೆ",
+    "Confirm and Publish": "ದೃಢಪಡಿಸಿ ಪ್ರಕಟಿಸಿ", "Note for Faculty (optional)": "ಅಧ್ಯಾಪಕರಿಗೆ ಟಿಪ್ಪಣಿ (ಐಚ್ಛಿಕ)", "Note for faculty (optional)": "ಅಧ್ಯಾಪಕರಿಗೆ ಟಿಪ್ಪಣಿ (ಐಚ್ಛಿಕ)",
+    "Canteen note:": "ಕ್ಯಾಂಟೀನ್ ಟಿಪ್ಪಣಿ:", "Alternative menu item": "ಪರ್ಯಾಯ ಮೆನು ಪದಾರ್ಥ", "Event price (INR)": "ಕಾರ್ಯಕ್ರಮದ ಬೆಲೆ (₹)",
+    "Estimated quotation total:": "ಅಂದಾಜು ಉಲ್ಲೇಖದ ಮೊತ್ತ:", "No items selected yet.": "ಇನ್ನೂ ಯಾವುದೇ ಪದಾರ್ಥ ಆಯ್ಕೆ ಮಾಡಿಲ್ಲ.", "Loading available menu items…": "ಲಭ್ಯವಿರುವ ಮೆನು ಲೋಡ್ ಆಗುತ್ತಿದೆ…",
+    "This canteen has no available menu items right now.": "ಈ ಕ್ಯಾಂಟೀನ್‌ನಲ್ಲಿ ಈಗ ಮೆನು ಪದಾರ್ಥಗಳು ಲಭ್ಯವಿಲ್ಲ.", "Items": "ಪದಾರ್ಥಗಳು", "total": "ಒಟ್ಟು",
+    "There are not enough event places remaining for that request.": "ಆ ವಿನಂತಿಗೆ ಕಾರ್ಯಕ್ರಮದಲ್ಲಿ ಸಾಕಷ್ಟು ಸ್ಥಳಗಳು ಉಳಿದಿಲ್ಲ.", "Could not request additional event tokens.": "ಹೆಚ್ಚುವರಿ ಕಾರ್ಯಕ್ರಮ ಟೋಕನ್ ಕೇಳಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ.",
+    "You already have an additional token request waiting for the canteen.": "ನಿಮ್ಮ ಹೆಚ್ಚುವರಿ ಟೋಕನ್ ವಿನಂತಿ ಈಗಾಗಲೇ ಕ್ಯಾಂಟೀನ್ ಪರಿಶೀಲನೆಗೆ ಕಾಯುತ್ತಿದೆ.",
+    "Additional token request rejected.": "ಹೆಚ್ಚುವರಿ ಟೋಕನ್ ವಿನಂತಿ ತಿರಸ್ಕರಿಸಲಾಗಿದೆ.", "There is no longer enough event capacity to approve this request.": "ಈ ವಿನಂತಿ ಅನುಮೋದಿಸಲು ಈಗ ಸಾಕಷ್ಟು ಕಾರ್ಯಕ್ರಮ ಸಾಮರ್ಥ್ಯವಿಲ್ಲ.",
+    "This token request was already handled or could not be updated.": "ಈ ಟೋಕನ್ ವಿನಂತಿ ಈಗಾಗಲೇ ನಿರ್ವಹಿಸಲಾಗಿದೆ ಅಥವಾ ನವೀಕರಿಸಲಾಗಲಿಲ್ಲ.",
+    "Event availability is temporarily unavailable. Please try again shortly.": "ಕಾರ್ಯಕ್ರಮದ ಲಭ್ಯತೆ ಈಗ ತಾತ್ಕಾಲಿಕವಾಗಿ ತಿಳಿಯುತ್ತಿಲ್ಲ. ಸ್ವಲ್ಪ ಸಮಯದ ಬಳಿಕ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
+    "That Event Code is invalid or this event is not published for the canteen.": "ಕಾರ್ಯಕ್ರಮ ಕೋಡ್ ತಪ್ಪಾಗಿದೆ ಅಥವಾ ಈ ಕ್ಯಾಂಟೀನ್‌ಗೆ ಕಾರ್ಯಕ್ರಮ ಪ್ರಕಟಿಸಿಲ್ಲ.",
+    "Could not load events. Reconnecting…": "ಕಾರ್ಯಕ್ರಮ ಲೋಡ್ ಆಗಲಿಲ್ಲ. ಮತ್ತೆ ಸಂಪರ್ಕಿಸಲಾಗುತ್ತಿದೆ…", "Event availability is temporarily unavailable. Refreshing automatically…": "ಕಾರ್ಯಕ್ರಮದ ಲಭ್ಯತೆ ತಾತ್ಕಾಲಿಕವಾಗಿ ತಿಳಿಯುತ್ತಿಲ್ಲ. ಸ್ವಯಂ ರಿಫ್ರೆಶ್ ಆಗುತ್ತಿದೆ…",
+  },
+};
+
+Object.assign(eventDashboardTranslations.hi, {
+  "Could not create the event.": "कार्यक्रम नहीं बनाया जा सका।", "Could not send the capacity request.": "क्षमता अनुरोध नहीं भेजा जा सका।",
+  "Additional capacity approved and activated.": "अतिरिक्त क्षमता मंज़ूर करके सक्रिय की गई।", "Capacity request rejected.": "क्षमता अनुरोध अस्वीकार किया गया।",
+  "Set a valid quantity and price for every requested food item.": "हर माँगी गई चीज़ के लिए सही मात्रा और कीमत दर्ज करें।",
+  "Could not update this request.": "यह अनुरोध अपडेट नहीं हो सका।", "Could not update this token request.": "यह टोकन अनुरोध अपडेट नहीं हो सका।",
+  "Event accepted. Confirm quantities and prices, then publish it.": "कार्यक्रम स्वीकार किया गया। मात्रा और कीमत तय करके प्रकाशित करें।",
+  "Event request rejected.": "कार्यक्रम अनुरोध अस्वीकार किया गया।", "Select at least one item and enter a valid price for each item.": "कम से कम एक चीज़ चुनें और हर चीज़ की सही कीमत दर्ज करें।",
+  "Could not send this quotation.": "यह कोटेशन नहीं भेजा जा सका।", "Quotation approved. The canteen can now confirm and publish the event.": "कोटेशन मंज़ूर हुआ। अब कैंटीन कार्यक्रम की पुष्टि करके प्रकाशित कर सकती है।",
+  "Change request sent to the canteen.": "बदलाव का अनुरोध कैंटीन को भेजा गया।", "Could not update the quotation.": "कोटेशन अपडेट नहीं हो सका।",
+  "Event published. Students can now generate event tokens.": "कार्यक्रम प्रकाशित हुआ। अब छात्र कार्यक्रम टोकन बना सकते हैं।", "Event publication updated.": "कार्यक्रम की प्रकाशन स्थिति अपडेट हुई।",
+  "Could not publish this event.": "यह कार्यक्रम प्रकाशित नहीं हो सका।", "Could not verify this token.": "इस टोकन का सत्यापन नहीं हो सका।",
+  "Served food quantities saved.": "परोसे गए भोजन की मात्रा सहेजी गई।", "Could not save served quantities.": "परोसी गई मात्रा सहेजी नहीं जा सकी।",
+  "Select at least one food item and set its quantity.": "कम से कम एक भोजन चुनें और उसकी मात्रा तय करें।", "Event details updated.": "कार्यक्रम का विवरण अपडेट हुआ।",
+  "Could not update event details.": "कार्यक्रम का विवरण अपडेट नहीं हो सका।", "Event information could not be refreshed. Retrying automatically.": "कार्यक्रम की जानकारी रीफ़्रेश नहीं हुई। अपने आप फिर प्रयास हो रहा है।",
+  "Event logo (optional)": "कार्यक्रम का लोगो (वैकल्पिक)", "JPG, PNG, WebP or AVIF · maximum 8 MB": "JPG, PNG, WebP या AVIF · अधिकतम 8 MB",
+  "Event logo preview": "कार्यक्रम के लोगो का पूर्वावलोकन", "Choose a JPG, PNG, WebP, or AVIF image.": "JPG, PNG, WebP या AVIF तस्वीर चुनें।", "Event logos must be 8 MB or smaller.": "कार्यक्रम का लोगो 8 MB या उससे छोटा होना चाहिए।",
+  "Could not save the faculty event logo.": "संकाय कार्यक्रम का लोगो सहेजा नहीं जा सका।", "You cannot change this event logo.": "आप इस कार्यक्रम का लोगो नहीं बदल सकते।",
+  "Actual Food Quantities Served": "परोसे गए भोजन की वास्तविक मात्रा", "Originally requested:": "मूल अनुरोध की मात्रा:", "Actual served:": "वास्तव में परोसी गई मात्रा:", "Remaining:": "शेष मात्रा:", "Not specified": "निर्दिष्ट नहीं", "Last updated:": "अंतिम अपडेट:", "Not updated yet": "अभी अपडेट नहीं हुआ",
+  "Could not generate the event token. Please try again.": "कार्यक्रम टोकन नहीं बन सका। फिर से प्रयास करें।", "Could not request additional tokens.": "अतिरिक्त टोकन का अनुरोध नहीं भेजा जा सका।",
+  "Additional token request rejected.": "अतिरिक्त टोकन अनुरोध अस्वीकार किया गया।", "This event is not available. Check the Event Code.": "यह कार्यक्रम उपलब्ध नहीं है। कार्यक्रम कोड जाँचें।",
+  "Join the participating canteen before requesting event tokens.": "कार्यक्रम टोकन माँगने से पहले संबंधित कैंटीन से जुड़ें।",
+  "There are not enough event places remaining for that request.": "उस अनुरोध के लिए कार्यक्रम में पर्याप्त स्थान नहीं बचे हैं।",
+  "You cannot review this event.": "आप इस कार्यक्रम की समीक्षा नहीं कर सकते।", "This event request was already handled.": "इस कार्यक्रम अनुरोध पर पहले ही कार्रवाई हो चुकी है।",
+  "You cannot verify this event token.": "आप इस कार्यक्रम टोकन का सत्यापन नहीं कर सकते।", "There is no longer enough event capacity to approve this request.": "इस अनुरोध को मंज़ूर करने के लिए अब पर्याप्त कार्यक्रम क्षमता नहीं है।",
+});
+Object.assign(eventDashboardTranslations.kn, {
+  "Could not create the event.": "ಕಾರ್ಯಕ್ರಮ ರಚಿಸಲಾಗಲಿಲ್ಲ.", "Could not send the capacity request.": "ಸಾಮರ್ಥ್ಯದ ವಿನಂತಿ ಕಳುಹಿಸಲಾಗಲಿಲ್ಲ.",
+  "Additional capacity approved and activated.": "ಹೆಚ್ಚುವರಿ ಸಾಮರ್ಥ್ಯ ಅನುಮೋದಿಸಿ ಸಕ್ರಿಯಗೊಳಿಸಲಾಗಿದೆ.", "Capacity request rejected.": "ಸಾಮರ್ಥ್ಯದ ವಿನಂತಿ ತಿರಸ್ಕರಿಸಲಾಗಿದೆ.",
+  "Set a valid quantity and price for every requested food item.": "ಕೇಳಿದ ಪ್ರತಿಯೊಂದು ಆಹಾರ ಪದಾರ್ಥದ ಸರಿಯಾದ ಪ್ರಮಾಣ ಮತ್ತು ಬೆಲೆ ನಮೂದಿಸಿ.",
+  "Could not update this request.": "ಈ ವಿನಂತಿ ನವೀಕರಿಸಲಾಗಲಿಲ್ಲ.", "Could not update this token request.": "ಈ ಟೋಕನ್ ವಿನಂತಿ ನವೀಕರಿಸಲಾಗಲಿಲ್ಲ.",
+  "Event accepted. Confirm quantities and prices, then publish it.": "ಕಾರ್ಯಕ್ರಮ ಸ್ವೀಕರಿಸಲಾಗಿದೆ. ಪ್ರಮಾಣ ಮತ್ತು ಬೆಲೆ ದೃಢಪಡಿಸಿ ಪ್ರಕಟಿಸಿ.",
+  "Event request rejected.": "ಕಾರ್ಯಕ್ರಮದ ವಿನಂತಿ ತಿರಸ್ಕರಿಸಲಾಗಿದೆ.", "Select at least one item and enter a valid price for each item.": "ಕನಿಷ್ಠ ಒಂದು ಪದಾರ್ಥ ಆಯ್ಕೆ ಮಾಡಿ, ಪ್ರತಿಯೊಂದಕ್ಕೂ ಸರಿಯಾದ ಬೆಲೆ ನಮೂದಿಸಿ.",
+  "Could not send this quotation.": "ಈ ಉಲ್ಲೇಖ ಕಳುಹಿಸಲಾಗಲಿಲ್ಲ.", "Quotation approved. The canteen can now confirm and publish the event.": "ಉಲ್ಲೇಖ ಅನುಮೋದಿಸಲಾಗಿದೆ. ಈಗ ಕ್ಯಾಂಟೀನ್ ಕಾರ್ಯಕ್ರಮ ದೃಢಪಡಿಸಿ ಪ್ರಕಟಿಸಬಹುದು.",
+  "Change request sent to the canteen.": "ಬದಲಾವಣೆಯ ವಿನಂತಿಯನ್ನು ಕ್ಯಾಂಟೀನ್‌ಗೆ ಕಳುಹಿಸಲಾಗಿದೆ.", "Could not update the quotation.": "ಉಲ್ಲೇಖ ನವೀಕರಿಸಲಾಗಲಿಲ್ಲ.",
+  "Event published. Students can now generate event tokens.": "ಕಾರ್ಯಕ್ರಮ ಪ್ರಕಟಿಸಲಾಗಿದೆ. ಈಗ ವಿದ್ಯಾರ್ಥಿಗಳು ಕಾರ್ಯಕ್ರಮದ ಟೋಕನ್ ಪಡೆಯಬಹುದು.", "Event publication updated.": "ಕಾರ್ಯಕ್ರಮದ ಪ್ರಕಟಣೆ ಸ್ಥಿತಿ ನವೀಕರಿಸಲಾಗಿದೆ.",
+  "Could not publish this event.": "ಈ ಕಾರ್ಯಕ್ರಮ ಪ್ರಕಟಿಸಲಾಗಲಿಲ್ಲ.", "Could not verify this token.": "ಈ ಟೋಕನ್ ಪರಿಶೀಲಿಸಲಾಗಲಿಲ್ಲ.",
+  "Served food quantities saved.": "ವಿತರಿಸಿದ ಆಹಾರದ ಪ್ರಮಾಣ ಉಳಿಸಲಾಗಿದೆ.", "Could not save served quantities.": "ವಿತರಿಸಿದ ಪ್ರಮಾಣ ಉಳಿಸಲಾಗಲಿಲ್ಲ.",
+  "Select at least one food item and set its quantity.": "ಕನಿಷ್ಠ ಒಂದು ಆಹಾರ ಪದಾರ್ಥ ಆಯ್ಕೆ ಮಾಡಿ ಅದರ ಪ್ರಮಾಣ ನಿಗದಿಪಡಿಸಿ.", "Event details updated.": "ಕಾರ್ಯಕ್ರಮದ ವಿವರ ನವೀಕರಿಸಲಾಗಿದೆ.",
+  "Could not update event details.": "ಕಾರ್ಯಕ್ರಮದ ವಿವರ ನವೀಕರಿಸಲಾಗಲಿಲ್ಲ.", "Event information could not be refreshed. Retrying automatically.": "ಕಾರ್ಯಕ್ರಮದ ಮಾಹಿತಿ ರಿಫ್ರೆಶ್ ಆಗಲಿಲ್ಲ. ಸ್ವಯಂ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಲಾಗುತ್ತಿದೆ.",
+  "Event logo (optional)": "ಕಾರ್ಯಕ್ರಮದ ಲೋಗೋ (ಐಚ್ಛಿಕ)", "JPG, PNG, WebP or AVIF · maximum 8 MB": "JPG, PNG, WebP ಅಥವಾ AVIF · ಗರಿಷ್ಠ 8 MB",
+  "Event logo preview": "ಕಾರ್ಯಕ್ರಮದ ಲೋಗೋ ಮುನ್ನೋಟ", "Choose a JPG, PNG, WebP, or AVIF image.": "JPG, PNG, WebP ಅಥವಾ AVIF ಚಿತ್ರ ಆಯ್ಕೆಮಾಡಿ.", "Event logos must be 8 MB or smaller.": "ಕಾರ್ಯಕ್ರಮದ ಲೋಗೋ 8 MB ಅಥವಾ ಕಡಿಮೆ ಇರಬೇಕು.",
+  "Could not save the faculty event logo.": "ಅಧ್ಯಾಪಕರ ಕಾರ್ಯಕ್ರಮದ ಲೋಗೋ ಉಳಿಸಲಾಗಲಿಲ್ಲ.", "You cannot change this event logo.": "ಈ ಕಾರ್ಯಕ್ರಮದ ಲೋಗೋ ಬದಲಿಸಲು ನಿಮಗೆ ಅನುಮತಿ ಇಲ್ಲ.",
+  "Actual Food Quantities Served": "ವಿತರಿಸಿದ ಆಹಾರದ ನಿಜವಾದ ಪ್ರಮಾಣ", "Originally requested:": "ಮೂಲ ವಿನಂತಿಯ ಪ್ರಮಾಣ:", "Actual served:": "ನಿಜವಾಗಿ ವಿತರಿಸಿದ ಪ್ರಮಾಣ:", "Remaining:": "ಉಳಿದ ಪ್ರಮಾಣ:", "Not specified": "ನಮೂದಿಸಿಲ್ಲ", "Last updated:": "ಕೊನೆಯ ನವೀಕರಣ:", "Not updated yet": "ಇನ್ನೂ ನವೀಕರಿಸಿಲ್ಲ",
+  "Could not generate the event token. Please try again.": "ಕಾರ್ಯಕ್ರಮದ ಟೋಕನ್ ರಚಿಸಲಾಗಲಿಲ್ಲ. ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.", "Could not request additional tokens.": "ಹೆಚ್ಚುವರಿ ಟೋಕನ್ ಕೇಳಲಾಗಲಿಲ್ಲ.",
+  "Additional token request rejected.": "ಹೆಚ್ಚುವರಿ ಟೋಕನ್ ವಿನಂತಿ ತಿರಸ್ಕರಿಸಲಾಗಿದೆ.", "This event is not available. Check the Event Code.": "ಈ ಕಾರ್ಯಕ್ರಮ ಲಭ್ಯವಿಲ್ಲ. ಕಾರ್ಯಕ್ರಮ ಕೋಡ್ ಪರಿಶೀಲಿಸಿ.",
+  "Join the participating canteen before requesting event tokens.": "ಕಾರ್ಯಕ್ರಮದ ಟೋಕನ್ ಕೇಳುವ ಮೊದಲು ಸಂಬಂಧಿತ ಕ್ಯಾಂಟೀನ್‌ಗೆ ಸೇರಿ.",
+  "There are not enough event places remaining for that request.": "ಆ ವಿನಂತಿಗೆ ಕಾರ್ಯಕ್ರಮದಲ್ಲಿ ಸಾಕಷ್ಟು ಸ್ಥಳಗಳು ಉಳಿದಿಲ್ಲ.",
+  "You cannot review this event.": "ಈ ಕಾರ್ಯಕ್ರಮ ಪರಿಶೀಲಿಸಲು ನಿಮಗೆ ಅನುಮತಿ ಇಲ್ಲ.", "This event request was already handled.": "ಈ ಕಾರ್ಯಕ್ರಮದ ವಿನಂತಿಗೆ ಈಗಾಗಲೇ ಕ್ರಮ ಕೈಗೊಳ್ಳಲಾಗಿದೆ.",
+  "You cannot verify this event token.": "ಈ ಕಾರ್ಯಕ್ರಮದ ಟೋಕನ್ ಪರಿಶೀಲಿಸಲು ನಿಮಗೆ ಅನುಮತಿ ಇಲ್ಲ.", "There is no longer enough event capacity to approve this request.": "ಈ ವಿನಂತಿ ಅನುಮೋದಿಸಲು ಸಾಕಷ್ಟು ಕಾರ್ಯಕ್ರಮ ಸಾಮರ್ಥ್ಯ ಉಳಿದಿಲ್ಲ.",
+});
+
+Object.assign(eventDashboardTranslations.hi, {
+  "EVENT LOGO (OPTIONAL)": "कार्यक्रम का लोगो (वैकल्पिक)",
+  "PNG, JPG or JPEG · maximum 8 MB": "PNG, JPG या JPEG · अधिकतम 8 MB",
+  "Selected file:": "चुनी गई फ़ाइल:",
+  "Replace image": "तस्वीर बदलें",
+  "Remove image": "तस्वीर हटाएँ",
+  "Choose a JPG or PNG image.": "JPG या PNG तस्वीर चुनें।",
+});
+
+Object.assign(eventDashboardTranslations.kn, {
+  "EVENT LOGO (OPTIONAL)": "ಕಾರ್ಯಕ್ರಮದ ಲೋಗೋ (ಐಚ್ಛಿಕ)",
+  "PNG, JPG or JPEG · maximum 8 MB": "PNG, JPG ಅಥವಾ JPEG · ಗರಿಷ್ಠ 8 MB",
+  "Selected file:": "ಆಯ್ಕೆ ಮಾಡಿದ ಫೈಲ್:",
+  "Replace image": "ಚಿತ್ರ ಬದಲಾಯಿಸಿ",
+  "Remove image": "ಚಿತ್ರ ತೆಗೆದುಹಾಕಿ",
+  "Choose a JPG or PNG image.": "JPG ಅಥವಾ PNG ಚಿತ್ರ ಆಯ್ಕೆಮಾಡಿ.",
+});
+
 export function translateDashboardText(input: string, language: DashboardLanguage): string {
   if (language === "en") return input;
   const matchWhitespace = input.match(/^(\s*)([\s\S]*?)(\s*)$/)!;
   const [, leading, core, trailing] = matchWhitespace;
   if (leading || trailing) return `${leading}${translateDashboardText(core!, language)}${trailing}`;
+  if (eventDashboardTranslations[language][input]) return eventDashboardTranslations[language][input]!;
   const dict = dictionaries[language];
   if (dict[input]) return dict[input]!;
   const patterns: [RegExp, (m: RegExpMatchArray) => string][] = [
+    [/^(\d+) tokens remaining$/, m => language === "hi" ? `${m[1]} टोकन शेष` : `${m[1]} ಟೋಕನ್‌ಗಳು ಉಳಿದಿವೆ`],
+    [/^(\d+) places remaining$/, m => language === "hi" ? `${m[1]} स्थान शेष` : `${m[1]} ಸ್ಥಳಗಳು ಉಳಿದಿವೆ`],
+    [/^ · Event Code verified$/, () => language === "hi" ? " · कार्यक्रम कोड सत्यापित" : " · ಕಾರ್ಯಕ್ರಮ ಕೋಡ್ ಪರಿಶೀಲಿಸಲಾಗಿದೆ"],
+    [/^(\d+) additional tokens? · $/, m => language === "hi" ? `${m[1]} अतिरिक्त टोकन · ` : `${m[1]} ಹೆಚ್ಚುವರಿ ಟೋಕನ್‌ಗಳು · `],
+    [/^Availability refreshing$/, () => language === "hi" ? "उपलब्धता रीफ़्रेश हो रही है" : "ಲಭ್ಯತೆ ರಿಫ್ರೆಶ್ ಆಗುತ್ತಿದೆ"],
+    [/^Open (.+) menu$/, m => language === "hi" ? `${m[1]} का मेनू खोलें` : `${m[1]} ಮೆನು ತೆರೆಯಿರಿ`],
+    [/^Add one (.+)$/, m => language === "hi" ? `${m[1]} की एक मात्रा बढ़ाएँ` : `${m[1]} ಒಂದನ್ನು ಸೇರಿಸಿ`],
+    [/^Remove one (.+)$/, m => language === "hi" ? `${m[1]} की एक मात्रा घटाएँ` : `${m[1]} ಒಂದನ್ನು ತೆಗೆದುಹಾಕಿ`],
+    [/^Add one quoted (.+)$/, m => language === "hi" ? `कोटेशन में ${m[1]} की मात्रा बढ़ाएँ` : `ಉಲ್ಲೇಖದಲ್ಲಿ ${m[1]} ಪ್ರಮಾಣ ಹೆಚ್ಚಿಸಿ`],
+    [/^Remove one quoted (.+)$/, m => language === "hi" ? `कोटेशन में ${m[1]} की मात्रा घटाएँ` : `ಉಲ್ಲೇಖದಲ್ಲಿ ${m[1]} ಪ್ರಮಾಣ ಕಡಿಮೆ ಮಾಡಿ`],
+    [/^(\d+) places remain available\.$/, m => language === "hi" ? `${m[1]} स्थान उपलब्ध हैं।` : `${m[1]} ಸ್ಥಳಗಳು ಲಭ್ಯವಿವೆ.`],
+    [/^(\d+) pending$/, m => language === "hi" ? `${m[1]} लंबित` : `${m[1]} ಬಾಕಿ`],
+    [/^(\d+) quotations due$/, m => language === "hi" ? `${m[1]} कोटेशन देना बाकी` : `${m[1]} ಉಲ್ಲೇಖ ಬಾಕಿ`],
+    [/^(\d+) approved to publish$/, m => language === "hi" ? `${m[1]} प्रकाशन के लिए मंज़ूर` : `${m[1]} ಪ್ರಕಟಣೆಗೆ ಅನುಮೋದಿತ`],
+    [/^(\d+) items · (\d+) total$/, m => language === "hi" ? `${m[1]} चीज़ें · कुल ${m[2]}` : `${m[1]} ಪದಾರ್ಥಗಳು · ಒಟ್ಟು ${m[2]}`],
+    [/^No events for (.+) yet\.$/, m => language === "hi" ? `${m[1]} के लिए अभी कोई कार्यक्रम नहीं है।` : `${m[1]} ಗಾಗಿ ಇನ್ನೂ ಯಾವುದೇ ಕಾರ್ಯಕ್ರಮಗಳಿಲ್ಲ.`],
+    [/^This event will be sent privately to (.+)\. It becomes visible to users after approval and publication\.$/, m => language === "hi" ? `यह कार्यक्रम निजी रूप से ${m[1]} को भेजा जाएगा। मंज़ूरी और प्रकाशन के बाद उपयोगकर्ताओं को दिखाई देगा।` : `ಈ ಕಾರ್ಯಕ್ರಮವನ್ನು ಖಾಸಗಿಯಾಗಿ ${m[1]} ಗೆ ಕಳುಹಿಸಲಾಗುತ್ತದೆ. ಅನುಮೋದಿಸಿ ಪ್ರಕಟಿಸಿದ ನಂತರ ಬಳಕೆದಾರರಿಗೆ ಕಾಣಿಸುತ್ತದೆ.`],
+    [/^Event request sent to (.+)\. Event Code: (\d+)\. The canteen will review the request and send a quotation\.$/, m => language === "hi" ? `${m[1]} को कार्यक्रम अनुरोध भेजा गया। कार्यक्रम कोड: ${m[2]}। कैंटीन अनुरोध देखकर कोटेशन भेजेगी।` : `${m[1]} ಗೆ ಕಾರ್ಯಕ್ರಮದ ವಿನಂತಿ ಕಳುಹಿಸಲಾಗಿದೆ. ಕಾರ್ಯಕ್ರಮ ಕೋಡ್: ${m[2]}. ಕ್ಯಾಂಟೀನ್ ಪರಿಶೀಲಿಸಿ ಉಲ್ಲೇಖ ಕಳುಹಿಸುತ್ತದೆ.`],
+    [/^Additional capacity request sent\. Proposed capacity: (\d+)\.$/, m => language === "hi" ? `अतिरिक्त क्षमता का अनुरोध भेजा गया। प्रस्तावित क्षमता: ${m[1]}।` : `ಹೆಚ್ಚುವರಿ ಸಾಮರ್ಥ್ಯದ ವಿನಂತಿ ಕಳುಹಿಸಲಾಗಿದೆ. ಪ್ರಸ್ತಾಪಿತ ಸಾಮರ್ಥ್ಯ: ${m[1]}.`],
+    [/^(\d+) additional event tokens approved and issued\.$/, m => language === "hi" ? `${m[1]} अतिरिक्त कार्यक्रम टोकन मंज़ूर करके जारी किए गए।` : `${m[1]} ಹೆಚ್ಚುವರಿ ಕಾರ್ಯಕ್ರಮದ ಟೋಕನ್‌ಗಳನ್ನು ಅನುಮೋದಿಸಿ ನೀಡಲಾಗಿದೆ.`],
+    [/^Token (.+) verified and marked served\.$/, m => language === "hi" ? `टोकन ${m[1]} सत्यापित करके परोसा हुआ दर्ज किया गया।` : `ಟೋಕನ್ ${m[1]} ಪರಿಶೀಲಿಸಿ ವಿತರಿಸಲಾಗಿದೆ ಎಂದು ಗುರುತಿಸಲಾಗಿದೆ.`],
+    [/^Quotation sent to Faculty\. Estimated budget: ₹(.+)\.$/, m => language === "hi" ? `संकाय को कोटेशन भेजा गया। अनुमानित बजट: ₹${m[1]}।` : `ಅಧ್ಯಾಪಕರಿಗೆ ಉಲ್ಲೇಖ ಕಳುಹಿಸಲಾಗಿದೆ. ಅಂದಾಜು ಬಜೆಟ್: ₹${m[1]}.`],
+    [/^Event published\. Students can now generate event tokens\.$/, () => language === "hi" ? "कार्यक्रम प्रकाशित हुआ। अब छात्र कार्यक्रम टोकन बना सकते हैं।" : "ಕಾರ್ಯಕ್ರಮ ಪ್ರಕಟಿಸಲಾಗಿದೆ. ಈಗ ವಿದ್ಯಾರ್ಥಿಗಳು ಕಾರ್ಯಕ್ರಮದ ಟೋಕನ್ ಪಡೆಯಬಹುದು."],
+    [/^Event accepted\. Confirm quantities and prices, then publish it\.$/, () => language === "hi" ? "कार्यक्रम स्वीकार किया गया। मात्रा और कीमत तय करके प्रकाशित करें।" : "ಕಾರ್ಯಕ್ರಮ ಸ್ವೀಕರಿಸಲಾಗಿದೆ. ಪ್ರಮಾಣ ಮತ್ತು ಬೆಲೆ ದೃಢಪಡಿಸಿ ಪ್ರಕಟಿಸಿ."],
+    [/^Quotation approved\. The canteen can now confirm and publish the event\.$/, () => language === "hi" ? "कोटेशन मंज़ूर हुआ। अब कैंटीन कार्यक्रम की पुष्टि करके प्रकाशित कर सकती है।" : "ಉಲ್ಲೇಖ ಅನುಮೋದಿಸಲಾಗಿದೆ. ಈಗ ಕ್ಯಾಂಟೀನ್ ಕಾರ್ಯಕ್ರಮ ದೃಢಪಡಿಸಿ ಪ್ರಕಟಿಸಬಹುದು."],
+    [/^Change request sent to the canteen\.$/, () => language === "hi" ? "बदलाव का अनुरोध कैंटीन को भेजा गया।" : "ಬದಲಾವಣೆಯ ವಿನಂತಿಯನ್ನು ಕ್ಯಾಂಟೀನ್‌ಗೆ ಕಳುಹಿಸಲಾಗಿದೆ."],
+    [/^Faculty requested \+(\d+) tokens\. Proposed capacity: (\d+)\. Currently approved: (\d+)\. Tokens issued: (\d+)\. Remaining: (\d+)\.$/, m => language === "hi" ? `संकाय ने +${m[1]} टोकन माँगे। प्रस्तावित क्षमता: ${m[2]}। अभी मंज़ूर: ${m[3]}। जारी टोकन: ${m[4]}। शेष: ${m[5]}।` : `ಅಧ್ಯಾಪಕರು +${m[1]} ಟೋಕನ್ ಕೇಳಿದ್ದಾರೆ. ಪ್ರಸ್ತಾಪಿತ ಸಾಮರ್ಥ್ಯ: ${m[2]}. ಈಗ ಅನುಮೋದಿತ: ${m[3]}. ನೀಡಿದ ಟೋಕನ್‌ಗಳು: ${m[4]}. ಉಳಿದಿವೆ: ${m[5]}.`],
+    [/^Could not verify this token request\.$/, () => language === "hi" ? "इस टोकन अनुरोध की पुष्टि नहीं हो सकी।" : "ಈ ಟೋಕನ್ ವಿನಂತಿಯನ್ನು ಪರಿಶೀಲಿಸಲಾಗಲಿಲ್ಲ."],
     [/^CANTEEN DASHBOARD · (.+)$/, m => `${dict["CANTEEN DASHBOARD"]} · ${m[1]}`],
     [/^Menu \((\d+)\)$/, m => `${dict.Menu} (${m[1]})`],
     [/^Live Orders \((\d+)\)$/, m => `${dict["Live Orders"]} (${m[1]})`],
@@ -156,6 +356,9 @@ export function translateDashboardText(input: string, language: DashboardLanguag
     [/^Pay ₹(\d+)$/, m => language === "hi" ? `₹${m[1]} भुगतान करें` : `₹${m[1]} ಪಾವತಿಸಿ`],
     [/^Place order · ₹(\d+)$/, m => language === "hi" ? `ऑर्डर करें · ₹${m[1]}` : `ಆರ್ಡರ್ ಮಾಡಿ · ₹${m[1]}`],
     [/^Free access active · (\d+) (day|days) left$/, m => language === "hi" ? `मुफ़्त सुविधा सक्रिय · ${m[1]} दिन शेष` : `ಉಚಿತ ಪ್ರವೇಶ ಸಕ್ರಿಯ · ${m[1]} ದಿನ ಬಾಕಿ`],
+    [/^(.+) · planned (\d+)$/, m => `${m[1]} · ${language === "hi" ? "नियोजित" : "ಯೋಜಿತ"} ${m[2]}`],
+    [/^(.+) event logo$/, m => `${m[1]} · ${language === "hi" ? "कार्यक्रम का लोगो" : "ಕಾರ್ಯಕ್ರಮದ ಲೋಗೋ"}`],
+    [/^The event request was sent, but the logo could not be saved: (.+)$/, m => `${language === "hi" ? "कार्यक्रम अनुरोध भेजा गया, लेकिन लोगो सहेजा नहीं जा सका" : "ಕಾರ್ಯಕ್ರಮದ ವಿನಂತಿ ಕಳುಹಿಸಲಾಗಿದೆ, ಆದರೆ ಲೋಗೋ ಉಳಿಸಲಾಗಲಿಲ್ಲ"}: ${m[1]}`],
   ];
   for (const [pattern, render] of patterns) { const found = input.match(pattern); if (found) return render(found); }
   return input;
@@ -215,15 +418,18 @@ export function LanguageSelect({ language, onChange }: { language: DashboardLang
 export function useDashboardLanguage(userId: string | null | undefined) {
   const [language, setLanguage] = useState<DashboardLanguage>(readStoredDashboardLanguage);
   const [loadedFor, setLoadedFor] = useState<string | null>(null);
+  const languageChangeVersion = useRef(0);
+  const saveQueue = useRef<Promise<void>>(Promise.resolve());
   useEffect(() => {
     if (!userId) { setLanguage(readStoredDashboardLanguage()); setLoadedFor(null); return; }
     let alive = true;
+    const loadVersion = languageChangeVersion.current;
     setLanguage(readStoredDashboardLanguage());
     void (async () => {
       try {
         const { data } = await supabase.from("user_language_preferences").select("language").eq("user_id", userId).maybeSingle();
         if (!alive) return;
-        if (data?.language === "en" || data?.language === "hi" || data?.language === "kn") {
+        if (loadVersion === languageChangeVersion.current && (data?.language === "en" || data?.language === "hi" || data?.language === "kn")) {
           setLanguage(data.language);
           try { window.localStorage.setItem(LANGUAGE_STORAGE_KEY, data.language); } catch { /* Optional browser cache only. */ }
         }
@@ -237,11 +443,16 @@ export function useDashboardLanguage(userId: string | null | undefined) {
     return () => { alive = false; };
   }, [userId]);
   const saveLanguage = useCallback(async (value: DashboardLanguage) => {
+    languageChangeVersion.current += 1;
     setLanguage(value);
     try { window.localStorage.setItem(LANGUAGE_STORAGE_KEY, value); } catch { /* Keep the in-memory selection. */ }
     if (!userId) return;
-    const { error } = await supabase.from("user_language_preferences").upsert({ user_id: userId, language: value, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
-    if (error) console.error("Could not save dashboard language preference", error.message);
+    const save = saveQueue.current.then(async () => {
+      const { error } = await supabase.from("user_language_preferences").upsert({ user_id: userId, language: value, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
+      if (error) console.error("Could not save dashboard language preference", error.message);
+    });
+    saveQueue.current = save.catch((error) => { console.error("Could not save dashboard language preference", error); });
+    await saveQueue.current;
   }, [userId]);
   return { language, saveLanguage, ready: !userId || loadedFor === userId };
 }
