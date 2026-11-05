@@ -17,6 +17,7 @@ type RequestRow = {
 };
 type TokenRow = { id: string; event_id: string; status: string; token_number: string; customer_id: string; created_at: string };
 type EventMenuItem = { id: string; name: string; price: number; image: string | null; category: string; stock: number | null };
+type ManualQuotationItem = { name: string; quantity: string; price: string };
 
 export function EventCapacityPanel({ mode, canteenId, canteenName }: { mode: "faculty" | "canteen"; canteenId: string; canteenName: string }) {
   const [events, setEvents] = useState<EventRow[]>([]);
@@ -35,6 +36,7 @@ export function EventCapacityPanel({ mode, canteenId, canteenName }: { mode: "fa
   const [additionalFoodSelection, setAdditionalFoodSelection] = useState<Record<string, Record<string, number>>>({});
   const [confirmedFoodSelection, setConfirmedFoodSelection] = useState<Record<string, Record<string, number>>>({});
   const [confirmedPrices, setConfirmedPrices] = useState<Record<string, Record<string, string>>>({});
+  const [manualQuotationItems, setManualQuotationItems] = useState<Record<string, ManualQuotationItem[]>>({});
   const [servedFoodSelection, setServedFoodSelection] = useState<Record<string, Record<string, number>>>({});
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [menuPrices, setMenuPrices] = useState<Record<string, number>>({});
@@ -152,8 +154,23 @@ export function EventCapacityPanel({ mode, canteenId, canteenName }: { mode: "fa
   async function sendQuotation(event: EventRow) {
     setError(""); setMessage(""); setBusy(true);
     try {
-      const quantities = Object.fromEntries(Object.entries(confirmedFoodSelection[event.id] ?? event.food_requirements).filter(([, quantity]) => Number.isInteger(quantity) && quantity > 0));
-      const prices = Object.fromEntries(Object.keys(quantities).map((food) => [food, Number(confirmedPrices[event.id]?.[food] ?? menuPrices[food] ?? 0)]));
+      let quantities: Record<string, number>;
+      let prices: Record<string, number>;
+      if (Object.keys(event.food_requirements).length === 0) {
+        const lines = manualQuotationItems[event.id] ?? [];
+        const normalizedNames = lines.map((line) => line.name.trim());
+        if (!lines.length || lines.some((line, index) => !normalizedNames[index] || !Number.isInteger(Number(line.quantity)) || Number(line.quantity) < 1 || Number(line.quantity) > 100000 || line.price.trim() === "" || !Number.isInteger(Number(line.price)) || Number(line.price) < 0 || Number(line.price) > 10000000)) {
+          throw new Error("Add a food name, a quantity, and a valid price for every quotation item.");
+        }
+        if (new Set(normalizedNames.map((name) => name.toLocaleLowerCase())).size !== normalizedNames.length) {
+          throw new Error("Each manual quotation item must have a unique food name.");
+        }
+        quantities = Object.fromEntries(lines.map((line, index) => [normalizedNames[index], Number(line.quantity)]));
+        prices = Object.fromEntries(lines.map((line, index) => [normalizedNames[index], Number(line.price)]));
+      } else {
+        quantities = Object.fromEntries(Object.entries(confirmedFoodSelection[event.id] ?? event.food_requirements).filter(([, quantity]) => Number.isInteger(quantity) && quantity > 0));
+        prices = Object.fromEntries(Object.keys(quantities).map((food) => [food, Number(confirmedPrices[event.id]?.[food] ?? menuPrices[food] ?? 0)]));
+      }
       if (!Object.keys(quantities).length || Object.values(prices).some((price) => !Number.isInteger(price) || price < 0)) throw new Error("Select at least one item and enter a valid price for each item.");
       const result = await quoteEvent({ data: { eventId: event.id, quantities, prices, note: notes[event.id] ?? "" } });
       setMessage(`Quotation sent to Faculty. Estimated budget: ₹${result.estimatedBudget}.`);
@@ -339,9 +356,14 @@ export function EventCapacityPanel({ mode, canteenId, canteenName }: { mode: "fa
           </div>}
           {mode === "canteen" && ["accepted", "changes_requested"].includes(event.status) && <div className="mt-4 space-y-3 rounded-2xl border border-primary/30 bg-primary/5 p-4">
             <h4 className="text-sm font-bold">Prepare event quotation</h4>
-            <p className="text-xs text-muted-foreground">Select requested dishes or alternatives, confirm quantities, and enter event prices. Faculty must approve before publishing.</p>
-            <MenuConfirmationEditor items={menuItems} quantities={event.food_requirements} confirmedQuantities={confirmedFoodSelection[event.id] ?? event.food_requirements} prices={confirmedPrices[event.id] ?? {}} onQuantityChange={(food, quantity) => setConfirmedFoodSelection((current) => ({ ...current, [event.id]: { ...(current[event.id] ?? event.food_requirements), [food]: quantity } }))} onPriceChange={(food, price) => setConfirmedPrices((current) => ({ ...current, [event.id]: { ...(current[event.id] ?? {}), [food]: price } }))} />
-            <QuotationBudget quantities={confirmedFoodSelection[event.id] ?? event.food_requirements} prices={confirmedPrices[event.id] ?? menuPrices} />
+            {Object.keys(event.food_requirements).length > 0 ? <>
+              <p className="text-xs text-muted-foreground">Select requested dishes or alternatives, confirm quantities, and enter event prices. Faculty must approve before publishing.</p>
+              <MenuConfirmationEditor items={menuItems} quantities={event.food_requirements} confirmedQuantities={confirmedFoodSelection[event.id] ?? event.food_requirements} prices={confirmedPrices[event.id] ?? {}} onQuantityChange={(food, quantity) => setConfirmedFoodSelection((current) => ({ ...current, [event.id]: { ...(current[event.id] ?? event.food_requirements), [food]: quantity } }))} onPriceChange={(food, price) => setConfirmedPrices((current) => ({ ...current, [event.id]: { ...(current[event.id] ?? {}), [food]: price } }))} />
+              <QuotationBudget quantities={confirmedFoodSelection[event.id] ?? event.food_requirements} prices={confirmedPrices[event.id] ?? menuPrices} />
+            </> : <>
+              <p className="text-xs text-muted-foreground">Faculty did not select menu items. Prepare the quotation from the faculty instructions above.</p>
+              <ManualQuotationEditor items={manualQuotationItems[event.id] ?? []} onChange={(items) => setManualQuotationItems((current) => ({ ...current, [event.id]: items }))} />
+            </>}
             <textarea maxLength={500} placeholder="Note for Faculty (optional)" aria-label={`Quotation note for ${event.name}`} value={notes[event.id] ?? ""} onChange={(formEvent) => setNotes({ ...notes, [event.id]: formEvent.currentTarget.value })} className="w-full rounded-xl border border-input bg-ink-soft px-3 py-2 text-sm" rows={2} />
             <button type="button" disabled={busy} onClick={() => sendQuotation(event)} className="rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50">Send quotation to Faculty</button>
           </div>}
@@ -463,6 +485,30 @@ function MenuConfirmationEditor({ items, quantities, confirmedQuantities, prices
     })}
     {Object.keys(quantities).filter((name) => !items.some((item) => item.name === name)).map((name) => <div key={name} className="flex items-center justify-between rounded-xl border border-red-500/30 p-3 text-xs"><span>{name} is unavailable. Remove it from the quotation.</span><button type="button" onClick={() => onQuantityChange(name, 0)} className="rounded-full border border-border px-3 py-1">Remove</button></div>)}
   </div>;
+}
+
+function ManualQuotationEditor({ items, onChange }: { items: ManualQuotationItem[]; onChange: (items: ManualQuotationItem[]) => void }) {
+  const total = items.reduce((sum, item) => {
+    const quantity = Number(item.quantity);
+    const price = Number(item.price);
+    return item.name.trim() && Number.isInteger(quantity) && quantity > 0 && Number.isInteger(price) && price >= 0 ? sum + quantity * price : sum;
+  }, 0);
+  return <section className="space-y-3 rounded-2xl border border-border p-3" aria-label="Manual quotation items">
+    <div className="flex flex-wrap items-center justify-between gap-2"><h5 className="text-xs font-bold uppercase tracking-[0.14em] text-primary">MANUALLY ADD FOOD ITEMS</h5><button type="button" onClick={() => onChange([...items, { name: "", quantity: "1", price: "" }])} className="rounded-full border border-primary/50 bg-primary/10 px-4 py-2 text-xs font-bold text-primary transition hover:bg-primary/15">+ ADD FOOD ITEM</button></div>
+    {items.map((item, index) => {
+      const quantity = Number(item.quantity);
+      const price = Number(item.price);
+      const subtotal = item.name.trim() && Number.isInteger(quantity) && quantity > 0 && Number.isInteger(price) && price >= 0 ? quantity * price : 0;
+      return <div key={index} className="grid gap-2 rounded-xl bg-ink-soft p-3 sm:grid-cols-[minmax(0,1fr)_110px_140px_auto]">
+      <label className="text-[11px] text-muted-foreground">Food item name<input required maxLength={120} aria-label={`Manual food item ${index + 1}`} value={item.name} onChange={(event) => onChange(items.map((entry, row) => row === index ? { ...entry, name: event.currentTarget.value } : entry))} placeholder="e.g. Chicken Biryani" className="mt-1 w-full rounded-lg border border-input bg-card px-3 py-2 text-sm text-foreground" /></label>
+      <label className="text-[11px] text-muted-foreground">Quantity<input required type="number" min={1} max={100000} step={1} aria-label={`Manual quantity ${index + 1}`} value={item.quantity} onChange={(event) => onChange(items.map((entry, row) => row === index ? { ...entry, quantity: event.currentTarget.value } : entry))} className="mt-1 w-full rounded-lg border border-input bg-card px-3 py-2 text-sm text-foreground" /></label>
+      <label className="text-[11px] text-muted-foreground">Price per item (₹)<input required type="number" min={0} max={10000000} step={1} aria-label={`Manual price per item ${index + 1}`} value={item.price} onChange={(event) => onChange(items.map((entry, row) => row === index ? { ...entry, price: event.currentTarget.value } : entry))} className="mt-1 w-full rounded-lg border border-input bg-card px-3 py-2 text-sm text-foreground" /></label>
+      <div className="flex items-center justify-between gap-3 sm:col-span-4"><p className="text-xs font-semibold text-foreground">Subtotal: ₹{subtotal.toLocaleString("en-IN")}</p><button type="button" aria-label={`Remove manual food item ${index + 1}`} onClick={() => onChange(items.filter((_, row) => row !== index))} className="rounded-full border border-border px-3 py-2 text-xs font-semibold text-muted-foreground">Remove Item</button></div>
+    </div>;
+    })}
+    {!items.length && <p className="text-xs text-muted-foreground">Add one or more food items to prepare the quotation.</p>}
+    <p className="rounded-xl bg-ink-soft p-3 text-sm font-semibold">Estimated quotation total: ₹{total.toLocaleString("en-IN")}</p>
+  </section>;
 }
 
 function MenuServedEditor({ items, planned, quantities, onChange }: { items: EventMenuItem[]; planned: Record<string, number>; quantities: Record<string, number>; onChange: (value: Record<string, number>) => void }) {

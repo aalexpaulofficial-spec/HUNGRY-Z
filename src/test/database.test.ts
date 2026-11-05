@@ -48,6 +48,8 @@ CREATE PUBLICATION supabase_realtime;`);
     await db.exec(readFileSync(path.join(root, "drizzle/migrations/0009_collected_order_thank_you.sql"), "utf8"));
     await db.exec(readFileSync(path.join(root, "drizzle/migrations/0010_printed_order_food_receipt_confirmation.sql"), "utf8"));
     await db.exec(readFileSync(path.join(root, "drizzle/migrations/0011_faculty_event_quote_and_participation.sql"), "utf8"));
+    await db.exec(readFileSync(path.join(root, "drizzle/migrations/0013_faculty_event_additional_token_requests.sql"), "utf8"));
+    await db.exec(readFileSync(path.join(root, "drizzle/migrations/0014_faculty_event_manual_quotation.sql"), "utf8"));
 
     const failures: string[] = [];
     const ok = (c: boolean | undefined, m: string) => { if (!c) failures.push(m); };
@@ -87,6 +89,13 @@ CREATE PUBLICATION supabase_realtime;`);
     ok((await q(`SELECT hungry_review_faculty_event_quotation($1,$2,true,'Approved') status`, [requestedEvent.id, faculty.id]))[0].status === "approved", "faculty approval moves the quotation to the publish-ready state");
     ok((await q(`SELECT hungry_publish_faculty_event($1,$2,'{"Tea":5}'::jsonb,'{"Tea":22}'::jsonb,'Confirmed') status`, [requestedEvent.id, owner.id]))[0].status === "published", "canteen can publish only the faculty-approved quotation");
     ok(!!(await err(`SELECT hungry_review_faculty_event_request($1,$2,true,'')`, [requestedEvent.id, a.id])), "a student cannot approve or publish a canteen event request");
+    const [manualEvent] = await q(`INSERT INTO faculty_events (faculty_user_id,canteen_id,name,event_code,token_prefix,event_date,venue,initial_capacity,approved_capacity,food_requirements,food_request_message) VALUES ($1,$2,'Manual food request','1000006','M','2026-12-02','Main Hall',10,10,'{}','MAKE 10 CHICKEN BIRYANI') RETURNING id`, [faculty.id, c.id]);
+    await q(`SELECT hungry_review_faculty_event_request($1,$2,true,'Accepted')`, [manualEvent.id, owner.id]);
+    ok((await q(`SELECT hungry_submit_faculty_event_quotation($1,$2,'{"Chicken Biryani":10}'::jsonb,'{"Chicken Biryani":250}'::jsonb,'') budget`, [manualEvent.id, owner.id]))[0].budget === 2500, "message-only requests accept free-text manual quote items and calculate the total");
+    const [manualQuote] = await q(`SELECT status,estimated_budget,food_confirmation FROM faculty_events WHERE id=$1`, [manualEvent.id]);
+    ok(manualQuote.status === "quotation_received" && manualQuote.estimated_budget === 2500 && manualQuote.food_confirmation.quantities["Chicken Biryani"] === 10 && manualQuote.food_confirmation.prices["Chicken Biryani"] === 250, "manual quotation items, quantities, prices and total are stored for faculty review");
+    await q(`SELECT hungry_review_faculty_event_quotation($1,$2,true,'Approved')`, [manualEvent.id, faculty.id]);
+    ok((await q(`SELECT hungry_publish_faculty_event($1,$2,'{"Chicken Biryani":10}'::jsonb,'{"Chicken Biryani":250}'::jsonb,'') status`, [manualEvent.id, owner.id]))[0].status === "published", "manual quotation remains compatible with faculty approval and event publication");
     const [eventToken] = await q(`SELECT * FROM hungry_issue_faculty_event_token($1,'1000004',$2,$3)`, [requestedEvent.id, faculty.id, c.id]);
     ok(eventToken.token_number === "0001" && eventToken.approved_capacity === 5 && eventToken.tokens_remaining === 4, "published event issues an independent four-digit participation token within approved capacity");
     const [duplicateEventToken] = await q(`SELECT * FROM hungry_issue_faculty_event_token($1,'1000004',$2,$3)`, [requestedEvent.id, faculty.id, c.id]);
@@ -123,7 +132,7 @@ CREATE PUBLICATION supabase_realtime;`);
     ok((await q(`SELECT status FROM faculty_event_tokens WHERE order_id=$1`, [hackToken.order_id]))[0].status === "collected", "order collection updates the linked event token");
     await q(`SELECT set_config('request.jwt.claim.sub',$1,false)`, [faculty.id]);
     const [hackStats] = await q(`SELECT * FROM hungry_get_event_capacity($1)`, [event1.id]);
-    ok(hackStats.approved_capacity === 110 && hackStats.issued_tokens === 2 && hackStats.tokens_remaining === 107 && hackStats.collected_tokens === 1 && hackStats.cancelled_tokens === 1, "event capacity analytics count issued, remaining, collected and cancelled tokens consistently");
+    ok(hackStats.approved_capacity === 110 && hackStats.issued_tokens === 2 && hackStats.tokens_remaining === 108 && hackStats.collected_tokens === 1 && hackStats.cancelled_tokens === 1, "event capacity analytics exclude cancelled tokens and reserved pending requests consistently");
     const [event3] = await q(`INSERT INTO faculty_events (faculty_user_id,canteen_id,name,event_code,token_prefix,initial_capacity,approved_capacity,status,food_confirmation) VALUES ($1,$2,'Concurrent','1000003','C',1,1,'published','{"quantities":{"Tea":2},"prices":{"Tea":20}}') RETURNING id`, [faculty.id, c.id]);
     await db.query(`SELECT set_config('request.jwt.claim.sub',$1,false)`, [a.id]);
     const parallel = await Promise.allSettled([
@@ -132,6 +141,15 @@ CREATE PUBLICATION supabase_realtime;`);
     ]);
     ok(parallel.filter((result) => result.status === "fulfilled").length === 1, "simultaneous users cannot oversell a one-token event");
     ok((await q(`SELECT count(*)::int n FROM faculty_event_tokens WHERE event_id=$1`, [event3.id]))[0].n === 1, "atomic event allocation creates only one token under contention");
+    const [event4] = await q(`INSERT INTO faculty_events (faculty_user_id,canteen_id,name,event_code,token_prefix,initial_capacity,approved_capacity,status,food_confirmation) VALUES ($1,$2,'Additional tokens','1000005','A',5,5,'published','{"quantities":{"Tea":5},"prices":{"Tea":20}}') RETURNING id`, [faculty.id, c.id]);
+    const [studentTokenRequest] = await q(`SELECT hungry_request_faculty_event_tokens($1,$2,3) result`, [event4.id, a.id]);
+    ok(studentTokenRequest.result.status === "pending" && studentTokenRequest.result.tokens_remaining === 2, "student additional-token request reserves only its requested event capacity");
+    ok(!!(await err(`SELECT hungry_request_faculty_event_tokens($1,$2,3)`, [event4.id, b.id])), "additional token request is rejected when the requested count exceeds free event capacity");
+    const [singleWhileReserved] = await q(`SELECT * FROM hungry_issue_faculty_event_token($1,'1000005',$2,$3)`, [event4.id, b.id, c.id]);
+    ok(singleWhileReserved.tokens_remaining === 1, "ordinary token issuance cannot consume places reserved for a pending additional-token request");
+    const [resolvedTokenRequest] = await q(`SELECT hungry_resolve_faculty_event_token_request($1,$2,true,'Approved') result`, [studentTokenRequest.result.request_id, owner.id]);
+    ok(resolvedTokenRequest.result.status === "approved" && resolvedTokenRequest.result.tokens.length === 3, "canteen approval creates the requested number of individual event tokens");
+    ok((await q(`SELECT count(*)::int n FROM faculty_event_tokens WHERE event_id=$1 AND customer_id=$2 AND status='issued'`, [event4.id, a.id]))[0].n === 3, "approved student tokens are visible as separate entries for QR generation and serving");
     await q(`UPDATE profiles SET current_canteen_id=NULL WHERE id IN ($1,$2)`, [b.id, faculty.id]);
 
     const place = (user: string, lines: unknown, type: string, method: string, sub: number, coupon: string | null, disc: number, key: string, num: string) =>
