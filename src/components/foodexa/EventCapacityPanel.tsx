@@ -216,7 +216,32 @@ export function EventCapacityPanel({ mode, canteenId, canteenName }: { mode: "fa
 
   return (
     <section className="space-y-5" aria-label="Event token management">
-      {mode === "faculty" && <div><h2 className="display text-2xl">Manage My Events</h2><p className="mt-1 text-sm text-muted-foreground">Create events, review canteen responses and monitor event tokens.</p></div>}
+      {mode === "faculty" ? (
+        <div>
+          <h2 className="display text-2xl">Manage My Events</h2>
+          <p className="mt-1 text-sm text-muted-foreground">Create an event request, review the canteen quotation and track participation through serving.</p>
+        </div>
+      ) : (
+        <div className="rounded-3xl border border-primary/25 bg-primary/[0.04] p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="display text-2xl">Faculty Event Requests</h2>
+              <p className="mt-1 text-sm text-muted-foreground">Review event details and instructions, confirm food and pricing, then publish after faculty approval.</p>
+            </div>
+            <div className="flex flex-wrap gap-2 text-xs">
+              <span className="rounded-full border border-amber-500/40 bg-amber-500/10 px-3 py-1 font-semibold text-amber-700">
+                {events.filter((event) => event.status === "requested").length} pending
+              </span>
+              <span className="rounded-full border border-primary/40 bg-primary/10 px-3 py-1 font-semibold text-primary">
+                {events.filter((event) => event.status === "accepted" || event.status === "changes_requested").length} quotations due
+              </span>
+              <span className="rounded-full border border-emerald-500/40 bg-emerald-500/10 px-3 py-1 font-semibold text-emerald-700">
+                {events.filter((event) => event.status === "approved").length} approved to publish
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
       {mode === "faculty" && <form onSubmit={createEvent} className="glass-red space-y-3 rounded-3xl p-5">
         <h2 className="display text-xl">Create a Faculty Event</h2>
         <p className="text-xs text-muted-foreground">Follow these steps to submit your event for canteen review.</p>
@@ -265,7 +290,7 @@ export function EventCapacityPanel({ mode, canteenId, canteenName }: { mode: "fa
         const pending = eventRequests.some((request) => request.status === "pending");
         return <article key={event.id} className="rounded-3xl border border-border bg-card p-5">
           <div className="flex flex-wrap items-start justify-between gap-3">
-            <div><p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary-bright">{eventStatusLabel(event.status)} | {canteenName}</p><h3 className="display mt-1 text-xl">{event.name}</h3><p className="mt-1 text-xs text-muted-foreground">Event Code: <span className="font-mono font-bold tracking-widest text-foreground">{event.event_code}</span></p></div>
+            <div><span className={`inline-flex rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] ${eventStatusClass(event.status)}`}>{eventStatusLabel(event.status)}</span><p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">{canteenName}</p><h3 className="display mt-1 text-xl">{event.name}</h3><p className="mt-1 text-xs text-muted-foreground">Event Code: <span className="font-mono font-bold tracking-widest text-foreground">{event.event_code}</span></p></div>
             <span className="rounded-full border border-border px-3 py-1 text-xs font-semibold">{eventTokens.length}/{event.approved_capacity} tokens</span>
           </div>
           {event.description && <p className="mt-3 text-sm text-muted-foreground">{event.description}</p>}
@@ -454,8 +479,16 @@ function QuotationBudget({ quantities, prices }: { quantities: Record<string, nu
 }
 
 function eventStatusLabel(status: string) {
-  const labels: Record<string, string> = { requested: "PENDING", accepted: "REQUEST ACCEPTED - QUOTE DUE", quotation_received: "QUOTATION RECEIVED", changes_requested: "CHANGES REQUESTED", approved: "APPROVED - READY TO PUBLISH", published: "ACCEPTED & PUBLISHED", rejected: "REJECTED", closed: "CLOSED" };
+  const labels: Record<string, string> = { requested: "PENDING", accepted: "QUOTATION DUE", quotation_received: "QUOTATION RECEIVED", changes_requested: "CHANGES REQUESTED", approved: "APPROVED", published: "ACCEPTED & PUBLISHED", rejected: "REJECTED", closed: "CLOSED" };
   return labels[status] ?? status.toUpperCase().replaceAll("_", " ");
+}
+
+function eventStatusClass(status: string) {
+  if (status === "requested") return "border-amber-500/40 bg-amber-500/10 text-amber-700";
+  if (status === "quotation_received" || status === "changes_requested" || status === "accepted") return "border-primary/40 bg-primary/10 text-primary";
+  if (status === "approved" || status === "published") return "border-emerald-500/40 bg-emerald-500/10 text-emerald-700";
+  if (status === "rejected" || status === "closed") return "border-border bg-ink-soft text-muted-foreground";
+  return "border-border bg-ink-soft text-foreground";
 }
 
 function FoodQuantitySummary({ quantities, prices, title }: { quantities: Record<string, number>; prices?: Record<string, number>; title: string }) {
