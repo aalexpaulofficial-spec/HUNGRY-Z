@@ -31,6 +31,21 @@ vi.mock("@/integrations/supabase/client", () => ({
 afterEach(() => { cleanup(); vi.clearAllMocks(); fixtures.eventLogoPath = null; });
 
 describe("student event participation", () => {
+  it("keeps the Event Code placeholder and full seven-digit value visible in the mobile layout", async () => {
+    render(<StudentEventsTab canteenId="canteen-1" canteenName="FLAMES" userId="student-1" />);
+    fireEvent.click(await screen.findByRole("button", { name: /Hackathon/ }));
+    const input = screen.getByLabelText("7-digit Event Code") as HTMLInputElement;
+    const form = input.closest("form")!;
+    expect(input.placeholder).toBe("7-digit Event Code");
+    expect(form).toHaveClass("flex-col", "sm:flex-row", "min-w-0");
+    expect(input).toHaveClass("w-full", "min-w-0", "max-w-full", "text-sm", "tracking-[0.12em]", "placeholder:tracking-normal");
+    expect(screen.getByRole("button", { name: "Open Event" })).toHaveClass("w-full", "sm:w-auto", "min-h-12");
+
+    fireEvent.change(input, { target: { value: "1234567" } });
+    expect(input).toHaveValue("1234567");
+    expect(input.value).toHaveLength(7);
+  });
+
   it("verifies the seven-digit code and issues a four-digit token without food checkout", async () => {
     issueToken.mockResolvedValue({ token_number: "0042", approved_capacity: 10, issued_tokens: 3, tokens_remaining: 7, already_issued: false });
     render(<StudentEventsTab canteenId="canteen-1" canteenName="FLAMES" userId="student-1" />);
