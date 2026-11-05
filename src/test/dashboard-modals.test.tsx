@@ -33,7 +33,7 @@ describe("dashboard support and legal dialogs", () => {
     render(<LegalDialog legalDocument={termsConditions} onClose={() => undefined} />);
 
     expect(screen.getByRole("dialog", { name: "Terms & Conditions" })).toBeInTheDocument();
-    expect(screen.getByText("10. Support and updates")).toBeInTheDocument();
+    expect(screen.getByText("11. Support and updates")).toBeInTheDocument();
   });
 
   it("closes a legal popup with Escape without changing its dashboard route", () => {

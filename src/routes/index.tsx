@@ -15,6 +15,7 @@ import { Pricing } from "@/components/foodexa/Pricing";
 import { Faq } from "@/components/foodexa/Faq";
 import { FinalCTA } from "@/components/foodexa/FinalCTA";
 import { Footer } from "@/components/foodexa/Footer";
+import { WebsiteHelpChat } from "@/components/foodexa/WebsiteHelpChat";
 
 export const landingManifestHref = "/manifest-student.webmanifest";
 
@@ -58,6 +59,7 @@ function Index() {
         <FinalCTA />
       </main>
       <Footer />
+      <WebsiteHelpChat />
     </>
   );
 }

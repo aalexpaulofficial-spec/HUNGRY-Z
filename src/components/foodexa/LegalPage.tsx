@@ -17,7 +17,7 @@ export function LegalPage({ title, intro, sections }: { title: string; intro: st
       <section className="glass-red mt-10 rounded-[2rem] p-6 sm:mt-14 sm:p-10">
         <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary-bright">HUNGRY Z · Legal</p>
         <h1 className="display mt-3 text-3xl sm:text-4xl">{title}</h1>
-        <p className="mt-3 text-xs text-muted-foreground">Last updated: November 4, 2026</p>
+        <p className="mt-3 text-xs text-muted-foreground">Last updated: November 5, 2026</p>
         <p className="mt-6 max-w-3xl text-sm leading-relaxed text-foreground/80">{intro}</p>
         <div className="mt-8 divide-y divide-border border-y border-border">
           {sections.map((section) => <section key={section.title} className="py-6">

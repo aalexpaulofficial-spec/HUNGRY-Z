@@ -81,12 +81,12 @@ describe("HUNGRY Z order email content", () => {
       expect(email.html.indexOf("Official HUNGRY Z logo")).toBeLessThan(email.html.indexOf("<h1"));
       expect(email.html).toContain("HUNGRY Z</p>");
       expect(email.html).toContain('href="https://www.instagram.com/hungryz___?obrf=MTBoOHp3ZjJzZW9tdg=="');
-      expect(email.html).toContain('href="https://chat.whatsapp.com/LlhEK43VNYE6zWZBX9hYqM"');
+      expect(email.html).toContain('href="https://whatsapp.com/channel/0029Vb9EpYJ0G0XmfZmSme1H"');
       expect(email.html).toContain('href="https://www.linkedin.com/company/hungryz/"');
-      expect(email.html).toContain('href="https://hungryz.vercel.app/privacy"');
-      expect(email.html).toContain('href="https://hungryz.vercel.app/terms"');
+      expect(email.html).toContain('href="https://hungryz.vercel.app/" style="color:#555;text-decoration:underline">Privacy Policy</a>');
+      expect(email.html).toContain('href="https://hungryz.vercel.app/" style="color:#555;text-decoration:underline">Terms &amp; Conditions</a>');
       expect(email.html).toContain('aria-label="Instagram"');
-      expect(email.html).toContain('aria-label="WhatsApp"');
+      expect(email.html).toContain('aria-label="WhatsApp Community"');
       expect(email.html).toContain('aria-label="LinkedIn"');
       expect(email.html).toContain("https://hungryz.vercel.app/email-instagram.png");
       expect(email.html).toContain("https://hungryz.vercel.app/email-whatsapp.png");
@@ -101,7 +101,9 @@ describe("HUNGRY Z order email content", () => {
   it("adds social and legal destinations to plain-text email fallbacks only once", () => {
     const email = withEmailTextFooter({ subject: "Order", text: "Order confirmed", html: "<p>Order confirmed</p>" });
     expect(email.text).toContain("Instagram: https://www.instagram.com/hungryz___?obrf=MTBoOHp3ZjJzZW9tdg==");
-    expect(email.text).toContain("WhatsApp: https://chat.whatsapp.com/LlhEK43VNYE6zWZBX9hYqM");
+    expect(email.text).toContain("WhatsApp Community: https://whatsapp.com/channel/0029Vb9EpYJ0G0XmfZmSme1H");
+    expect(email.text).toContain("Privacy Policy: https://hungryz.vercel.app/");
+    expect(email.text).toContain("Terms & Conditions: https://hungryz.vercel.app/");
     expect(email.text).toContain("LinkedIn: https://www.linkedin.com/company/hungryz/");
     expect(withEmailTextFooter(email).text).toBe(email.text);
   });

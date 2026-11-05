@@ -40,7 +40,7 @@ export function LegalDialog({ legalDocument, onClose }: { legalDocument: LegalDo
         <header className="relative shrink-0 border-b border-border px-5 pb-4 pr-16 pt-5 sm:px-8 sm:pb-5 sm:pr-20 sm:pt-7">
           <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary-bright">HUNGRY Z · Legal</p>
           <h2 id="hungry-legal-dialog-title" className="display mt-2 text-2xl sm:text-3xl">{legalDocument.title}</h2>
-          <p className="mt-2 text-xs text-muted-foreground">Last updated: November 4, 2026</p>
+          <p className="mt-2 text-xs text-muted-foreground">Last updated: November 5, 2026</p>
           <button
             ref={closeButton}
             type="button"

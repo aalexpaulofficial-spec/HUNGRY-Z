@@ -23,8 +23,9 @@ describe("branded Supabase Auth email templates", () => {
     expect(html).toContain("https://hungryz.vercel.app/email-instagram.png");
     expect(html).toContain("https://hungryz.vercel.app/email-whatsapp.png");
     expect(html).toContain("https://hungryz.vercel.app/email-linkedin.png");
-    expect(html).toContain("https://hungryz.vercel.app/privacy");
-    expect(html).toContain("https://hungryz.vercel.app/terms");
+    expect(html).toContain('href="https://hungryz.vercel.app/" style="color:#555;text-decoration:underline">Privacy Policy</a>');
+    expect(html).toContain('href="https://hungryz.vercel.app/" style="color:#555;text-decoration:underline">Terms &amp; Conditions</a>');
+    expect(html).toContain('href="https://whatsapp.com/channel/0029Vb9EpYJ0G0XmfZmSme1H" aria-label="WhatsApp Community"');
     expect(html).not.toMatch(/hungryofficial\.vercel\.app|hungryzq\.vercel\.app/i);
   });
 
