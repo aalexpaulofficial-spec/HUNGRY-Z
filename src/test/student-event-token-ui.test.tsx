@@ -11,7 +11,10 @@ vi.mock("@/lib/hungry.functions", () => ({
   issueFacultyEventToken: issueToken,
 }));
 
-const eventCard = { id: "event-1", serial_number: 1 };
+const eventCard = {
+  id: "event-1", serial_number: 1, name: "Hackathon", description: "Campus coding event",
+  event_date: "2026-12-01", venue: "Main Hall", event_logo_url: "https://storage.example/student-logo",
+};
 function eventDetails(tokens: Array<{ id: string; token_number: string; status: string }> = []) {
   return {
     id: "event-1", name: "Hackathon", serial_number: 1, description: "Campus coding event", event_date: "2026-12-01", venue: "Main Hall",
@@ -37,8 +40,12 @@ describe("faculty event access-code gate", () => {
     fireEvent.click(await screen.findByRole("button", { name: "View event EVENT #001" }));
 
     expect(await screen.findByRole("dialog", { name: "Verify Event Access" })).toBeInTheDocument();
-    expect(screen.queryByText("Hackathon")).not.toBeInTheDocument();
-    expect(screen.queryByText("Campus coding event")).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Hackathon" })).toBeInTheDocument();
+    expect(screen.getByText("Campus coding event")).toBeInTheDocument();
+    expect(screen.getByText("Main Hall")).toBeInTheDocument();
+    expect(document.body).toHaveTextContent(new Date("2026-12-01T00:00:00").toLocaleDateString());
+    expect(screen.getByRole("img", { name: "Hackathon event image" })).toHaveAttribute("src", eventCard.event_logo_url);
+    expect(screen.queryByRole("dialog", { name: "Hackathon" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Generate Token" })).not.toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText("7-digit Event Access Code"), { target: { value: "1234567" } });
@@ -55,7 +62,8 @@ describe("faculty event access-code gate", () => {
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Invalid Event Access Code");
     expect(screen.getByRole("dialog", { name: "Verify Event Access" })).toBeInTheDocument();
-    expect(screen.queryByText("Hackathon")).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Hackathon" })).toBeInTheDocument();
+    expect(screen.queryByRole("dialog", { name: "Hackathon" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Generate Token" })).not.toBeInTheDocument();
     expect(issueToken).not.toHaveBeenCalled();
   });
@@ -80,5 +88,13 @@ describe("faculty event access-code gate", () => {
     expect(dialog.querySelector("canvas")).toBeInTheDocument();
     expect(issueToken).toHaveBeenCalledWith({ data: { eventId: "event-1", eventCode: "1234567" } });
     await waitFor(() => expect(verifyCode).toHaveBeenCalledTimes(2));
+  });
+
+  it("shows the event created by this Faculty member in their selected canteen listing", async () => {
+    render(<StudentEventsTab canteenId="00000000-0000-0000-0000-000000000001" canteenName="FLAMES" userId="faculty-creator" />);
+    expect(await screen.findByRole("heading", { name: "Hackathon" })).toBeInTheDocument();
+    expect(listEvents).toHaveBeenCalledWith({ data: { canteenId: "00000000-0000-0000-0000-000000000001" } });
+    fireEvent.click(screen.getByRole("button", { name: "View event EVENT #001" }));
+    expect(await screen.findByRole("dialog", { name: "Verify Event Access" })).toBeInTheDocument();
   });
 });

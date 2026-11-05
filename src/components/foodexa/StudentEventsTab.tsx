@@ -6,7 +6,16 @@ import { issueFacultyEventToken, listPublishedFacultyEventCards, verifyFacultyEv
 import { EventLogoImage } from "@/components/foodexa/FacultyEventLogo";
 import { formatFacultyEventSerial } from "@/lib/faculty-event-serial";
 
-type EventCard = { id: string; serial_number: number };
+type EventCard = {
+  id: string;
+  serial_number: number;
+  name: string;
+  description: string;
+  event_date: string | null;
+  venue: string;
+  event_logo_url: string | null;
+};
+type SelectedEvent = Pick<EventCard, "id" | "serial_number">;
 type EventToken = { id: string; token_number: string; status: string };
 type VerifiedEvent = {
   id: string;
@@ -25,7 +34,7 @@ type VerifiedEvent = {
 
 export function StudentEventsTab({ canteenId, canteenName, userId }: { canteenId: string; canteenName: string; userId: string }) {
   const [events, setEvents] = useState<EventCard[]>([]);
-  const [selected, setSelected] = useState<EventCard | null>(null);
+  const [selected, setSelected] = useState<SelectedEvent | null>(null);
   const [opened, setOpened] = useState<VerifiedEvent | null>(null);
   const [accessCode, setAccessCode] = useState("");
   const [verifiedCode, setVerifiedCode] = useState("");
@@ -129,10 +138,20 @@ export function StudentEventsTab({ canteenId, canteenName, userId }: { canteenId
     {loading && <p role="status" className="text-sm text-muted-foreground">Loading events…</p>}
     {loadingError && <p role="alert" className="rounded-2xl border border-primary/30 bg-primary/10 p-3 text-sm text-primary-bright">{loadingError}</p>}
     {!loading && !loadingError && events.length === 0 && <p className="rounded-3xl border border-border bg-card p-6 text-center text-sm text-muted-foreground">No published events for this canteen yet.</p>}
-    {events.length > 0 && <div className="grid min-w-0 gap-3 sm:grid-cols-2">{events.map((event) => <article key={event.id} className="min-w-0 rounded-2xl border border-border bg-card p-4 sm:p-5">
-      <span className="block text-[10px] font-black tracking-[0.18em] text-primary">{formatFacultyEventSerial(event.serial_number)}</span>
-      <p className="mt-2 text-sm font-semibold">Published Faculty Event</p>
-      <p className="mt-1 text-xs text-muted-foreground">Enter its 7-digit Event Access Code to view event details.</p>
+    {events.length > 0 && <div className="grid min-w-0 gap-3 sm:grid-cols-2">{events.map((event) => <article key={event.id} className="min-w-0 overflow-hidden rounded-2xl border border-border bg-card p-4 sm:p-5">
+      {event.event_logo_url
+        ? <EventLogoImage src={event.event_logo_url} alt={`${event.name} event image`} className="min-h-0 max-h-44 sm:min-h-0" />
+        : <div aria-hidden="true" className="grid h-28 place-items-center rounded-2xl border border-border bg-ink-soft text-primary"><Ticket className="h-8 w-8" /></div>}
+      <div className="mt-4 flex items-center justify-between gap-2">
+        <span className="text-[10px] font-black tracking-[0.18em] text-primary">{formatFacultyEventSerial(event.serial_number)}</span>
+        <span className="rounded-full border border-border px-2.5 py-1 text-[10px] font-semibold text-muted-foreground">Published event</span>
+      </div>
+      <h3 data-no-translate className="mt-2 break-words text-lg font-bold leading-tight text-foreground">{event.name}</h3>
+      <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-xs text-muted-foreground">
+        {event.event_date && <span className="flex items-center gap-1.5"><CalendarDays className="h-4 w-4 shrink-0 text-primary" />{new Date(`${event.event_date}T00:00:00`).toLocaleDateString()}</span>}
+        {event.venue && <span data-no-translate className="flex items-center gap-1.5"><MapPin className="h-4 w-4 shrink-0 text-primary" />{event.venue}</span>}
+      </div>
+      {event.description && <p data-no-translate className="mt-3 whitespace-pre-wrap break-words text-sm leading-relaxed text-muted-foreground">{event.description}</p>}
       <button type="button" onClick={() => { setSelected(event); setAccessCode(""); setError(""); }} aria-label={`View event ${formatFacultyEventSerial(event.serial_number)}`} className="mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-full bg-primary px-4 py-2 text-sm font-bold text-primary-foreground transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2">View Event</button>
     </article>)}</div>}
 

@@ -15,6 +15,7 @@ import {
 import { couponCodeSchema } from "@/lib/coupons";
 import type { CanteenApplicationStatus } from "@/lib/canteen-owner-flow";
 import { canAccessOwnerCanteen } from "@/lib/canteen-owner-flow";
+import { canViewPublishedEventsInCanteen, isPublishedEventViewerRole } from "@/lib/faculty-event-access";
 import { generateOwnerCredentialPair, hashOwnerLoginCode, ownerLoginRateLimitKey, verifyOwnerCredentialPair } from "@/lib/owner-credentials";
 import {
   ORDER_TYPES,
@@ -330,23 +331,51 @@ export const reviewFacultyEventQuotation = createServerFn({ method: "POST" })
     return { status: status as string };
   });
 
-const facultyEventViewerRoles = ["student", "faculty", "guest"] as const;
+/** Returns event-card summaries only to members of the currently selected canteen. */
+export const countPublishedFacultyEvents = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ canteenId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const db = await admin();
+    const { data: profile, error: profileError } = await db.from("profiles").select("role,current_canteen_id").eq("id", context.userId).maybeSingle();
+    if (profileError || !profile || !canViewPublishedEventsInCanteen(profile.role, profile.current_canteen_id, data.canteenId)) {
+      throw new Error("Join this canteen to view its published event listings.");
+    }
+    const { count, error } = await db.from("faculty_events").select("id", { count: "exact", head: true })
+      .eq("canteen_id", data.canteenId).eq("status", "published").is("archived_at", null);
+    if (error) throw new Error("Could not load published events. Please try again.");
+    return count ?? 0;
+  });
 
-/** Returns only opaque event identifiers and serials until the access code is verified. */
 export const listPublishedFacultyEventCards = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ canteenId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const db = await admin();
     const { data: profile, error: profileError } = await db.from("profiles").select("role,current_canteen_id").eq("id", context.userId).maybeSingle();
-    if (profileError || !profile || !facultyEventViewerRoles.includes(profile.role as typeof facultyEventViewerRoles[number]) || profile.current_canteen_id !== data.canteenId) {
+    if (profileError || !profile || !canViewPublishedEventsInCanteen(profile.role, profile.current_canteen_id, data.canteenId)) {
       throw new Error("Join this canteen to view its published event listings.");
     }
-    const { data: rows, error } = await db.from("faculty_events").select("id,serial_number")
+    const { data: rows, error } = await db.from("faculty_events").select("id,serial_number,name,description,event_date,venue,event_logo_path")
       .eq("canteen_id", data.canteenId).eq("status", "published").is("archived_at", null)
       .order("created_at", { ascending: false });
     if (error) throw new Error("Could not load published events. Please try again.");
-    return (rows ?? []).map((row) => ({ id: row.id, serial_number: row.serial_number }));
+    return Promise.all((rows ?? []).map(async (row) => {
+      let eventLogoUrl: string | null = null;
+      if (row.event_logo_path) {
+        const { data: signedLogo } = await db.storage.from("faculty-event-logos").createSignedUrl(row.event_logo_path, 60 * 60);
+        eventLogoUrl = signedLogo?.signedUrl ?? null;
+      }
+      return {
+        id: row.id,
+        serial_number: row.serial_number,
+        name: row.name,
+        description: row.description,
+        event_date: row.event_date,
+        venue: row.venue,
+        event_logo_url: eventLogoUrl,
+      };
+    }));
   });
 
 /** Checks the event code before returning any event details or participant tokens. */
@@ -356,7 +385,7 @@ export const verifyFacultyEventAccessCode = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const db = await admin();
     const { data: profile, error: profileError } = await db.from("profiles").select("role,current_canteen_id").eq("id", context.userId).maybeSingle();
-    if (profileError || !profile || !facultyEventViewerRoles.includes(profile.role as typeof facultyEventViewerRoles[number]) || !profile.current_canteen_id) {
+    if (profileError || !profile || !isPublishedEventViewerRole(profile.role) || !profile.current_canteen_id) {
       throw new Error("Sign in with a Student, Faculty, or Guest account and join the event canteen.");
     }
 

@@ -22,12 +22,12 @@ import {
   cancelPendingOrder,
   acknowledgeCollectedOrderThankYou,
   confirmOwnPrintedOrderFoodReceived,
+  countPublishedFacultyEvents,
   ensureWelcomeEmail,
   getOwnOrderDetails,
   getPaymentConfig,
   joinCanteenByCode,
   joinPublicCanteen,
-  listPublishedFacultyEventCards,
   listPublicCanteens,
   placeOrder,
   quoteOrder,
@@ -136,7 +136,7 @@ function OrderingApp() {
   useBackStep(switching, () => setSwitching(false));
   const welcome = useServerFn(ensureWelcomeEmail);
   const getOwnOrder = useServerFn(getOwnOrderDetails);
-  const listEventCards = useServerFn(listPublishedFacultyEventCards);
+  const getPublishedEventCount = useServerFn(countPublishedFacultyEvents);
   const acknowledgeOrderThankYou = useServerFn(acknowledgeCollectedOrderThankYou);
   const confirmFoodReceived = useServerFn(confirmOwnPrintedOrderFoodReceived);
 
@@ -216,8 +216,8 @@ function OrderingApp() {
     let alive = true;
     const loadPublishedEvents = async () => {
       try {
-        const events = await listEventCards({ data: { canteenId } });
-        if (alive) setPublishedEventCount(events.length);
+        const count = await getPublishedEventCount({ data: { canteenId } });
+        if (alive) setPublishedEventCount(count);
       } catch {
         if (alive) setPublishedEventCount(0);
       }
@@ -228,7 +228,7 @@ function OrderingApp() {
       .subscribe();
     const retry = window.setInterval(() => void loadPublishedEvents(), 15000);
     return () => { alive = false; window.clearInterval(retry); void supabase.removeChannel(channel); };
-  }, [canteenId, listEventCards]);
+  }, [canteenId, getPublishedEventCount]);
 
   const userId = profile?.id;
   useEffect(() => {
