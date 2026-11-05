@@ -97,7 +97,7 @@ export function EventCapacityPanel({ mode, canteenId, canteenName }: { mode: "fa
   async function createEvent(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault(); setError(""); setMessage("");
     const food = Object.fromEntries(Object.entries(foodSelection).filter(([, quantity]) => quantity > 0));
-    if (!Object.keys(food).length) return setError("Select at least one available food item and set its quantity.");
+    if (!Object.keys(food).length && !foodRequestMessage.trim()) return setError("Select at least one food item or enter a message to the canteen.");
     setBusy(true);
     try {
       const result = await create({ data: { name, eventCode, description, eventDate, venue, foodRequestMessage, initialCapacity: Number(capacity), foodRequirements: food } });

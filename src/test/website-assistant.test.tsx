@@ -1,8 +1,10 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { WebsiteHelpChat } from "@/components/foodexa/WebsiteHelpChat";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { getWebsiteAssistantAnswer } from "@/lib/website-assistant";
 
+beforeEach(() => { document.documentElement.dataset.theme = "dark"; });
 afterEach(() => cleanup());
 
 describe("HUNGRY Z website help chat", () => {
@@ -16,6 +18,8 @@ describe("HUNGRY Z website help chat", () => {
     expect(refund).toContain("5–7 business working days");
     expect(refund).toContain("gateway confirmation");
     expect(refund).toContain("does not automatically qualify");
+    expect(getWebsiteAssistantAnswer("रिफंड में कितना समय लगता है?", "hi")).toContain("5–7 व्यावसायिक कार्यदिवस");
+    expect(getWebsiteAssistantAnswer("ಮರುಪಾವತಿ ಎಷ್ಟು ದಿನಗಳಲ್ಲಿ ಬರುತ್ತದೆ?", "kn")).toContain("5–7 ವ್ಯವಹಾರಿಕ ಕೆಲಸದ ದಿನಗಳಲ್ಲಿ");
   });
 
   it("shows example prompts and returns Hindi and Kannada answers after language switches", () => {
@@ -34,6 +38,26 @@ describe("HUNGRY Z website help chat", () => {
     fireEvent.change(screen.getByRole("textbox"), { target: { value: "How do event tokens work?" } });
     fireEvent.submit(screen.getByRole("textbox").closest("form")!);
     expect(screen.getByText(/\u0c95\u0cbe\u0cb0\u0ccd\u0caf\u0c95\u0ccd\u0cb0\u0cae\u0ca6/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "\u0939\u093f\u0928\u094d\u0926\u0940" }));
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: "रिफंड में कितना समय लगता है?" } });
+    fireEvent.submit(screen.getByRole("textbox").closest("form")!);
+    expect(screen.getByText(/\u0c95\u0cbe\u0cb0\u0ccd\u0caf\u0c95\u0ccd\u0cb0\u0cae\u0ca6/)).toBeInTheDocument();
+    expect(screen.getByText(/5–7 \u0935\u094d\u092f\u093e\u0935\u0938\u093e\u092f\u093f\u0915 \u0915\u093e\u0930\u094d\u092f\u0926\u093f\u0935\u0938/)).toBeInTheDocument();
+  });
+
+  it("keeps chat surfaces readable through theme switches and viewport-bounded on small screens", () => {
+    render(<><ThemeToggle /><WebsiteHelpChat /></>);
+    fireEvent.click(screen.getByRole("button", { name: "Ask HUNGRY Z" }));
+    const dialog = screen.getByRole("dialog", { name: "HUNGRY Z Help" });
+    expect(dialog).toHaveClass("bg-card", "max-h-[min(34rem,calc(100dvh-7rem))]", "w-[min(25rem,calc(100vw-2rem))]");
+    expect(screen.getByRole("textbox")).toHaveClass("bg-background", "text-foreground");
+    fireEvent.click(screen.getByRole("button", { name: "Switch to White Theme" }));
+    expect(document.documentElement.dataset.theme).toBe("light");
+    expect(screen.getByRole("dialog", { name: "HUNGRY Z Help" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Switch to HUNGRY Z Theme" }));
+    expect(document.documentElement.dataset.theme).toBe("dark");
+    expect(screen.getByRole("dialog", { name: "HUNGRY Z Help" })).toBeInTheDocument();
   });
 
   it("uses a helpful localized fallback for unrecognized questions", () => {

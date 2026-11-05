@@ -47,7 +47,10 @@ export const createFacultyEvent = createServerFn({ method: "POST" })
     venue: z.string().trim().min(2).max(200),
     foodRequestMessage: z.string().trim().max(500).default(""),
     initialCapacity: z.number().int().min(1).max(9999),
-    foodRequirements: z.record(z.string().trim().min(1).max(120), z.number().int().min(1).max(100000)).refine((items) => Object.keys(items).length > 0, "Add at least one food item."),
+    foodRequirements: z.record(z.string().trim().min(1).max(120), z.number().int().min(1).max(100000)).default({}),
+  }).refine((data) => Object.keys(data.foodRequirements).length > 0 || data.foodRequestMessage.trim().length > 0, {
+    message: "Select at least one food item or enter a message to the canteen.",
+    path: ["foodRequirements"],
   }).parse(input))
   .handler(async ({ data, context }) => {
     const db = await admin();

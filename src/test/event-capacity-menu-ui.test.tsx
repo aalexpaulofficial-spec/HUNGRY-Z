@@ -1,6 +1,7 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { EventCapacityPanel } from "@/components/foodexa/EventCapacityPanel";
+import { createFacultyEvent } from "@/lib/hungry.functions";
 
 vi.mock("@tanstack/react-start", () => ({ useServerFn: (fn: unknown) => fn }));
 vi.mock("@/lib/hungry.functions", () => ({
@@ -31,9 +32,54 @@ vi.mock("@/integrations/supabase/client", () => ({
   },
 }));
 
-afterEach(() => cleanup());
+afterEach(() => { cleanup(); vi.clearAllMocks(); });
+
+function fillEventBasics() {
+  fireEvent.change(screen.getByLabelText("Event name"), { target: { value: "Campus Meetup" } });
+  fireEvent.change(screen.getByLabelText("Event date"), { target: { value: "2026-12-01" } });
+  fireEvent.change(screen.getByLabelText("Event venue"), { target: { value: "Main Hall" } });
+  fireEvent.change(screen.getByLabelText("7-digit Event Code"), { target: { value: "1000002" } });
+}
+
+async function submitFoodRequest() {
+  fireEvent.submit(screen.getByRole("button", { name: "6. Submit Food Request" }).closest("form")!);
+}
 
 describe("faculty event food request menu", () => {
+  it("shows a validation error only when both menu quantities and canteen message are empty", async () => {
+    render(<EventCapacityPanel mode="faculty" canteenId="canteen-1" canteenName="FLAMES" />);
+    fillEventBasics();
+    fireEvent.change(screen.getByLabelText("Message to Canteen (Optional)"), { target: { value: "   " } });
+    await submitFoodRequest();
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Select at least one food item or enter a message to the canteen.");
+    expect(createFacultyEvent).not.toHaveBeenCalled();
+  });
+
+  it("submits a request with a message and no menu items", async () => {
+    vi.mocked(createFacultyEvent).mockResolvedValue({ event_code: "1000002" } as never);
+    render(<EventCapacityPanel mode="faculty" canteenId="canteen-1" canteenName="FLAMES" />);
+    fillEventBasics();
+    fireEvent.change(screen.getByLabelText("Message to Canteen (Optional)"), { target: { value: "Please suggest a suitable menu." } });
+    await submitFoodRequest();
+
+    await waitFor(() => expect(createFacultyEvent).toHaveBeenCalledWith({ data: expect.objectContaining({ foodRequirements: {}, foodRequestMessage: "Please suggest a suitable menu." }) }));
+    expect(await screen.findByRole("status")).toHaveTextContent("Event request sent to FLAMES.");
+  });
+
+  it("submits a request with a selected menu item and no message", async () => {
+    vi.mocked(createFacultyEvent).mockResolvedValue({ event_code: "1000002" } as never);
+    render(<EventCapacityPanel mode="faculty" canteenId="canteen-1" canteenName="FLAMES" />);
+    fillEventBasics();
+    fireEvent.click(await screen.findByRole("button", { name: "Open FLAMES menu" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Add one DOSA" }));
+    fireEvent.click(screen.getByRole("button", { name: "Done" }));
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "FLAMES Menu" })).not.toBeInTheDocument());
+    await submitFoodRequest();
+
+    await waitFor(() => expect(createFacultyEvent).toHaveBeenCalledWith({ data: expect.objectContaining({ foodRequirements: { DOSA: 1 }, foodRequestMessage: "" }) }));
+  });
+
   it("hides menu cards until MENU opens and preserves selections across closing and reopening", async () => {
     render(<EventCapacityPanel mode="faculty" canteenId="canteen-1" canteenName="FLAMES" />);
 

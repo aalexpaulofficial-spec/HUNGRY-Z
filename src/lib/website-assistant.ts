@@ -136,7 +136,7 @@ const fallback: Record<AssistantLanguage, string> = {
 
 export function getWebsiteAssistantAnswer(question: string, language: AssistantLanguage): string {
   const normalized = question.toLocaleLowerCase().normalize("NFC");
-  const topicOrder: Topic[] = ["event", "payment", "cancel", "refund", "fees", "order", "canteen", "account", "scanner", "privacy", "support", "features"];
+  const topicOrder: Topic[] = ["event", "refund", "payment", "cancel", "fees", "order", "canteen", "account", "scanner", "privacy", "support", "features"];
   const matched = topicOrder.find((topic) =>
     Object.values(topicWords[topic]).some((words) => words.some((word) => normalized.includes(word.toLocaleLowerCase()))),
   );
