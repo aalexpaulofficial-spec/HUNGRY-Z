@@ -136,6 +136,7 @@ export function EventCapacityPanel({ mode, canteenId, canteenName, userId }: { m
         try {
           if (!userId) throw new Error("Your faculty account is unavailable.");
           const path = facultyEventLogoObjectPath(userId, result.id, eventLogoFile);
+          uploadedPath = path;
           let fileToSave = eventLogoFile;
           let originalSourcePath: string | null = null;
           if (eventLogoCrop) {

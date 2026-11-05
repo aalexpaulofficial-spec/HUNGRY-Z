@@ -53,4 +53,24 @@ describe("responsive faculty event logos", () => {
     expect(bitmap.close).toHaveBeenCalledOnce();
     expect(file.size).toBe("original-image-bytes".length);
   });
+
+  it.each([
+    ["portrait", 900, 1800, "square", 900, 900],
+    ["square", 1200, 1200, "original", 1200, 1200],
+    ["small landscape", 800, 450, "wide", 800, 450],
+  ] as const)("keeps the %s crop bounded to its chosen aspect ratio", async (_name, width, height, aspect, expectedWidth, expectedHeight) => {
+    const bitmap = { width, height, close: vi.fn() };
+    const drawImage = vi.fn();
+    vi.stubGlobal("createImageBitmap", vi.fn(async () => bitmap));
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({ drawImage } as unknown as CanvasRenderingContext2D);
+    vi.spyOn(HTMLCanvasElement.prototype, "toBlob").mockImplementation((callback) => callback(new Blob(["adjusted"], { type: "image/png" })));
+
+    await createCroppedEventLogoFile(new File(["source"], `${_name}.png`, { type: "image/png" }), { zoom: 1, x: 0.5, y: 0.5, aspect });
+    const args = drawImage.mock.calls[0]!;
+    expect(args[5]).toBe(0);
+    expect(args[6]).toBe(0);
+    expect(args[7]).toBe(expectedWidth);
+    expect(args[8]).toBe(expectedHeight);
+    expect(bitmap.close).toHaveBeenCalledOnce();
+  });
 });
