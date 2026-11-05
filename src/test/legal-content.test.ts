@@ -18,4 +18,13 @@ describe("published HUNGRY Z legal content", () => {
     expect(text).toContain("approved capacity");
     expect(text).toContain("not food orders, payment");
   });
+
+  it("states refund eligibility, timing, notifications and gateway confirmation consistently", () => {
+    const privacy = allText(privacyPolicy);
+    const terms = allText(termsConditions);
+    expect(privacy).toContain("refund amount and status are shown in order details");
+    expect(terms).toContain("does not automatically qualify it for a refund");
+    expect(terms).toContain("5–7 business working days");
+    expect(terms).toContain("only after payment gateway confirmation");
+  });
 });

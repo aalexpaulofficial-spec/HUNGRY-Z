@@ -131,12 +131,12 @@ export function Pricing() {
           >
             <div>
               <p className="text-[10px] tracking-[0.3em] text-muted-foreground">
-                FOR INSTITUTIONS
+                FOR CANTEEN OWNERS
               </p>
-              <p className="display mt-6 text-[clamp(1.8rem,5vw,3rem)]">Built for campuses.</p>
+              <p className="display mt-6 text-[clamp(1.8rem,5vw,3rem)]">Run daily service.</p>
               <p className="mt-5 text-sm text-muted-foreground">
-                Multi-canteen setup, menu control, order rules and campus analytics. We scope
-                deployment with your team — talk to us for details.
+                Manage menu availability, incoming orders, fulfilment and sales reports from the
+                canteen dashboard. Apply to register your canteen and our team will review it.
               </p>
               <div className="mt-8 flex justify-center lg:justify-start">
                 <Phone screen="history" glow={false} className="w-[170px]" />
@@ -147,7 +147,7 @@ export function Pricing() {
               aria-label="Talk to HUNGRY Z about canteen registration"
               className="inline-flex items-center justify-center gap-2 rounded-full border border-primary/40 px-6 py-3.5 text-sm font-semibold text-foreground transition-all duration-300 hover:bg-primary/12"
             >
-              Talk to HUNGRY Z
+              Register your canteen
             </a>
           </div>
         </div>

@@ -119,7 +119,7 @@ export function Hero() {
             data-sub
             className="mt-8 max-w-sm text-[15px] leading-relaxed text-muted-foreground sm:text-base"
           >
-            Order faster. Skip the queue. Track your food. Enjoy your campus.
+            Browse campus menus, place an order and follow its status through pickup. Faculty can also coordinate events with their canteen.
           </p>
 
           <div data-sub className="mt-9 flex flex-wrap items-center gap-3">

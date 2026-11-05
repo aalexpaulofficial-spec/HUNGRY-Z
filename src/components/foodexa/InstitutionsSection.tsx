@@ -3,9 +3,9 @@ import { cn } from "@/lib/utils";
 
 const kpis = [
   ["Orders today", "1,284", "sample"],
-  ["Active canteens", "6", "sample"],
-  ["Avg. pickup", "5m 42s", "sample"],
-  ["Platform fee", "₹0", "always"],
+  ["Orders collected", "986", "sample"],
+  ["Orders in progress", "42", "sample"],
+  ["Paid sales", "₹0.00", "sample"],
 ];
 
 const queue = [
@@ -90,9 +90,9 @@ export function InstitutionsSection() {
         className="pointer-events-none absolute right-[-20%] top-1/4 -z-10 h-[60vh] w-[70vw] ember opacity-55"
       />
       <div className="mx-auto max-w-7xl px-5">
-        <p className="mb-8 text-[10px] tracking-[0.34em] text-muted-foreground">FOR INSTITUTIONS</p>
+        <p className="mb-8 text-[10px] tracking-[0.34em] text-muted-foreground">FOR CANTEEN OWNERS</p>
         <h2 data-headline className="display max-w-4xl text-[clamp(2.4rem,7.4vw,6rem)]">
-          {["ONE PLATFORM.", "ONE CAMPUS.", "TOTAL CONTROL."].map((l, i) => (
+          {["MENU. ORDERS.", "SERVICE.", "IN ONE DASHBOARD."].map((l, i) => (
             <span key={l} className="block overflow-hidden pb-[0.06em]">
               <span className={i === 2 ? "block text-primary-bright" : "block"}>{l}</span>
             </span>
@@ -109,7 +109,7 @@ export function InstitutionsSection() {
               <div className="flex items-center gap-2.5">
                 <img src="/HUNGRY%20Z%20Q%20LOGO.png" alt="" className="h-6 w-6 rounded-md object-contain" />
                 <span className="display text-[11px] tracking-[0.24em]">
-                  HUNGRY Z CAMPUS CONSOLE
+                  HUNGRY Z CANTEEN DASHBOARD
                 </span>
               </div>
               <span className="rounded-full border border-border px-2.5 py-1 text-[9px] tracking-[0.16em] text-muted-foreground">

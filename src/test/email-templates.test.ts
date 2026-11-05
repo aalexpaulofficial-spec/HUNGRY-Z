@@ -56,7 +56,7 @@ describe("HUNGRY Z order email content", () => {
     const placed = orderStatusEmail({ customerName: order.customerName, orderNumber: order.orderNumber, canteenName: order.canteenName, status: "preparing", lines: order.lines, total: order.total, orderType: order.orderType, paymentMethod: order.paymentMethod, paymentStatus: order.paymentStatus, pickupCode: order.pickupCode, counter: order.counter });
     expect(placed.text).not.toContain("4821");
     const refund = refundProcessingEmail({ customerName: order.customerName, orderNumber: order.orderNumber, amount: 110 });
-    expect(refund.text).toContain("5–7 working days");
+    expect(refund.text).toContain("5–7 business working days after approval and successful initiation");
     expect(refund.text).toContain("Razorpay, your bank and payment method");
     const failed = refundFailedEmail({ customerName: order.customerName, orderNumber: order.orderNumber, amount: 110 });
     expect(failed.text).toContain("could not be completed automatically");

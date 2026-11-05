@@ -72,7 +72,7 @@ export function StudentsSection() {
           <div>
             <p className="mb-8 text-[10px] tracking-[0.34em] text-muted-foreground">FOR STUDENTS</p>
             <h2 className="display text-[clamp(2.6rem,8vw,6.4rem)]">
-              {["FOOD,", "WITHOUT", "THE WAIT."].map((w, i) => (
+              {["CAMPUS FOOD,", "MADE", "SIMPLE."].map((w, i) => (
                 <span key={w} className="block overflow-hidden pb-[0.06em]">
                   <span data-word className={i === 2 ? "block text-primary-bright" : "block"}>
                     {w}
@@ -81,13 +81,13 @@ export function StudentsSection() {
               ))}
             </h2>
             <p className="mt-8 max-w-md text-base text-muted-foreground">
-              Your campus food experience, redesigned.
+              Browse participating canteens, choose Dine In or Parcel, pay with an available method and follow your order to pickup. For a published event, enter its seven-digit code to request a four-digit token while capacity remains.
             </p>
             <div className="mt-10 flex flex-wrap gap-8">
               {[
                 ["₹0", "Platform fee"],
-                ["6 min", "Typical pickup"],
                 ["Live", "Order status"],
+                ["QR", "Pickup code"],
               ].map(([big, small]) => (
                 <div key={small}>
                   <p className="display text-3xl text-foreground">{big}</p>

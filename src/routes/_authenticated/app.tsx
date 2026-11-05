@@ -657,7 +657,7 @@ function HomeTab({ menu, canteen, template, onOpen, onAdd, goMenu }: { menu: Men
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
         <div className="absolute bottom-5 left-5 right-5">
           <p data-no-translate className="text-xs font-semibold uppercase tracking-widest text-primary-bright">{canteen.name} · {canteen.university_name}</p>
-          <p data-no-translate={template?.heading?.trim() ? "" : undefined} className="display mt-1 break-words text-2xl sm:break-normal sm:text-3xl">{template?.heading?.trim() || "Skip the queue."}</p>
+          <p data-no-translate={template?.heading?.trim() ? "" : undefined} className="display mt-1 break-words text-2xl sm:break-normal sm:text-3xl">{template?.heading?.trim() || "Browse campus food."}</p>
           {template?.description?.trim() && <p data-no-translate className="mt-2 max-w-xl text-sm text-foreground/90">{template.description.trim()}</p>}
           <button onClick={goMenu} className="mt-3 rounded-full bg-primary px-5 py-2.5 text-xs font-semibold text-primary-foreground">Order now ↗</button>
         </div>
@@ -1163,7 +1163,11 @@ function OrderDetail({ order, canteenName, refund, notice, onNotice }: { order: 
       {refund && (
         <div className="mt-5 rounded-2xl border border-border bg-card p-4 text-sm">
           <p className="font-semibold">{REFUND_STATUS_LABELS[refund.status] ?? refund.status} · ₹{refund.amount}</p>
-          {refund.status === "processing" && <p className="mt-2 text-xs text-muted-foreground">Eligible refunds generally take 5–7 working days to appear, depending on Razorpay, your bank and payment method.</p>}
+          {refund.status === "requested" && <p className="mt-2 text-xs text-muted-foreground">Your request is received and awaiting review. A cancellation does not automatically qualify for a refund. We’ll email you when its status changes.</p>}
+          {refund.status === "processing" && <p className="mt-2 text-xs text-muted-foreground">Approved and successfully initiated refunds generally take 5–7 business working days to appear in the original payment method. Timing can vary by Razorpay, your bank and payment method. We’ll email you when this status changes.</p>}
+          {refund.status === "processed" && <p className="mt-2 text-xs text-muted-foreground">Razorpay has confirmed the refund to your original payment method. Your bank may take additional time to show the credit.</p>}
+          {refund.status === "failed" && <p className="mt-2 text-xs text-muted-foreground">The gateway did not confirm completion. HUNGRY Z has been notified and will review the refund. Check your email and contact support with your Order ID if you need help.</p>}
+          {refund.status === "rejected" && <p className="mt-2 text-xs text-muted-foreground">This request was not approved. Cancellation does not automatically qualify for a refund.</p>}
           {refund.status === "rejected" && refund.admin_note && <p className="mt-1 text-xs text-muted-foreground">{refund.admin_note}</p>}
         </div>
       )}

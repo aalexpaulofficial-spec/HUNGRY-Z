@@ -64,7 +64,7 @@ export function CanteenTemplateBanner({
       <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
       <div className="absolute bottom-5 left-5 right-5">
         <p data-no-translate className="text-xs font-semibold uppercase tracking-widest text-primary-bright">{canteenName} · {universityName}</p>
-        <h2 data-no-translate={heading?.trim() ? "" : undefined} className="display mt-1 text-3xl">{heading?.trim() || "Skip the queue."}</h2>
+        <h2 data-no-translate={heading?.trim() ? "" : undefined} className="display mt-1 text-3xl">{heading?.trim() || "Browse campus food."}</h2>
         {description?.trim() && <p data-no-translate className="mt-2 max-w-xl text-sm text-foreground/90">{description.trim()}</p>}
         <button type="button" onClick={onOrder} disabled={preview} className="mt-3 rounded-full bg-primary px-5 py-2.5 text-xs font-semibold text-primary-foreground disabled:cursor-default">
           Order now ↗

@@ -77,8 +77,8 @@ export function welcomeEmail(d: { name: string }): EmailContent {
   const first = d.name.split(" ")[0] ?? d.name;
   return {
     subject: "Welcome to HUNGRY Z 🍽️",
-    text: `Hi ${first},\n\nYour HUNGRY Z account is ready. Log in, enter your campus canteen code and order ahead — skip the queue and pay ₹0 platform fee.\n\n— Team HUNGRY Z`,
-    html: wrap(`Welcome, ${esc(first)}!`, `<p>Your HUNGRY Z account is ready.</p><ol><li>Log in to HUNGRY Z.</li><li>Enter your campus canteen's 7-character code.</li><li>Order ahead, skip the queue, pick up with your code.</li></ol><p>₹0 platform fee on every order.</p>`),
+    text: `Hi ${first},\n\nYour HUNGRY Z account is ready. Log in and enter your campus canteen's 7-character code to browse its menu. Place an available order, follow its status and show your pickup code at the counter when it is ready. HUNGRY Z charges ₹0 platform fee on orders.\n\n— Team HUNGRY Z`,
+    html: wrap(`Welcome, ${esc(first)}!`, `<p>Your HUNGRY Z account is ready.</p><ol><li>Log in to HUNGRY Z.</li><li>Enter your campus canteen's 7-character code.</li><li>Browse the menu, place an available order and track its status.</li><li>When it is ready, show your pickup code at the listed counter.</li></ol><p>HUNGRY Z charges ₹0 platform fee on orders.</p>`),
   };
 }
 
@@ -179,8 +179,8 @@ export function refundRequestedEmail(d: RefundData): EmailContent {
 export function refundProcessingEmail(d: RefundData): EmailContent {
   return {
     subject: `Your refund for ${d.orderNumber} is being processed`,
-    text: `Hi ${d.customerName},\n\nYour refund of ₹${d.amount} for order ${d.orderNumber} has been initiated. Eligible refunds generally take 5–7 working days to appear in the original payment method, depending on Razorpay, your bank and payment method.\n\n— Team HUNGRY Z`,
-    html: wrap("Refund initiated", `<p>Hi ${esc(d.customerName)}, your refund of <b>${esc(rupee(d.amount))}</b> for order <b>${esc(d.orderNumber)}</b> has been initiated.</p><p>Eligible refunds generally take <b>5–7 working days</b> to appear in the original payment method, depending on Razorpay, your bank and payment method.</p>`),
+    text: `Hi ${d.customerName},\n\nYour refund of ₹${d.amount} for order ${d.orderNumber} has been approved and successfully initiated with Razorpay. Eligible refunds generally take 5–7 business working days after approval and successful initiation to appear in the original payment method. Processing time can vary by Razorpay, your bank and payment method. Your order details show the latest refund status; we will email you when it changes.\n\n— Team HUNGRY Z`,
+    html: wrap("Refund initiated", `<p>Hi ${esc(d.customerName)}, your refund of <b>${esc(rupee(d.amount))}</b> for order <b>${esc(d.orderNumber)}</b> has been approved and successfully initiated with Razorpay.</p><p>Eligible refunds generally take <b>5–7 business working days after approval and successful initiation</b> to appear in the original payment method. Processing time can vary by Razorpay, your bank and payment method. Your order details show the latest refund status; we will email you when it changes.</p>`),
   };
 }
 

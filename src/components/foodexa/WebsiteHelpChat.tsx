@@ -5,9 +5,15 @@ import { assistantUiText, getWebsiteAssistantAnswer, type AssistantLanguage } fr
 type Message = { id: number; role: "user" | "assistant"; text: string };
 const languages: { value: AssistantLanguage; label: string }[] = [
   { value: "en", label: "English" },
-  { value: "hi", label: "हिन्दी" },
-  { value: "kn", label: "ಕನ್ನಡ" },
+  { value: "hi", label: "\u0939\u093f\u0928\u094d\u0926\u0940" },
+  { value: "kn", label: "\u0c95\u0ca8\u0ccd\u0ca8\u0ca1" },
 ];
+
+const sampleQuestions: Record<AssistantLanguage, string[]> = {
+  en: ["How do I place an order?", "How do event tokens work?", "How can I register my canteen?", "How do I track my order?", "How can I contact support?"],
+  hi: ["How do I place an order?", "How do event tokens work?", "How can I register my canteen?", "How do I track my order?", "How can I contact support?"],
+  kn: ["How do I place an order?", "How do event tokens work?", "How can I register my canteen?", "How do I track my order?", "How can I contact support?"],
+};
 
 export function WebsiteHelpChat() {
   const [open, setOpen] = useState(false);
@@ -27,9 +33,8 @@ export function WebsiteHelpChat() {
     if (messages.length === 0) setMessages([{ id: nextId.current++, role: "assistant", text: assistantUiText[value].greeting }]);
   }
 
-  function send(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const cleanQuestion = question.trim();
+  function ask(value: string) {
+    const cleanQuestion = value.trim();
     if (!cleanQuestion) return;
     const id = nextId.current++;
     setMessages((current) => [
@@ -39,6 +44,11 @@ export function WebsiteHelpChat() {
     ]);
     nextId.current += 1;
     setQuestion("");
+  }
+
+  function send(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    ask(question);
   }
 
   return <div className="fixed bottom-5 right-4 z-[60] flex flex-col items-end gap-3 sm:bottom-6 sm:right-6">
@@ -56,6 +66,7 @@ export function WebsiteHelpChat() {
       <div className="min-h-32 flex-1 space-y-3 overflow-y-auto p-4" aria-live="polite" aria-relevant="additions text">
         {messages.length === 0 && <p className="max-w-[90%] rounded-2xl rounded-tl-sm bg-ink-soft p-3 text-sm leading-relaxed text-foreground">{text.greeting}</p>}
         {messages.map((message) => <p key={message.id} className={`max-w-[92%] whitespace-pre-wrap rounded-2xl p-3 text-sm leading-relaxed ${message.role === "user" ? "ml-auto rounded-tr-sm bg-primary text-primary-foreground" : "rounded-tl-sm bg-ink-soft text-foreground"}`}>{message.text}</p>)}
+        {!messages.some((message) => message.role === "user") && <div className="flex flex-wrap gap-2" aria-label="Sample questions">{sampleQuestions[language].map((sample) => <button key={sample} type="button" onClick={() => ask(sample)} className="rounded-2xl border border-primary/30 bg-background px-3 py-2 text-left text-xs leading-snug text-foreground transition hover:border-primary hover:bg-primary/5">{sample}</button>)}</div>}
       </div>
       <form onSubmit={send} className="flex items-center gap-2 border-t border-border p-3">
         <input ref={input} value={question} onChange={(event) => setQuestion(event.currentTarget.value)} aria-label={text.placeholder} placeholder={text.placeholder} maxLength={500} className="min-w-0 flex-1 rounded-full border border-input bg-background px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25" />

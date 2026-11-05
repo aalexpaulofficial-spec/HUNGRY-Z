@@ -97,9 +97,9 @@ const answers: Record<Topic, Record<AssistantLanguage, string>> = {
     kn: "ಪಾವತಿಗಾಗಿ ಕಾಯುತ್ತಿರುವ online order ವಿವರಗಳಲ್ಲಿ Cancel ಆಯ್ಕೆ ಕಾಣಬಹುದು. ಸ್ವೀಕರಿಸಿದ ಅಥವಾ ತಯಾರಾಗುತ್ತಿರುವ ಆರ್ಡರ್‌ಗಾಗಿ ಕ್ಯಾಂಟೀನ್ ಅಥವಾ HUNGRY Z ಬೆಂಬಲವನ್ನು ಸಂಪರ್ಕಿಸಿ; ರದ್ದುಪಡಿಸುವುದು ಆರ್ಡರ್ ಸ್ಥಿತಿ ಮತ್ತು ಪಾವತಿ ವಿಧಾನವನ್ನು ಅವಲಂಬಿಸಿರುತ್ತದೆ. ಸಹಾಯಕ್ಕೆ Order ID ಜೊತೆಗೆ hungryofficialx@gmail.com ಗೆ ಬರೆಯಿರಿ.",
   },
   refund: {
-    en: "If an order shows a Request a refund option, you can submit a request from its details. The request is reviewed; approval and processing are not instant. Approved online refunds go through Razorpay to the original payment method, and the order page shows the refund status. For help, email support with your Order ID.",
-    hi: "यदि ऑर्डर विवरण में Request a refund विकल्प दिखे, तो वहीं से अनुरोध भेजें। अनुरोध की समीक्षा होती है; मंज़ूरी और प्रक्रिया तुरंत नहीं होती। स्वीकृत ऑनलाइन रिफंड Razorpay के माध्यम से मूल भुगतान तरीके पर लौटता है और स्थिति ऑर्डर पेज पर दिखती है। मदद के लिए Order ID के साथ support को ईमेल करें।",
-    kn: "ಆರ್ಡರ್ ವಿವರಗಳಲ್ಲಿ Request a refund ಆಯ್ಕೆ ಕಂಡರೆ ಅಲ್ಲಿಂದ ವಿನಂತಿ ಕಳುಹಿಸಿ. ವಿನಂತಿಯನ್ನು ಪರಿಶೀಲಿಸಲಾಗುತ್ತದೆ; ಅನುಮೋದನೆ ಮತ್ತು ಪ್ರಕ್ರಿಯೆ ತಕ್ಷಣವಾಗುವುದಿಲ್ಲ. ಅನುಮೋದಿತ ಆನ್‌ಲೈನ್ ಮರುಪಾವತಿ Razorpay ಮೂಲಕ ಮೂಲ ಪಾವತಿ ವಿಧಾನಕ್ಕೆ ಹೋಗುತ್ತದೆ; ಸ್ಥಿತಿ ಆರ್ಡರ್ ಪುಟದಲ್ಲಿ ಕಾಣುತ್ತದೆ. ಸಹಾಯಕ್ಕೆ Order ID ಜೊತೆಗೆ ಬೆಂಬಲಕ್ಕೆ ಇಮೇಲ್ ಮಾಡಿ.",
+    en: "If an order shows a Request a refund option, submit a request from its details. Refunds are reviewed and cancellation does not automatically qualify. If approved, the refund is sent through Razorpay to the original payment method. Once approval is followed by successful refund initiation, eligible refunds generally take 5–7 business working days to appear; bank and payment-provider processing can vary. Check the refund status and amount in order details. HUNGRY Z emails you when a refund is initiated and when its status changes. A refund is shown as completed only after gateway confirmation. For help, email hungryofficialx@gmail.com with your Order ID.",
+    hi: "यदि ऑर्डर विवरण में Request a refund विकल्प दिखे, तो वहीं से अनुरोध भेजें। रिफंड की समीक्षा होती है और केवल रद्द होने से रिफंड अपने-आप मंज़ूर नहीं होता। मंज़ूरी मिलने पर रिफंड Razorpay के माध्यम से मूल भुगतान तरीके पर भेजा जाता है। मंज़ूरी के बाद रिफंड सफलतापूर्वक शुरू होने पर, पात्र रिफंड आमतौर पर 5–7 व्यावसायिक कार्यदिवस में दिखाई देते हैं; बैंक और भुगतान सेवा के अनुसार समय बदल सकता है। ऑर्डर विवरण में रिफंड की स्थिति और राशि देखें। रिफंड शुरू होने और स्थिति बदलने पर HUNGRY Z ईमेल भेजता है। गेटवे की पुष्टि मिलने के बाद ही रिफंड को पूरा दिखाया जाता है। मदद के लिए Order ID के साथ hungryofficialx@gmail.com पर ईमेल करें।",
+    kn: "ಆರ್ಡರ್ ವಿವರಗಳಲ್ಲಿ Request a refund ಆಯ್ಕೆ ಕಂಡರೆ ಅಲ್ಲಿಂದ ವಿನಂತಿ ಕಳುಹಿಸಿ. ವಿನಂತಿಯನ್ನು ಪರಿಶೀಲಿಸಲಾಗುತ್ತದೆ; ಆರ್ಡರ್ ರದ್ದಾದ ಮಾತ್ರಕ್ಕೆ ಮರುಪಾವತಿ ಸ್ವಯಂ ಅನುಮೋದನೆಯಾಗುವುದಿಲ್ಲ. ಅನುಮೋದಿಸಿದರೆ, ಮರುಪಾವತಿಯನ್ನು Razorpay ಮೂಲಕ ಮೂಲ ಪಾವತಿ ವಿಧಾನಕ್ಕೆ ಕಳುಹಿಸಲಾಗುತ್ತದೆ. ಅನುಮೋದನೆಯ ನಂತರ ಮರುಪಾವತಿ ಯಶಸ್ವಿಯಾಗಿ ಪ್ರಾರಂಭವಾದರೆ, ಅರ್ಹ ಮರುಪಾವತಿಗಳು ಸಾಮಾನ್ಯವಾಗಿ 5–7 ವ್ಯವಹಾರಿಕ ಕೆಲಸದ ದಿನಗಳಲ್ಲಿ ಕಾಣಿಸುತ್ತವೆ; ಬ್ಯಾಂಕ್ ಮತ್ತು ಪಾವತಿ ಸೇವೆಯ ಪ್ರಕ್ರಿಯೆಗೆ ಅನುಗುಣವಾಗಿ ಸಮಯ ಬದಲಾಗಬಹುದು. ಆರ್ಡರ್ ವಿವರಗಳಲ್ಲಿ ಮರುಪಾವತಿಯ ಸ್ಥಿತಿ ಮತ್ತು ಮೊತ್ತವನ್ನು ನೋಡಿ. ಮರುಪಾವತಿ ಪ್ರಾರಂಭವಾದಾಗ ಮತ್ತು ಸ್ಥಿತಿ ಬದಲಾದಾಗ HUNGRY Z ಇಮೇಲ್ ಕಳುಹಿಸುತ್ತದೆ. ಪಾವತಿ ಗೇಟ್‌ವೇ ದೃಢೀಕರಿಸಿದ ನಂತರವೇ ಮರುಪಾವತಿಯನ್ನು ಪೂರ್ಣವಾಗಿದೆ ಎಂದು ತೋರಿಸಲಾಗುತ್ತದೆ. ಸಹಾಯಕ್ಕೆ Order ID ಜೊತೆಗೆ hungryofficialx@gmail.com ಗೆ ಇಮೇಲ್ ಮಾಡಿ.",
   },
   account: {
     en: "Use Create Account or Login and enter accurate details. Customer accounts can be for students, faculty or guests. Google sign-in is optional when it is shown. Use your own account and keep passwords, one-time codes and canteen owner access details private.",
@@ -136,7 +136,7 @@ const fallback: Record<AssistantLanguage, string> = {
 
 export function getWebsiteAssistantAnswer(question: string, language: AssistantLanguage): string {
   const normalized = question.toLocaleLowerCase().normalize("NFC");
-  const topicOrder: Topic[] = ["event", "payment", "cancel", "refund", "fees", "order", "account", "canteen", "scanner", "privacy", "support", "features"];
+  const topicOrder: Topic[] = ["event", "payment", "cancel", "refund", "fees", "order", "canteen", "account", "scanner", "privacy", "support", "features"];
   const matched = topicOrder.find((topic) =>
     Object.values(topicWords[topic]).some((words) => words.some((word) => normalized.includes(word.toLocaleLowerCase()))),
   );
@@ -144,7 +144,7 @@ export function getWebsiteAssistantAnswer(question: string, language: AssistantL
 }
 
 export const assistantUiText: Record<AssistantLanguage, { title: string; subtitle: string; greeting: string; placeholder: string; send: string; close: string; open: string; language: string }> = {
-  en: { title: "HUNGRY Z Help", subtitle: "Answers about the website", greeting: "Hi! Ask me about ordering, payments, events or your account.", placeholder: "Type your question…", send: "Send", close: "Close chat", open: "Chat with HUNGRY Z", language: "Reply language" },
-  hi: { title: "HUNGRY Z सहायता", subtitle: "वेबसाइट के बारे में जवाब", greeting: "नमस्ते! ऑर्डर, भुगतान, कार्यक्रम या खाते के बारे में पूछें।", placeholder: "अपना सवाल लिखें…", send: "भेजें", close: "चैट बंद करें", open: "HUNGRY Z से चैट करें", language: "जवाब की भाषा" },
-  kn: { title: "HUNGRY Z ಸಹಾಯ", subtitle: "ವೆಬ್‌ಸೈಟ್ ಕುರಿತು ಉತ್ತರಗಳು", greeting: "ನಮಸ್ಕಾರ! ಆರ್ಡರ್, ಪಾವತಿ, ಕಾರ್ಯಕ್ರಮ ಅಥವಾ ಖಾತೆ ಬಗ್ಗೆ ಕೇಳಿ.", placeholder: "ನಿಮ್ಮ ಪ್ರಶ್ನೆ ಬರೆಯಿರಿ…", send: "ಕಳುಹಿಸಿ", close: "ಚಾಟ್ ಮುಚ್ಚಿ", open: "HUNGRY Z ಜೊತೆ ಚಾಟ್ ಮಾಡಿ", language: "ಉತ್ತರದ ಭಾಷೆ" },
+  en: { title: "HUNGRY Z Help", subtitle: "Answers about the website", greeting: "Hi! Ask me about ordering, payments, events or your account.", placeholder: "Type your question…", send: "Send", close: "Close chat", open: "Ask HUNGRY Z", language: "Reply language" },
+  hi: { title: "HUNGRY Z सहायता", subtitle: "वेबसाइट के बारे में जवाब", greeting: "नमस्ते! ऑर्डर, भुगतान, कार्यक्रम या खाते के बारे में पूछें।", placeholder: "अपना सवाल लिखें…", send: "भेजें", close: "चैट बंद करें", open: "HUNGRY Z से पूछें", language: "जवाब की भाषा" },
+  kn: { title: "HUNGRY Z ಸಹಾಯ", subtitle: "ವೆಬ್‌ಸೈಟ್ ಕುರಿತು ಉತ್ತರಗಳು", greeting: "ನಮಸ್ಕಾರ! ಆರ್ಡರ್, ಪಾವತಿ, ಕಾರ್ಯಕ್ರಮ ಅಥವಾ ಖಾತೆ ಬಗ್ಗೆ ಕೇಳಿ.", placeholder: "ನಿಮ್ಮ ಪ್ರಶ್ನೆ ಬರೆಯಿರಿ…", send: "ಕಳುಹಿಸಿ", close: "ಚಾಟ್ ಮುಚ್ಚಿ", open: "HUNGRY Z ಅನ್ನು ಕೇಳಿ", language: "ಉತ್ತರದ ಭಾಷೆ" },
 };

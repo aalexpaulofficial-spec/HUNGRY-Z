@@ -3,11 +3,11 @@ import faculty from "@/assets/faculty-campus.jpg";
 import cafeteria from "@/assets/campus-cafeteria.jpg";
 
 const features = [
-  ["Easy ordering", "Order between classes in a few taps."],
-  ["Scheduled meals", "Set your lunch slot ahead of time."],
-  ["Digital receipts", "Every order archived, nothing printed."],
-  ["Faster pickup", "Walk in, scan, walk out."],
-  ["Live order tracking", "Know the moment your food is ready."],
+  ["Create an event request", "Add the event, venue, date, participant count and a seven-digit access code."],
+  ["Choose food and quantities", "Select menu items and send optional instructions to the canteen."],
+  ["Review the quotation", "Ask for changes or approve the canteen’s itemized quote and estimate."],
+  ["Publish after approval", "The canteen confirms and publishes the approved event for token requests."],
+  ["Track participation and spend", "Follow generated tokens, remaining capacity, estimated budget and recorded expenditure."],
 ];
 
 export function FacultySection() {
@@ -90,9 +90,9 @@ export function FacultySection() {
             />
             <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
             <figcaption className="absolute bottom-6 left-6 max-w-xs">
-              <p className="display text-xl">Lunch, without the logistics.</p>
+              <p className="display text-xl">Campus events, coordinated.</p>
               <p className="mt-2 text-[12px] text-muted-foreground">
-                Pre-order in the morning. Collect between classes.
+                Request food, review a quotation and track participation in one workflow.
               </p>
             </figcaption>
           </figure>
@@ -108,7 +108,8 @@ export function FacultySection() {
             />
             <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
             <figcaption className="absolute bottom-6 left-6">
-              <p className="display text-xl">No queue. No cash. No fee.</p>
+              <p className="display text-xl">A clear plan for event day.</p>
+              <p className="mt-2 max-w-xs text-[12px] text-muted-foreground">Approved participants request a capacity-limited event token; canteen staff verify tokens while serving.</p>
             </figcaption>
           </figure>
         </div>

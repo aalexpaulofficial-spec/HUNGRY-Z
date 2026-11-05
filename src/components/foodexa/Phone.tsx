@@ -143,7 +143,7 @@ function Screen({ screen }: { screen: ScreenKey }) {
           <div className="absolute inset-0 bg-gradient-to-t from-background via-background/30 to-transparent" />
           <div className="absolute bottom-2 left-3">
             <p className="text-[10px] font-semibold">Today at Food Court</p>
-            <p className="text-[8px] text-muted-foreground">Ready in 6 min · ₹0 fee</p>
+            <p className="text-[8px] text-muted-foreground">Pickup estimate · ₹0 platform fee</p>
           </div>
         </div>
         <div className="flex flex-col gap-2">

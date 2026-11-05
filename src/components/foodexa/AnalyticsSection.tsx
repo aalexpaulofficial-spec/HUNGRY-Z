@@ -2,9 +2,9 @@ import { useGsap } from "./use-gsap";
 
 const metrics = [
   { label: "Orders this week", value: 8432, suffix: "" },
-  { label: "Avg. pickup time", value: 5.7, suffix: " min" },
-  { label: "Peak hour load", value: 96, suffix: "%" },
-  { label: "Food waste saved", value: 21, suffix: "%" },
+  { label: "Orders in period", value: 1248, suffix: "" },
+  { label: "Orders collected", value: 986, suffix: "" },
+  { label: "Orders cancelled", value: 42, suffix: "" },
 ];
 
 const popular = [
@@ -99,9 +99,9 @@ export function AnalyticsSection() {
         className="pointer-events-none absolute left-1/4 top-1/3 -z-10 h-[55vh] w-[70vw] ember opacity-50"
       />
       <div className="mx-auto max-w-7xl px-5">
-        <p className="mb-8 text-[10px] tracking-[0.34em] text-muted-foreground">ANALYTICS</p>
+        <p className="mb-8 text-[10px] tracking-[0.34em] text-muted-foreground">CANTEEN ANALYTICS</p>
         <h2 data-headline className="display max-w-3xl text-[clamp(2.4rem,7.4vw,6rem)]">
-          {["SEE YOUR CAMPUS", "IN REAL TIME."].map((l, i) => (
+          {["REVIEW SALES", "AND ORDER TRENDS."].map((l, i) => (
             <span key={l} className="block overflow-hidden pb-[0.06em]">
               <span className={i === 1 ? "block text-primary-bright" : "block"}>{l}</span>
             </span>
@@ -123,7 +123,7 @@ export function AnalyticsSection() {
                 <span data-count={m.value}>0</span>
                 {m.suffix}
               </p>
-              <p className="mt-2 text-[9.5px] text-muted-foreground/70">sample campus figure</p>
+              <p className="mt-2 text-[9.5px] text-muted-foreground/70">illustrative sample figure</p>
             </div>
           ))}
         </div>
@@ -134,7 +134,7 @@ export function AnalyticsSection() {
               <p className="text-[10px] tracking-[0.2em] text-muted-foreground">
                 CANTEEN PERFORMANCE · PEAK HOURS
               </p>
-              <p className="text-[10px] text-primary-bright">Live sample feed</p>
+              <p className="text-[10px] text-primary-bright">Illustrative sample data</p>
             </div>
             <svg viewBox="0 0 400 150" className="mt-6 w-full">
               {[0, 1, 2, 3].map((g) => (

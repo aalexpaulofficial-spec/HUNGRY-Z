@@ -21,7 +21,7 @@ export const landingManifestHref = "/manifest-student.webmanifest";
 
 const title = "HUNGRY Z — Smart Campus Food Ordering, ₹0 Platform Fee";
 const description =
-  "HUNGRY Z is smart campus food ordering. Order faster, skip the queue, track your food live and pay ₹0 platform fee on every order.";
+  "Browse participating campus canteen menus, place Dine In or Parcel orders, follow order status and collect with a pickup code. Faculty can coordinate events and students can request capacity-limited event tokens.";
 
 export const Route = createFileRoute("/")({
   head: () => ({
