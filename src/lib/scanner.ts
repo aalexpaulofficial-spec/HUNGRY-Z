@@ -60,7 +60,7 @@ export const STUDENT_SCANNER_PLANS: ScannerPlan[] = [
 ];
 
 export function canUseHungryAi(role: string | null | undefined): boolean {
-  return role === "student";
+  return role === "student" || role === "faculty" || role === "guest";
 }
 
 /** End of the free month: same day next month (clamped to month end, like Postgres `+ interval '1 month'`). */

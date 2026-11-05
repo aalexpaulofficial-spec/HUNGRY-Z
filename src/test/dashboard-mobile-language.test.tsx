@@ -77,6 +77,7 @@ describe("multilingual mobile dashboard layout", () => {
       "AI-powered food recognition and nutrition analysis.", "Camera scanning", "Gallery upload", "Food identification", "Portion estimation", "Calories", "Protein", "Carbohydrates", "Fats", "Fibre", "Sugar",
       "Your personal AI nutrition coach.", "Daily nutrition tracking", "Personalised food recommendations", "Meal planning", "Nutrition reports", "AI nutrition chat",
       "Advanced AI-powered nutrition intelligence.", "Multiple food recognition", "Advanced portion analysis", "Detailed nutritional insights", "Intelligent meal analysis",
+      "Available to Students, Faculty and Guests with eligible completed food orders.", "One HUNGRY AI usage is available for each completed food order.",
     ];
     for (const language of ["hi", "kn"] as const) {
       for (const copy of productCopy) expect(translateDashboardText(copy, language), `${language}: ${copy}`).not.toBe(copy);

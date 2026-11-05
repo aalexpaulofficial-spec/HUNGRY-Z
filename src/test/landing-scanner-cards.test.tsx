@@ -23,6 +23,7 @@ describe("public scanner pricing cards", () => {
     expect(versionOne!.getByText("Version 1.0")).toBeInTheDocument();
     expect(versionOne!.getByText("AVAILABLE NOW")).toBeInTheDocument();
     expect(versionOne!.getByText("AI-powered food recognition and nutrition analysis.")).toBeInTheDocument();
+    expect(versionOne!.getByText("One eligible completed food order provides one AI usage.")).toBeInTheDocument();
     for (const feature of ["Camera scanning", "Gallery upload", "Food identification", "Portion estimation", "Calories", "Protein", "Carbohydrates", "Fats", "Fibre", "Sugar"]) {
       expect(versionOne!.getByText(feature)).toBeInTheDocument();
     }

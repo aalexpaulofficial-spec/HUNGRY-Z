@@ -389,7 +389,7 @@ function OrderingApp() {
 
   const ordering = canAcceptOrders(canteen, availabilityNow);
   const nextOpen = canteen.availability_mode === "open" ? null : nextScheduledOpening(canteen, availabilityNow);
-  const navTabs = ([["home", "HOME", Home], ["menu", "MENU", UtensilsCrossed], ["scan", "HUNGRY AI", ScanLine], ["events", "EVENTS", Ticket], ["orders", "ORDERS", Receipt], ["you", "YOU", User]] as const).filter(([key]) => key !== "scan" || canUseHungryAi(profile.role));
+  const navTabs = [["home", "HOME", Home], ["menu", "MENU", UtensilsCrossed], ["scan", "HUNGRY AI", ScanLine], ["events", "EVENTS", Ticket], ["orders", "ORDERS", Receipt], ["you", "YOU", User]] as const;
 
   return (
     <div className="min-h-screen bg-background">

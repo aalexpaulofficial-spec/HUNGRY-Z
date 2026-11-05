@@ -131,17 +131,16 @@ function Screen({ screen }: { screen: ScreenKey }) {
           <br />
           Aarav?
         </p>
-        <div className="relative overflow-hidden rounded-2xl border border-border">
+        <div className="overflow-hidden rounded-2xl border border-border bg-ink-soft/70">
           <img
             src={burger}
             alt="Featured campus meal"
             loading="lazy"
             width={600}
             height={400}
-            className="h-28 w-full object-cover"
+            className="block h-auto max-h-48 w-full object-contain"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/30 to-transparent" />
-          <div className="absolute bottom-2 left-3">
+          <div className="px-3 py-2">
             <p className="text-[10px] font-semibold">Today at Food Court</p>
             <p className="text-[8px] text-muted-foreground">Pickup estimate · ₹0 platform fee</p>
           </div>

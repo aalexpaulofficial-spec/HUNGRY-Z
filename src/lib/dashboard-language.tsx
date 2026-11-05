@@ -145,6 +145,19 @@ Object.assign(scannerProductTranslations.kn, {
   "This scan request was already used. Start a new scan to continue.": "ಈ ಸ್ಕ್ಯಾನ್ ವಿನಂತಿಯನ್ನು ಈಗಾಗಲೇ ಬಳಸಲಾಗಿದೆ. ಮುಂದುವರಿಸಲು ಹೊಸ ಸ್ಕ್ಯಾನ್ ಪ್ರಾರಂಭಿಸಿ.",
 });
 
+Object.assign(scannerProductTranslations.hi, {
+  "Available to Students, Faculty and Guests with eligible completed food orders.": "पात्र पूरे किए गए फ़ूड ऑर्डर वाले Student, Faculty और Guest खाते इसका उपयोग कर सकते हैं।",
+  "HUNGRY AI access requires an eligible Student, Faculty or Guest account and completed food orders.": "HUNGRY AI के लिए पात्र Student, Faculty या Guest खाता और पूरे किए गए फ़ूड ऑर्डर आवश्यक हैं।",
+  "ORDER-BASED ACCESS": "ऑर्डर आधारित उपयोग",
+  "One eligible completed food order provides one AI usage.": "हर पात्र पूर्ण फ़ूड ऑर्डर पर AI का एक उपयोग मिलता है।",
+});
+Object.assign(scannerProductTranslations.kn, {
+  "Available to Students, Faculty and Guests with eligible completed food orders.": "ಅರ್ಹವಾಗಿ ಪೂರ್ಣಗೊಂಡ ಆಹಾರ ಆರ್ಡರ್‌ಗಳಿರುವ ವಿದ್ಯಾರ್ಥಿ, ಅಧ್ಯಾಪಕ ಮತ್ತು ಅತಿಥಿ ಖಾತೆಗಳಿಗೆ ಲಭ್ಯ.",
+  "HUNGRY AI access requires an eligible Student, Faculty or Guest account and completed food orders.": "HUNGRY AI ಬಳಸಲು ಅರ್ಹ ವಿದ್ಯಾರ್ಥಿ, ಅಧ್ಯಾಪಕ ಅಥವಾ ಅತಿಥಿ ಖಾತೆ ಮತ್ತು ಪೂರ್ಣಗೊಂಡ ಆಹಾರ ಆರ್ಡರ್‌ಗಳು ಅಗತ್ಯ.",
+  "ORDER-BASED ACCESS": "ಆರ್ಡರ್ ಆಧಾರಿತ ಪ್ರವೇಶ",
+  "One eligible completed food order provides one AI usage.": "ಪ್ರತಿ ಅರ್ಹ ಪೂರ್ಣಗೊಂಡ ಆಹಾರ ಆರ್ಡರ್‌ಗೆ ಒಂದು AI ಬಳಕೆ ಲಭ್ಯ.",
+});
+
 const dictionaries: Record<DashboardLanguage, Record<string, string>> = { en: {}, hi: { ...hi, ...hiExtra, ...scannerAndStatusTranslations.hi, ...studentDashboardTranslations.hi, ...scannerProductTranslations.hi, ...authTranslations.hi }, kn: { ...kn, ...knExtra, ...scannerAndStatusTranslations.kn, ...studentDashboardTranslations.kn, ...scannerProductTranslations.kn, ...authTranslations.kn } };
 
 const eventDashboardTranslations: Record<Exclude<DashboardLanguage, "en">, Record<string, string>> = {

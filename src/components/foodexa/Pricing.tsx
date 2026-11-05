@@ -47,7 +47,7 @@ export function Pricing() {
 
         <div className="mt-16">
           <div className="flex flex-wrap items-center gap-3">
-            <span className="scanner-pill scanner-pill-accent">EXCLUSIVELY FOR STUDENTS</span>
+            <span className="scanner-pill scanner-pill-accent">ORDER-BASED ACCESS</span>
             <p className="text-sm text-muted-foreground">₹0 — FREE. No card, no billing.</p>
           </div>
           <div className="mt-6 grid gap-4 md:grid-cols-3">
@@ -71,7 +71,7 @@ export function Pricing() {
                     </li>
                   ))}
                 </ul>
-                {p.status === "live" && <p className="mt-auto pt-6 text-[11px] text-muted-foreground">For students only</p>}
+                {p.status === "live" && <p className="mt-auto pt-6 text-[11px] text-muted-foreground">One eligible completed food order provides one AI usage.</p>}
               </article>
             ))}
           </div>

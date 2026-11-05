@@ -126,6 +126,10 @@ export function ScannerTab({ userId }: { userId?: string }) {
       <div className="flex flex-wrap items-center justify-between gap-2"><span className="scanner-pill scanner-pill-accent">{livePlan.brand}</span><span className="scanner-pill"><span>Version {livePlan.version}</span><span aria-hidden="true"> · </span><span>AVAILABLE NOW</span></span></div>
       <h2 className="mt-7 text-center text-2xl font-semibold tracking-tight sm:text-3xl">Scan Any Food,<br /><span className="text-primary">Know Its Nutrition</span></h2>
       <p className="mx-auto mt-2 max-w-sm text-center text-sm text-muted-foreground">{livePlan.description}</p>
+      <div className="mx-auto mt-3 max-w-2xl rounded-2xl border border-primary/25 bg-primary/5 px-4 py-3 text-center text-xs leading-relaxed text-foreground">
+        <p>Available to Students, Faculty and Guests with eligible completed food orders.</p>
+        <p className="mt-1">One HUNGRY AI usage is available for each completed food order.</p>
+      </div>
       <p className="mx-auto mt-3 flex max-w-2xl flex-wrap justify-center gap-x-1 text-center text-xs leading-relaxed text-muted-foreground"><span className="font-semibold text-foreground">Features:</span>{livePlan.features.map((feature, index) => <span key={feature}>{index > 0 && <span aria-hidden="true"> · </span>}{feature}</span>)}</p>
       <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4" aria-label="HUNGRY AI usage">
         <UsageMetric label="Completed orders" value={access.completed_orders} />

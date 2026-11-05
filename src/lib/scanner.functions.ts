@@ -22,14 +22,14 @@ async function releaseScannerUsage(requestId: string, userId: string) {
   } catch { /* The short-lived reservation expires in SQL if cleanup is temporarily unavailable. */ }
 }
 
-/** Returns order-earned analysis usage. The database function enforces student-only access. */
+/** Returns order-earned analysis usage. The database function validates eligible account roles. */
 export const getScannerAccess = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { data, error } = await context.supabase.rpc("hungry_get_scanner_usage");
     if (error) {
-      if (error.message.includes("students_only"))
-        return { ok: false as const, message: "HUNGRY Z SCANNER is available to student accounts only." };
+      if (error.message.includes("ineligible_role"))
+        return { ok: false as const, message: "HUNGRY AI access requires an eligible Student, Faculty or Guest account and completed food orders." };
       throw new Error("Could not load your scanner access. Please try again.");
     }
     const row = firstRow(data as ScannerUsage | ScannerUsage[] | null);
@@ -68,7 +68,7 @@ export const scanFood = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     const { data: reservedData, error } = await context.supabase.rpc("hungry_reserve_scanner_usage", { p_request_id: data.requestId });
     if (error) {
-      if (error.message.includes("students_only")) return { ok: false as const, message: "HUNGRY Z SCANNER is available to student accounts only." };
+      if (error.message.includes("ineligible_role")) return { ok: false as const, message: "HUNGRY AI access requires an eligible Student, Faculty or Guest account and completed food orders." };
       if (error.message.includes("usage_limit_reached")) return { ok: false as const, message: "Complete a food order to get another HUNGRY AI usage." };
       return { ok: false as const, message: "We couldn't verify scanner access. Please retry." };
     }
@@ -136,7 +136,7 @@ export const updateFoodScan = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     const { error } = await context.supabase.rpc("hungry_get_scanner_usage");
     if (error)
-      return { ok: false as const, message: error.message.includes("students_only") ? "HUNGRY Z SCANNER is available to student accounts only." : "Your scanner access is unavailable. Please reload the scanner." };
+      return { ok: false as const, message: error.message.includes("ineligible_role") ? "HUNGRY AI access requires an eligible Student, Faculty or Guest account and completed food orders." : "Your scanner access is unavailable. Please reload the scanner." };
     try {
       return { ok: true as const, scan: await analyzeFood(data.foodName, data.portionG, data.confidence, data.notes) };
     } catch (error) {
