@@ -250,6 +250,16 @@ const eventDashboardTranslations: Record<Exclude<DashboardLanguage, "en">, Recor
 };
 
 Object.assign(eventDashboardTranslations.hi, {
+  "Choose a published event and enter its access code to view details and generate a participation token.": "प्रकाशित कार्यक्रम चुनें और विवरण देखने के लिए उसका एक्सेस कोड दर्ज करें।",
+  "Published Faculty Event": "प्रकाशित फैकल्टी कार्यक्रम", "Verify Event Access": "कार्यक्रम एक्सेस सत्यापित करें", "Verify Code": "कोड सत्यापित करें", "Verifying…": "सत्यापन हो रहा है…",
+  "7-digit Event Access Code": "7 अंकों का इवेंट एक्सेस कोड", "Enter the event’s 7-digit Event Access Code to view its details and generate a token.": "विवरण देखने और टोकन बनाने के लिए कार्यक्रम का 7 अंकों का एक्सेस कोड दर्ज करें।",
+  "Enter the complete 7-digit Event Access Code.": "पूरा 7 अंकों का इवेंट एक्सेस कोड दर्ज करें।", "Invalid Event Access Code. Check the 7-digit code and try again.": "इवेंट एक्सेस कोड गलत है। 7 अंकों का कोड जाँचकर फिर कोशिश करें।",
+  "This event is no longer available. Enter the access code again.": "यह कार्यक्रम अब उपलब्ध नहीं है। एक्सेस कोड फिर दर्ज करें।",
+  "Could not load published events. Reconnecting…": "प्रकाशित कार्यक्रम लोड नहीं हुए। फिर से कनेक्ट हो रहा है…",
+  "Join this canteen to view its published event listings.": "प्रकाशित कार्यक्रम देखने के लिए इस कैंटीन से जुड़ें।",
+  "Sign in with a Student, Faculty, or Guest account and join the event canteen.": "स्टूडेंट, फैकल्टी या गेस्ट खाते से साइन इन करें और कार्यक्रम वाली कैंटीन से जुड़ें।",
+  "Could not load event access details. Please try again.": "कार्यक्रम की जानकारी लोड नहीं हुई। फिर से कोशिश करें।",
+  "Could not load the event logo. Please try again.": "कार्यक्रम का लोगो लोड नहीं हुआ। फिर से कोशिश करें।",
   "Choose a published event to view details and generate your participation token.": "विवरण देखने और भागीदारी टोकन बनाने के लिए प्रकाशित कार्यक्रम चुनें।",
   "View Event": "कार्यक्रम देखें", "Published event": "प्रकाशित कार्यक्रम",
   "This event has reached its token capacity.": "इस कार्यक्रम के सभी टोकन उपलब्ध हो चुके हैं।",
@@ -281,6 +291,16 @@ Object.assign(eventDashboardTranslations.hi, {
   "You cannot verify this event token.": "आप इस कार्यक्रम टोकन का सत्यापन नहीं कर सकते।", "There is no longer enough event capacity to approve this request.": "इस अनुरोध को मंज़ूर करने के लिए अब पर्याप्त कार्यक्रम क्षमता नहीं है।",
 });
 Object.assign(eventDashboardTranslations.kn, {
+  "Choose a published event and enter its access code to view details and generate a participation token.": "ಪ್ರಕಟಿತ ಕಾರ್ಯಕ್ರಮವನ್ನು ಆಯ್ಕೆ ಮಾಡಿ, ವಿವರಗಳನ್ನು ನೋಡಲು ಅದರ ಪ್ರವೇಶ ಕೋಡ್ ನಮೂದಿಸಿ.",
+  "Published Faculty Event": "ಪ್ರಕಟಿತ ಫ್ಯಾಕಲ್ಟಿ ಕಾರ್ಯಕ್ರಮ", "Verify Event Access": "ಕಾರ್ಯಕ್ರಮ ಪ್ರವೇಶ ಪರಿಶೀಲಿಸಿ", "Verify Code": "ಕೋಡ್ ಪರಿಶೀಲಿಸಿ", "Verifying…": "ಪರಿಶೀಲಿಸಲಾಗುತ್ತಿದೆ…",
+  "7-digit Event Access Code": "7 ಅಂಕಿಯ ಕಾರ್ಯಕ್ರಮ ಪ್ರವೇಶ ಕೋಡ್", "Enter the event’s 7-digit Event Access Code to view its details and generate a token.": "ವಿವರಗಳನ್ನು ನೋಡಲು ಮತ್ತು ಟೋಕನ್ ರಚಿಸಲು ಕಾರ್ಯಕ್ರಮದ 7 ಅಂಕಿಯ ಪ್ರವೇಶ ಕೋಡ್ ನಮೂದಿಸಿ.",
+  "Enter the complete 7-digit Event Access Code.": "ಪೂರ್ಣ 7 ಅಂಕಿಯ ಕಾರ್ಯಕ್ರಮ ಪ್ರವೇಶ ಕೋಡ್ ನಮೂದಿಸಿ.", "Invalid Event Access Code. Check the 7-digit code and try again.": "ಕಾರ್ಯಕ್ರಮ ಪ್ರವೇಶ ಕೋಡ್ ತಪ್ಪಾಗಿದೆ. 7 ಅಂಕಿಯ ಕೋಡ್ ಪರಿಶೀಲಿಸಿ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
+  "This event is no longer available. Enter the access code again.": "ಈ ಕಾರ್ಯಕ್ರಮ ಈಗ ಲಭ್ಯವಿಲ್ಲ. ಪ್ರವೇಶ ಕೋಡ್ ಮತ್ತೆ ನಮೂದಿಸಿ.",
+  "Could not load published events. Reconnecting…": "ಪ್ರಕಟಿತ ಕಾರ್ಯಕ್ರಮಗಳನ್ನು ಲೋಡ್ ಮಾಡಲಾಗಲಿಲ್ಲ. ಮರುಸಂಪರ್ಕಿಸಲಾಗುತ್ತಿದೆ…",
+  "Join this canteen to view its published event listings.": "ಪ್ರಕಟಿತ ಕಾರ್ಯಕ್ರಮಗಳನ್ನು ನೋಡಲು ಈ ಕ್ಯಾಂಟೀನ್‌ಗೆ ಸೇರಿ.",
+  "Sign in with a Student, Faculty, or Guest account and join the event canteen.": "ವಿದ್ಯಾರ್ಥಿ, ಫ್ಯಾಕಲ್ಟಿ ಅಥವಾ ಅತಿಥಿ ಖಾತೆಯಿಂದ ಸೈನ್ ಇನ್ ಮಾಡಿ ಕಾರ್ಯಕ್ರಮದ ಕ್ಯಾಂಟೀನ್‌ಗೆ ಸೇರಿ.",
+  "Could not load event access details. Please try again.": "ಕಾರ್ಯಕ್ರಮದ ವಿವರಗಳನ್ನು ಲೋಡ್ ಮಾಡಲಾಗಲಿಲ್ಲ. ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
+  "Could not load the event logo. Please try again.": "ಕಾರ್ಯಕ್ರಮದ ಲೋಗೋ ಲೋಡ್ ಆಗಲಿಲ್ಲ. ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
   "Choose a published event to view details and generate your participation token.": "ವಿವರಗಳನ್ನು ವೀಕ್ಷಿಸಲು ಮತ್ತು ಭಾಗವಹಿಸುವ ಟೋಕನ್ ಪಡೆಯಲು ಪ್ರಕಟಿತ ಕಾರ್ಯಕ್ರಮವನ್ನು ಆಯ್ಕೆಮಾಡಿ.",
   "View Event": "ಕಾರ್ಯಕ್ರಮ ವೀಕ್ಷಿಸಿ", "Published event": "ಪ್ರಕಟಿತ ಕಾರ್ಯಕ್ರಮ",
   "This event has reached its token capacity.": "ಈ ಕಾರ್ಯಕ್ರಮದ ಟೋಕನ್ ಸಾಮರ್ಥ್ಯ ಪೂರ್ಣವಾಗಿದೆ.",

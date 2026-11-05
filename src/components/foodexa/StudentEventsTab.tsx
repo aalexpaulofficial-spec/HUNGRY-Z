@@ -1,106 +1,160 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { CalendarDays, MapPin, Minus, Plus, Ticket, X } from "lucide-react";
+import { CalendarDays, MapPin, Ticket, X } from "lucide-react";
 import { QRCodeCanvas } from "qrcode.react";
-import { supabase } from "@/integrations/supabase/client";
-import { issueFacultyEventToken, requestAdditionalFacultyEventTokens } from "@/lib/hungry.functions";
-import { getFacultyEventLogoUrls } from "@/lib/faculty-event-logos";
+import { issueFacultyEventToken, listPublishedFacultyEventCards, verifyFacultyEventAccessCode } from "@/lib/hungry.functions";
 import { EventLogoImage } from "@/components/foodexa/FacultyEventLogo";
 import { formatFacultyEventSerial } from "@/lib/faculty-event-serial";
 
-type EventRow = {
-  id: string; name: string; event_code: string; serial_number: number; description: string;
-  event_date: string | null; venue: string; approved_capacity: number; status: string; event_logo_path: string | null; archived_at: string | null;
+type EventCard = { id: string; serial_number: number };
+type EventToken = { id: string; token_number: string; status: string };
+type VerifiedEvent = {
+  id: string;
+  name: string;
+  serial_number: number;
+  description: string;
+  event_date: string | null;
+  venue: string;
+  approved_capacity: number;
+  issued_tokens: number;
+  tokens_remaining: number;
+  capacity_available: boolean;
+  my_tokens: EventToken[];
+  event_logo_url: string | null;
 };
-type EventView = EventRow & { issued_tokens: number; tokens_remaining: number; capacity_available: boolean; event_logo_url?: string };
-type IssuedToken = { token_number: string; approved_capacity: number; issued_tokens: number; tokens_remaining: number; already_issued: boolean };
-type ParticipantToken = { id: string; event_id: string; token_number: string; status: string };
-type TokenRequest = { id: string; event_id: string; requested_count: number; status: string; canteen_note: string; created_at: string };
 
 export function StudentEventsTab({ canteenId, canteenName, userId }: { canteenId: string; canteenName: string; userId: string }) {
-  const [events, setEvents] = useState<EventView[]>([]);
-  const [opened, setOpened] = useState<EventView | null>(null);
+  const [events, setEvents] = useState<EventCard[]>([]);
+  const [selected, setSelected] = useState<EventCard | null>(null);
+  const [opened, setOpened] = useState<VerifiedEvent | null>(null);
+  const [accessCode, setAccessCode] = useState("");
+  const [verifiedCode, setVerifiedCode] = useState("");
   const [error, setError] = useState("");
+  const [loadingError, setLoadingError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [verifying, setVerifying] = useState(false);
   const [issuing, setIssuing] = useState(false);
-  const [requesting, setRequesting] = useState(false);
-  const [requestedCount, setRequestedCount] = useState(1);
-  const [token, setToken] = useState<IssuedToken | null>(null);
-  const [participantTokens, setParticipantTokens] = useState<ParticipantToken[]>([]);
-  const [tokenRequests, setTokenRequests] = useState<TokenRequest[]>([]);
+  const listEvents = useServerFn(listPublishedFacultyEventCards);
+  const verifyCode = useServerFn(verifyFacultyEventAccessCode);
   const issueToken = useServerFn(issueFacultyEventToken);
-  const requestTokens = useServerFn(requestAdditionalFacultyEventTokens);
+  const openedEventId = opened?.id;
+  const openedEventSerial = opened?.serial_number;
 
   const load = useCallback(async () => {
-    const { data, error: queryError } = await supabase.from("faculty_events")
-      .select("id,name,event_code,serial_number,description,event_date,venue,approved_capacity,status,event_logo_path,archived_at")
-      .eq("canteen_id", canteenId).eq("status", "published").is("archived_at", null).order("created_at", { ascending: false });
-    if (queryError) { setError("Could not load events. Reconnecting…"); setLoading(false); return; }
-    const next: EventView[] = [];
-    let capacityFailed = false;
-    for (const row of (data ?? []) as EventRow[]) {
-      const { data: stats, error: statsError } = await supabase.rpc("hungry_get_event_capacity", { p_event_id: row.id }).maybeSingle();
-      if (statsError || !stats) capacityFailed = true;
-      next.push({ ...row, issued_tokens: stats?.issued_tokens ?? 0, tokens_remaining: stats?.tokens_remaining ?? 0, capacity_available: !statsError && !!stats });
+    try {
+      const rows = await listEvents({ data: { canteenId } });
+      setEvents(rows);
+      setLoadingError("");
+    } catch {
+      setLoadingError("Could not load published events. Reconnecting…");
+    } finally {
+      setLoading(false);
     }
-    const [tokenResult, requestResult] = await Promise.all([
-      supabase.from("faculty_event_tokens").select("id,event_id,token_number,status").eq("customer_id", userId).neq("status", "cancelled").order("sequence_number"),
-      supabase.from("faculty_event_token_requests").select("id,event_id,requested_count,status,canteen_note,created_at").eq("requester_user_id", userId).order("created_at", { ascending: false }),
-    ]);
-    setParticipantTokens((tokenResult.data ?? []) as ParticipantToken[]);
-    setTokenRequests((requestResult.data ?? []) as TokenRequest[]);
-    const logoUrls = await getFacultyEventLogoUrls(next.map((event) => event.event_logo_path));
-    const withLogos = next.map((event) => ({ ...event, event_logo_url: event.event_logo_path ? logoUrls[event.event_logo_path] : undefined }));
-    setEvents(withLogos);
-    setOpened((current) => current ? withLogos.find((event) => event.id === current.id) ?? null : null);
-    setError(capacityFailed ? "Event availability is temporarily unavailable. Refreshing automatically…" : "");
-    setLoading(false);
-  }, [canteenId, userId]);
+  }, [canteenId, listEvents]);
 
   useEffect(() => {
     void load();
-    const channel = supabase.channel(`student-events-${canteenId}-${userId}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "faculty_events", filter: `canteen_id=eq.${canteenId}` }, load)
-      .on("postgres_changes", { event: "*", schema: "public", table: "faculty_event_tokens", filter: `canteen_id=eq.${canteenId}` }, load)
-      .on("postgres_changes", { event: "*", schema: "public", table: "faculty_event_token_requests" }, load)
-      .subscribe();
     const retry = window.setInterval(() => void load(), 15000);
-    return () => { window.clearInterval(retry); void supabase.removeChannel(channel); };
-  }, [canteenId, load, userId]);
+    return () => window.clearInterval(retry);
+  }, [load, userId]);
 
-  async function generateToken() {
-    if (!opened) return;
-    setError(""); setIssuing(true);
-    try {
-      const issued = await issueToken({ data: { eventId: opened.id, eventCode: opened.event_code } });
-      setToken(issued);
-      await load();
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not generate the event token. Please try again.");
-      await load();
-    } finally { setIssuing(false); }
+  // Refresh only after access has been verified. This keeps each open dialog's
+  // token and capacity information current without exposing it in the listing.
+  useEffect(() => {
+    if (!openedEventId || openedEventSerial === undefined || !verifiedCode) return;
+    let active = true;
+    const refresh = async () => {
+      try {
+        const details = await verifyCode({ data: { eventId: openedEventId, eventCode: verifiedCode } });
+        if (active) setOpened(details);
+      } catch {
+        if (active) {
+          setOpened(null);
+          setVerifiedCode("");
+          setSelected({ id: openedEventId, serial_number: openedEventSerial });
+          setError("This event is no longer available. Enter the access code again.");
+        }
+      }
+    };
+    const retry = window.setInterval(() => void refresh(), 15000);
+    return () => { active = false; window.clearInterval(retry); };
+  }, [openedEventId, openedEventSerial, verifiedCode, verifyCode]);
+
+  function closeDialogs() {
+    setSelected(null);
+    setOpened(null);
+    setAccessCode("");
+    setVerifiedCode("");
+    setError("");
   }
 
-  async function requestMoreTokens() {
-    if (!opened) return;
-    setError(""); setRequesting(true);
+  async function verifyEvent(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selected) return;
+    if (!/^[0-9]{7}$/.test(accessCode)) {
+      setError("Enter the complete 7-digit Event Access Code.");
+      return;
+    }
+    setError("");
+    setVerifying(true);
     try {
-      await requestTokens({ data: { eventId: opened.id, requestedCount } });
-      await load();
+      const details = await verifyCode({ data: { eventId: selected.id, eventCode: accessCode } });
+      setOpened(details);
+      setVerifiedCode(accessCode);
+      setSelected(null);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not request additional tokens.");
-    } finally { setRequesting(false); }
+      setError(cause instanceof Error ? cause.message : "Invalid Event Access Code. Check the 7-digit code and try again.");
+    } finally {
+      setVerifying(false);
+    }
+  }
+
+  async function generateToken() {
+    if (!opened || !verifiedCode) return;
+    setError("");
+    setIssuing(true);
+    try {
+      await issueToken({ data: { eventId: opened.id, eventCode: verifiedCode } });
+      const details = await verifyCode({ data: { eventId: opened.id, eventCode: verifiedCode } });
+      setOpened(details);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not generate the event token. Please try again.");
+    } finally {
+      setIssuing(false);
+    }
   }
 
   return <section className="space-y-5 pt-2" aria-label="Faculty Events">
-    <div><h2 className="display text-2xl">Faculty Events</h2><p className="mt-1 text-sm text-muted-foreground">Choose a published event to view details and generate your participation token.</p></div>
+    <div><h2 className="display text-2xl">Faculty Events</h2><p className="mt-1 text-sm text-muted-foreground">Choose a published event and enter its access code to view details and generate a participation token.</p></div>
     {loading && <p role="status" className="text-sm text-muted-foreground">Loading events…</p>}
-    {!loading && events.length === 0 && <p className="rounded-3xl border border-border bg-card p-6 text-center text-sm text-muted-foreground">No published events for this canteen yet.</p>}
-    {events.length > 0 && <div className="grid min-w-0 gap-3 sm:grid-cols-2">{events.map((event) => <button key={event.id} type="button" onClick={() => { setOpened(event); setToken(null); setRequestedCount(1); setError(""); }} aria-label={`Open event ${event.name}`} className="min-w-0 rounded-2xl border border-border bg-card p-3 text-left transition hover:border-primary hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:p-4">{event.event_logo_url && <EventLogoImage src={event.event_logo_url} alt={`${event.name} event logo`} className="mb-3 min-h-24 max-h-36 sm:min-h-28" />}<span className="block text-[10px] font-black tracking-[0.18em] text-primary">{formatFacultyEventSerial(event.serial_number)}</span><span data-no-translate className="mt-1 block font-semibold">{event.name}</span><span className="mt-1 block text-xs text-muted-foreground">{event.capacity_available ? `${event.tokens_remaining} tokens remaining` : "Availability refreshing"}</span><span className="mt-3 inline-flex rounded-full bg-primary px-4 py-2 text-xs font-bold text-primary-foreground">View Event</span></button>)}</div>}
-    {error && <p role="alert" className="rounded-2xl border border-primary/30 bg-primary/10 p-3 text-sm text-primary-bright">{error}</p>}
-    {opened && <div className="fixed inset-0 z-[70] grid place-items-center overflow-y-auto bg-black/65 p-4" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) { setOpened(null); setToken(null); } }}>
+    {loadingError && <p role="alert" className="rounded-2xl border border-primary/30 bg-primary/10 p-3 text-sm text-primary-bright">{loadingError}</p>}
+    {!loading && !loadingError && events.length === 0 && <p className="rounded-3xl border border-border bg-card p-6 text-center text-sm text-muted-foreground">No published events for this canteen yet.</p>}
+    {events.length > 0 && <div className="grid min-w-0 gap-3 sm:grid-cols-2">{events.map((event) => <article key={event.id} className="min-w-0 rounded-2xl border border-border bg-card p-4 sm:p-5">
+      <span className="block text-[10px] font-black tracking-[0.18em] text-primary">{formatFacultyEventSerial(event.serial_number)}</span>
+      <p className="mt-2 text-sm font-semibold">Published Faculty Event</p>
+      <p className="mt-1 text-xs text-muted-foreground">Enter its 7-digit Event Access Code to view event details.</p>
+      <button type="button" onClick={() => { setSelected(event); setAccessCode(""); setError(""); }} aria-label={`View event ${formatFacultyEventSerial(event.serial_number)}`} className="mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-full bg-primary px-4 py-2 text-sm font-bold text-primary-foreground transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2">View Event</button>
+    </article>)}</div>}
+
+    {selected && !opened && <div className="fixed inset-0 z-[70] grid place-items-center overflow-y-auto bg-black/65 p-3 sm:p-5" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) closeDialogs(); }}>
+      <section role="dialog" aria-modal="true" aria-labelledby="event-code-dialog-title" className="relative my-auto w-full max-w-md rounded-3xl border border-primary/30 bg-card p-5 sm:p-6">
+        <button type="button" aria-label="Close event" onClick={closeDialogs} className="absolute right-4 top-4 grid h-9 w-9 place-items-center rounded-full border border-border text-muted-foreground"><X className="h-4 w-4" /></button>
+        <div className="grid h-12 w-12 place-items-center rounded-2xl bg-primary/10 text-primary"><Ticket className="h-6 w-6" /></div>
+        <p className="mt-4 text-[10px] font-bold uppercase tracking-[0.2em] text-primary">{formatFacultyEventSerial(selected.serial_number)}</p>
+        <h3 id="event-code-dialog-title" className="display mt-1 pr-9 text-2xl">Verify Event Access</h3>
+        <p className="mt-2 text-sm text-muted-foreground">Enter the event’s 7-digit Event Access Code to view its details and generate a token.</p>
+        <form className="mt-5 space-y-3" onSubmit={(event) => void verifyEvent(event)}>
+          <label htmlFor="faculty-event-access-code" className="block text-xs font-bold uppercase tracking-wide">7-digit Event Access Code</label>
+          <input id="faculty-event-access-code" type="text" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{7}" maxLength={7} required value={accessCode} onChange={(event) => setAccessCode(event.currentTarget.value.replace(/\D/g, "").slice(0, 7))} placeholder="1234567" aria-describedby={error ? "event-access-code-error" : undefined} className="w-full rounded-2xl border border-input bg-ink-soft px-4 py-3 text-center font-mono text-xl tracking-[0.35em] text-foreground placeholder:text-sm placeholder:tracking-[0.15em] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" />
+          {error && <p id="event-access-code-error" role="alert" className="rounded-xl border border-primary/30 bg-primary/10 p-3 text-sm text-primary-bright">{error}</p>}
+          <button type="submit" disabled={verifying || accessCode.length !== 7} className="w-full rounded-full bg-primary py-3.5 text-sm font-bold text-primary-foreground disabled:opacity-50">{verifying ? "Verifying…" : "Verify Code"}</button>
+        </form>
+      </section>
+    </div>}
+
+    {opened && <div className="fixed inset-0 z-[70] grid place-items-center overflow-y-auto bg-black/65 p-3 sm:p-5" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) closeDialogs(); }}>
       <section role="dialog" aria-modal="true" aria-labelledby="event-dialog-title" className="relative my-auto max-h-[90dvh] w-full max-w-lg overflow-y-auto rounded-3xl border border-primary/30 bg-card p-5 sm:p-6">
-        <button type="button" aria-label="Close event" onClick={() => { setOpened(null); setToken(null); }} className="absolute right-4 top-4 grid h-9 w-9 place-items-center rounded-full border border-border text-muted-foreground"><X className="h-4 w-4" /></button>
+        <button type="button" aria-label="Close event" onClick={closeDialogs} className="absolute right-4 top-4 grid h-9 w-9 place-items-center rounded-full border border-border text-muted-foreground"><X className="h-4 w-4" /></button>
         <div className="grid h-12 w-12 place-items-center rounded-2xl bg-primary/10 text-primary"><Ticket className="h-6 w-6" /></div>
         {opened.event_logo_url && <EventLogoImage src={opened.event_logo_url} alt={`${opened.name} event logo`} className="mt-4 max-h-52" />}
         <p className="mt-4 text-[10px] font-bold uppercase tracking-[0.2em] text-primary">Event details</p>
@@ -112,35 +166,14 @@ export function StudentEventsTab({ canteenId, canteenName, userId }: { canteenId
           {opened.venue && <span data-no-translate className="flex items-center gap-1.5"><MapPin className="h-4 w-4 text-primary" />{opened.venue}</span>}
           <span>{opened.tokens_remaining} places remaining</span>
         </div>
-        {opened.capacity_available && opened.tokens_remaining < 1 && !participantTokens.some((item) => item.event_id === opened.id) && !token && <p role="status" className="mt-4 rounded-2xl border border-amber-500/35 bg-amber-500/10 p-3 text-sm font-semibold text-amber-800 dark:text-amber-200">This event has reached its token capacity.</p>}
+        {opened.capacity_available && opened.tokens_remaining < 1 && opened.my_tokens.length === 0 && <p role="status" className="mt-4 rounded-2xl border border-amber-500/35 bg-amber-500/10 p-3 text-sm font-semibold text-amber-800 dark:text-amber-200">This event has reached its token capacity.</p>}
         <div className="mt-5 rounded-2xl bg-ink-soft p-3 text-center text-xs text-muted-foreground"><span data-no-translate>{canteenName}</span> · Published event</div>
-        {(() => {
-          const tokens = participantTokens.filter((item) => item.event_id === opened.id);
-          if (token && !tokens.some((item) => item.token_number === token.token_number)) tokens.unshift({ id: token.token_number, event_id: opened.id, token_number: token.token_number, status: "issued" });
-          return tokens.length > 0 ? <div className="mt-5 space-y-3">
-            <p className="text-center text-xs font-bold uppercase tracking-[0.18em] text-primary">Your event tokens</p>
-            <div className="grid gap-3 sm:grid-cols-2">{tokens.map((item) => <div key={item.id} className="rounded-2xl border border-border p-3 text-center"><p className="text-[10px] font-black tracking-[0.18em] text-primary">{formatFacultyEventSerial(opened.serial_number)}</p><p className="display mt-2 text-4xl tracking-[0.2em]">{item.token_number}</p><p className="mt-1 text-xs text-muted-foreground">Show this token at {canteenName} when you attend.</p><div className="mx-auto mt-3 grid w-fit place-items-center rounded-2xl bg-white p-2"><QRCodeCanvas value={`${opened.id}:${item.token_number}`} size={128} /></div></div>)}</div>
-          </div> : <button type="button" disabled={issuing || !opened.capacity_available || opened.tokens_remaining < 1} onClick={() => void generateToken()} className="mt-5 w-full rounded-full bg-primary py-3.5 text-sm font-bold text-primary-foreground disabled:opacity-50">{issuing ? "Generating…" : opened.tokens_remaining < 1 ? "EVENT FULL" : "Generate Token"}</button>;
-        })()}
-        <div className="mt-5 rounded-2xl border border-border p-4">
-          <h4 className="text-sm font-bold">Additional tokens</h4>
-          <p className="mt-1 text-xs text-muted-foreground">Request extra event entry tokens. No food selection or order is involved. {opened.tokens_remaining} places remain available.</p>
-          <div className="mt-3 flex items-center gap-2 sm:gap-3">
-            <button type="button" aria-label="Remove one additional token" disabled={requestedCount <= 1 || requesting} onClick={() => setRequestedCount((current) => Math.max(1, current - 1))} className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-border disabled:opacity-40"><Minus className="h-4 w-4" /></button>
-            <output aria-label="Additional token quantity" className="min-w-8 text-center text-lg font-bold tabular-nums">{requestedCount}</output>
-            <button type="button" aria-label="Add one additional token" disabled={requestedCount >= Math.min(9999, opened.tokens_remaining) || requesting} onClick={() => setRequestedCount((current) => Math.min(9999, opened.tokens_remaining, current + 1))} className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground disabled:opacity-40"><Plus className="h-4 w-4" /></button>
-            <button type="button" disabled={requesting || !opened.capacity_available || opened.tokens_remaining < requestedCount || tokenRequests.some((request) => request.event_id === opened.id && request.status === "pending")} onClick={() => void requestMoreTokens()} className="min-h-10 min-w-0 flex-1 rounded-full border border-primary/50 px-3 py-2 text-[11px] font-bold leading-tight text-primary disabled:opacity-50 sm:text-xs">{requesting ? "Sending request…" : "Request Additional Tokens"}</button>
-          </div>
-          {tokenRequests.filter((request) => request.event_id === opened.id).map((request) => <p key={request.id} className="mt-3 rounded-xl bg-ink-soft p-3 text-xs text-muted-foreground">{request.requested_count} additional token{request.requested_count === 1 ? "" : "s"} · <span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-bold ${tokenRequestStatusClass(request.status)}`}>{request.status.toUpperCase()}</span>{request.canteen_note ? <span data-no-translate>{` — ${request.canteen_note}`}</span> : ""}</p>)}
-        </div>
+        {opened.my_tokens.length > 0 ? <div className="mt-5 space-y-3">
+          <p className="text-center text-xs font-bold uppercase tracking-[0.18em] text-primary">Your event tokens</p>
+          <div className="grid gap-3 sm:grid-cols-2">{opened.my_tokens.map((item) => <div key={item.id} className="rounded-2xl border border-border p-3 text-center"><p className="text-[10px] font-black tracking-[0.18em] text-primary">{formatFacultyEventSerial(opened.serial_number)}</p><p className="display mt-2 text-4xl tracking-[0.2em]">{item.token_number}</p><p className="mt-1 text-xs text-muted-foreground">Show this token at {canteenName} when you attend.</p><div className="mx-auto mt-3 grid w-fit place-items-center rounded-2xl bg-white p-2"><QRCodeCanvas value={`${opened.id}:${item.token_number}`} size={128} /></div></div>)}</div>
+        </div> : <button type="button" disabled={issuing || !opened.capacity_available || opened.tokens_remaining < 1} onClick={() => void generateToken()} className="mt-5 w-full rounded-full bg-primary py-3.5 text-sm font-bold text-primary-foreground disabled:opacity-50">{issuing ? "Generating…" : opened.tokens_remaining < 1 ? "EVENT FULL" : "Generate Token"}</button>}
+        {error && <p role="alert" className="mt-4 rounded-2xl border border-primary/30 bg-primary/10 p-3 text-sm text-primary-bright">{error}</p>}
       </section>
     </div>}
   </section>;
-}
-
-function tokenRequestStatusClass(status: string) {
-  if (status === "pending") return "border-orange-500/40 bg-orange-500/10 text-orange-700 dark:text-orange-300";
-  if (status === "approved") return "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300";
-  if (status === "rejected" || status === "cancelled") return "border-red-500/40 bg-red-500/10 text-red-700 dark:text-red-300";
-  return "border-border bg-ink-soft text-muted-foreground";
 }

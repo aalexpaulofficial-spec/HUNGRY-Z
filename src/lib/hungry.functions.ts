@@ -330,6 +330,76 @@ export const reviewFacultyEventQuotation = createServerFn({ method: "POST" })
     return { status: status as string };
   });
 
+const facultyEventViewerRoles = ["student", "faculty", "guest"] as const;
+
+/** Returns only opaque event identifiers and serials until the access code is verified. */
+export const listPublishedFacultyEventCards = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ canteenId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const db = await admin();
+    const { data: profile, error: profileError } = await db.from("profiles").select("role,current_canteen_id").eq("id", context.userId).maybeSingle();
+    if (profileError || !profile || !facultyEventViewerRoles.includes(profile.role as typeof facultyEventViewerRoles[number]) || profile.current_canteen_id !== data.canteenId) {
+      throw new Error("Join this canteen to view its published event listings.");
+    }
+    const { data: rows, error } = await db.from("faculty_events").select("id,serial_number")
+      .eq("canteen_id", data.canteenId).eq("status", "published").is("archived_at", null)
+      .order("created_at", { ascending: false });
+    if (error) throw new Error("Could not load published events. Please try again.");
+    return (rows ?? []).map((row) => ({ id: row.id, serial_number: row.serial_number }));
+  });
+
+/** Checks the event code before returning any event details or participant tokens. */
+export const verifyFacultyEventAccessCode = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ eventId: z.string().uuid(), eventCode: z.string().regex(/^[0-9]{7}$/) }).parse(input))
+  .handler(async ({ data, context }) => {
+    const db = await admin();
+    const { data: profile, error: profileError } = await db.from("profiles").select("role,current_canteen_id").eq("id", context.userId).maybeSingle();
+    if (profileError || !profile || !facultyEventViewerRoles.includes(profile.role as typeof facultyEventViewerRoles[number]) || !profile.current_canteen_id) {
+      throw new Error("Sign in with a Student, Faculty, or Guest account and join the event canteen.");
+    }
+
+    const { data: event, error: eventError } = await db.from("faculty_events")
+      .select("id,canteen_id,name,serial_number,description,event_date,venue,approved_capacity,event_logo_path")
+      .eq("id", data.eventId).eq("event_code", data.eventCode).eq("canteen_id", profile.current_canteen_id)
+      .eq("status", "published").is("archived_at", null).maybeSingle();
+    if (eventError || !event) throw new Error("Invalid Event Access Code. Check the 7-digit code and try again.");
+
+    const [tokensResult, tokenCountResult, requestsResult] = await Promise.all([
+      db.from("faculty_event_tokens").select("id,token_number,status")
+        .eq("event_id", event.id).eq("customer_id", context.userId).neq("status", "cancelled").order("sequence_number"),
+      db.from("faculty_event_tokens").select("id", { count: "exact", head: true })
+        .eq("event_id", event.id).neq("status", "cancelled"),
+      db.from("faculty_event_token_requests").select("requested_count").eq("event_id", event.id).eq("status", "pending"),
+    ]);
+    if (tokensResult.error || tokenCountResult.error || requestsResult.error) throw new Error("Could not load event access details. Please try again.");
+    const issuedTokens = tokenCountResult.count ?? 0;
+    const reservedTokens = (requestsResult.data ?? []).reduce((sum, request) => sum + request.requested_count, 0);
+    const tokensRemaining = Math.max(0, event.approved_capacity - issuedTokens - reservedTokens);
+    let eventLogoUrl: string | null = null;
+    if (event.event_logo_path) {
+      const { data: signedLogo, error: logoError } = await db.storage.from("faculty-event-logos").createSignedUrl(event.event_logo_path, 60 * 60);
+      if (logoError) throw new Error("Could not load the event logo. Please try again.");
+      eventLogoUrl = signedLogo.signedUrl;
+    }
+
+    return {
+      id: event.id,
+      name: event.name,
+      serial_number: event.serial_number,
+      description: event.description,
+      event_date: event.event_date,
+      venue: event.venue,
+      approved_capacity: event.approved_capacity,
+      issued_tokens: issuedTokens,
+      tokens_remaining: tokensRemaining,
+      capacity_available: true,
+      my_tokens: tokensResult.data ?? [],
+      event_logo_url: eventLogoUrl,
+    };
+  });
+
 export const issueFacultyEventToken = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ eventId: z.string().uuid(), eventCode: z.string().regex(/^[0-9]{7}$/) }).parse(input))
