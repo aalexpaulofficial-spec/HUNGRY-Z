@@ -6,6 +6,7 @@ import { createFacultyEvent } from "@/lib/hungry.functions";
 vi.mock("@tanstack/react-start", () => ({ useServerFn: (fn: unknown) => fn }));
 vi.mock("@/lib/hungry.functions", () => ({
   createFacultyEvent: vi.fn(), publishFacultyEvent: vi.fn(), requestFacultyEventCapacity: vi.fn(),
+  deleteFacultyEvent: vi.fn(),
   resolveAdditionalFacultyEventTokens: vi.fn(),
   resolveFacultyEventCapacity: vi.fn(), reviewFacultyEventRequest: vi.fn(), updateFacultyEvent: vi.fn(),
   submitFacultyEventQuotation: vi.fn(), reviewFacultyEventQuotation: vi.fn(), collectFacultyEventToken: vi.fn(), updateFacultyEventLogo: vi.fn(),
@@ -24,6 +25,7 @@ vi.mock("@/integrations/supabase/client", () => ({
       const query: Record<string, unknown> = {};
       query.select = vi.fn(() => query);
       query.eq = vi.fn(() => query);
+      query.is = vi.fn(() => query);
       query.order = vi.fn(() => query);
       query.then = (resolve: (value: unknown) => unknown, reject?: (reason: unknown) => unknown) => Promise.resolve(result).then(resolve, reject);
       return query;
@@ -58,7 +60,7 @@ describe("faculty event food request menu", () => {
   });
 
   it("submits a request with a message and no menu items", async () => {
-    vi.mocked(createFacultyEvent).mockResolvedValue({ event_code: "1000002" } as never);
+    vi.mocked(createFacultyEvent).mockResolvedValue({ event_code: "1000002", serial_number: 1 } as never);
     render(<EventCapacityPanel mode="faculty" canteenId="canteen-1" canteenName="FLAMES" />);
     fillEventBasics();
     fireEvent.change(screen.getByLabelText("Message to Canteen (Optional)"), { target: { value: "Please suggest a suitable menu." } });
@@ -69,7 +71,7 @@ describe("faculty event food request menu", () => {
   });
 
   it("submits a request with a selected menu item and no message", async () => {
-    vi.mocked(createFacultyEvent).mockResolvedValue({ event_code: "1000002" } as never);
+    vi.mocked(createFacultyEvent).mockResolvedValue({ event_code: "1000002", serial_number: 1 } as never);
     render(<EventCapacityPanel mode="faculty" canteenId="canteen-1" canteenName="FLAMES" />);
     fillEventBasics();
     fireEvent.click(await screen.findByRole("button", { name: "Open FLAMES menu" }));
@@ -97,7 +99,8 @@ describe("faculty event food request menu", () => {
     expect(await screen.findByRole("dialog", { name: "FLAMES Menu" })).toBeInTheDocument();
     expect(screen.getByText("DOSA")).toBeInTheDocument();
     expect(screen.getByText("WADA")).toBeInTheDocument();
-    expect(screen.getByText("BREAKFAST · ₹4")).toBeInTheDocument();
+    expect(screen.getAllByText("BREAKFAST")).toHaveLength(2);
+    expect(screen.getByText("₹4")).toBeInTheDocument();
     expect(screen.getAllByAltText("")).toHaveLength(2);
 
     fireEvent.click(screen.getByRole("button", { name: "Add one DOSA" }));

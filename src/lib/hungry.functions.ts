@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { WEEKDAYS, type WeeklyHours } from "@/lib/canteen-availability";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -195,7 +196,7 @@ export const createFacultyEvent = createServerFn({ method: "POST" })
       initial_capacity: data.initialCapacity,
       approved_capacity: data.initialCapacity,
       status: "requested",
-    }).select("id,event_code").single();
+    }).select("id,event_code,serial_number").single();
     if (error || !row) throw new Error(error?.message.includes("faculty_events_event_code_key") ? "That 7-digit Event Code is already in use." : "Could not create the event. Please try again.");
     return row;
   });
@@ -220,6 +221,22 @@ export const updateFacultyEvent = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+export const deleteFacultyEvent = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ eventId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const db = await admin();
+    const { data: profile, error: profileError } = await db.from("profiles").select("role").eq("id", context.userId).maybeSingle();
+    if (profileError || profile?.role !== "faculty") throw new Error("Only the faculty member who created an event can delete it.");
+    const { data: event, error: readError } = await db.from("faculty_events").select("id,faculty_user_id,archived_at").eq("id", data.eventId).maybeSingle();
+    if (readError || event?.faculty_user_id !== context.userId) throw new Error("You cannot delete this event.");
+    if (event.archived_at) return { deleted: true };
+    const archivedAt = new Date().toISOString();
+    const { data: archived, error } = await db.from("faculty_events").update({ archived_at: archivedAt, status: "closed", updated_at: archivedAt }).eq("id", data.eventId).eq("faculty_user_id", context.userId).is("archived_at", null).select("id").maybeSingle();
+    if (error || !archived) throw new Error("Could not delete this event. Please refresh and try again.");
+    return { deleted: true };
+  });
+
 export const updateFacultyEventLogo = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ eventId: z.string().uuid(), imagePath: z.string().min(1).max(300) }).parse(input))
@@ -229,8 +246,8 @@ export const updateFacultyEventLogo = createServerFn({ method: "POST" })
       throw new Error("Invalid faculty event logo path.");
     }
     const db = await admin();
-    const { data: event, error: readError } = await db.from("faculty_events").select("id,faculty_user_id,event_logo_path").eq("id", data.eventId).maybeSingle();
-    if (readError || event?.faculty_user_id !== context.userId) throw new Error("You cannot change this event logo.");
+    const { data: event, error: readError } = await db.from("faculty_events").select("id,faculty_user_id,event_logo_path,archived_at").eq("id", data.eventId).maybeSingle();
+    if (readError || event?.faculty_user_id !== context.userId || event.archived_at) throw new Error("You cannot change this event logo.");
     const { error } = await db.from("faculty_events").update({ event_logo_path: data.imagePath, updated_at: new Date().toISOString() }).eq("id", data.eventId);
     if (error) throw new Error("Could not save the faculty event logo.");
     return { oldPath: event.event_logo_path as string | null };
@@ -328,7 +345,7 @@ export const issueFacultyEventToken = createServerFn({ method: "POST" })
     });
     if (error) {
       if (error.message.includes("EVENT:full")) throw new Error("EVENT FULL");
-      if (error.message.includes("EVENT:invalid_or_closed")) throw new Error("This event is not available. Check the Event Code.");
+      if (error.message.includes("EVENT:invalid_or_closed")) throw new Error("This event is no longer available. Refresh and select it again.");
       if (error.message.includes("EVENT:not_participant")) throw new Error("Join the participating canteen to get this event token.");
       throw new Error("Could not generate the event token. Please try again.");
     }
@@ -708,7 +725,7 @@ export const adminLogin = createServerFn({ method: "POST" })
   });
 
 /* ---------------- Admin actions ---------------- */
-async function assertAdmin(ctx: { supabase: any; userId: string }) {
+async function assertAdmin(ctx: { supabase: SupabaseClient; userId: string }) {
   const { data } = await ctx.supabase.rpc("has_role", { _user_id: ctx.userId, _role: "admin" });
   if (!data) throw new Error("Forbidden");
 }
@@ -1433,7 +1450,7 @@ export const ownerUpdateOrderStatus = createServerFn({ method: "POST" })
     }
     const patch: { status: string; completion_workflow?: string | null; payment_status?: string; paid_at?: string } = {
       status: data.status,
-      completion_workflow: data.status === "cancelled" ? o.completion_workflow : "manual",
+      completion_workflow: "manual",
     };
     if (data.status === "collected" && o.payment_method === "counter" && data.counterPaymentConfirmed) {
       patch.payment_status = "paid";

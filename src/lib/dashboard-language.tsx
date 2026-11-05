@@ -128,6 +128,23 @@ const authTranslations: Record<Exclude<DashboardLanguage, "en">, Record<string, 
   },
 };
 
+Object.assign(scannerProductTranslations.hi, {
+  "Completed orders": "पूरे हुए ऑर्डर", "Total AI usages": "कुल AI उपयोग", "Used usages": "उपयोग किए गए",
+  "Usages remaining": "शेष उपयोग", "One HUNGRY AI usage is available for each completed food order.": "हर पूरे हुए फूड ऑर्डर पर HUNGRY AI का एक उपयोग मिलता है।",
+  "Complete a food order to unlock another HUNGRY AI usage.": "एक और HUNGRY AI उपयोग पाने के लिए फूड ऑर्डर पूरा करें।",
+  "Complete a food order to get another HUNGRY AI usage.": "एक और HUNGRY AI उपयोग पाने के लिए फूड ऑर्डर पूरा करें।",
+  "Personalized food insight": "आपके लिए खाने की सलाह",
+  "This scan request was already used. Start a new scan to continue.": "यह स्कैन अनुरोध पहले ही इस्तेमाल हो चुका है। जारी रखने के लिए नया स्कैन शुरू करें।",
+});
+Object.assign(scannerProductTranslations.kn, {
+  "Completed orders": "ಪೂರ್ಣಗೊಂಡ ಆರ್ಡರ್‌ಗಳು", "Total AI usages": "ಒಟ್ಟು AI ಬಳಕೆಗಳು", "Used usages": "ಬಳಸಿದ ಬಳಕೆಗಳು",
+  "Usages remaining": "ಉಳಿದ ಬಳಕೆಗಳು", "One HUNGRY AI usage is available for each completed food order.": "ಪ್ರತಿ ಪೂರ್ಣಗೊಂಡ ಆಹಾರ ಆರ್ಡರ್‌ಗೆ ಒಂದು HUNGRY AI ಬಳಕೆ ಲಭ್ಯವಿದೆ.",
+  "Complete a food order to unlock another HUNGRY AI usage.": "ಇನ್ನೊಂದು HUNGRY AI ಬಳಕೆಯನ್ನು ಪಡೆಯಲು ಆಹಾರ ಆರ್ಡರ್ ಪೂರ್ಣಗೊಳಿಸಿ.",
+  "Complete a food order to get another HUNGRY AI usage.": "ಇನ್ನೊಂದು HUNGRY AI ಬಳಕೆಯನ್ನು ಪಡೆಯಲು ಆಹಾರ ಆರ್ಡರ್ ಪೂರ್ಣಗೊಳಿಸಿ.",
+  "Personalized food insight": "ನಿಮಗಾಗಿ ಆಹಾರ ಸಲಹೆ",
+  "This scan request was already used. Start a new scan to continue.": "ಈ ಸ್ಕ್ಯಾನ್ ವಿನಂತಿಯನ್ನು ಈಗಾಗಲೇ ಬಳಸಲಾಗಿದೆ. ಮುಂದುವರಿಸಲು ಹೊಸ ಸ್ಕ್ಯಾನ್ ಪ್ರಾರಂಭಿಸಿ.",
+});
+
 const dictionaries: Record<DashboardLanguage, Record<string, string>> = { en: {}, hi: { ...hi, ...hiExtra, ...scannerAndStatusTranslations.hi, ...studentDashboardTranslations.hi, ...scannerProductTranslations.hi, ...authTranslations.hi }, kn: { ...kn, ...knExtra, ...scannerAndStatusTranslations.kn, ...studentDashboardTranslations.kn, ...scannerProductTranslations.kn, ...authTranslations.kn } };
 
 const eventDashboardTranslations: Record<Exclude<DashboardLanguage, "en">, Record<string, string>> = {
@@ -233,6 +250,12 @@ const eventDashboardTranslations: Record<Exclude<DashboardLanguage, "en">, Recor
 };
 
 Object.assign(eventDashboardTranslations.hi, {
+  "Choose a published event to view details and generate your participation token.": "विवरण देखने और भागीदारी टोकन बनाने के लिए प्रकाशित कार्यक्रम चुनें।",
+  "View Event": "कार्यक्रम देखें", "Published event": "प्रकाशित कार्यक्रम",
+  "This event has reached its token capacity.": "इस कार्यक्रम के सभी टोकन उपलब्ध हो चुके हैं।",
+  "This event is no longer available. Refresh and select it again.": "यह कार्यक्रम अब उपलब्ध नहीं है। रीफ़्रेश करके इसे फिर चुनें।",
+  "Delete Event": "कार्यक्रम हटाएँ", "Delete this event? It will be removed from both dashboards and student listings. Existing tokens, orders and audit history will be preserved.": "क्या यह कार्यक्रम हटाएँ? यह दोनों डैशबोर्ड और छात्र सूची से हट जाएगा। मौजूदा टोकन, ऑर्डर और ऑडिट इतिहास सुरक्षित रहेंगे।",
+  "Event deleted.": "कार्यक्रम हटा दिया गया।", "Could not delete this event. Please refresh and try again.": "कार्यक्रम नहीं हटाया जा सका। रीफ़्रेश करके फिर कोशिश करें।",
   "Could not create the event.": "कार्यक्रम नहीं बनाया जा सका।", "Could not send the capacity request.": "क्षमता अनुरोध नहीं भेजा जा सका।",
   "Additional capacity approved and activated.": "अतिरिक्त क्षमता मंज़ूर करके सक्रिय की गई।", "Capacity request rejected.": "क्षमता अनुरोध अस्वीकार किया गया।",
   "Set a valid quantity and price for every requested food item.": "हर माँगी गई चीज़ के लिए सही मात्रा और कीमत दर्ज करें।",
@@ -258,6 +281,12 @@ Object.assign(eventDashboardTranslations.hi, {
   "You cannot verify this event token.": "आप इस कार्यक्रम टोकन का सत्यापन नहीं कर सकते।", "There is no longer enough event capacity to approve this request.": "इस अनुरोध को मंज़ूर करने के लिए अब पर्याप्त कार्यक्रम क्षमता नहीं है।",
 });
 Object.assign(eventDashboardTranslations.kn, {
+  "Choose a published event to view details and generate your participation token.": "ವಿವರಗಳನ್ನು ವೀಕ್ಷಿಸಲು ಮತ್ತು ಭಾಗವಹಿಸುವ ಟೋಕನ್ ಪಡೆಯಲು ಪ್ರಕಟಿತ ಕಾರ್ಯಕ್ರಮವನ್ನು ಆಯ್ಕೆಮಾಡಿ.",
+  "View Event": "ಕಾರ್ಯಕ್ರಮ ವೀಕ್ಷಿಸಿ", "Published event": "ಪ್ರಕಟಿತ ಕಾರ್ಯಕ್ರಮ",
+  "This event has reached its token capacity.": "ಈ ಕಾರ್ಯಕ್ರಮದ ಟೋಕನ್ ಸಾಮರ್ಥ್ಯ ಪೂರ್ಣವಾಗಿದೆ.",
+  "This event is no longer available. Refresh and select it again.": "ಈ ಕಾರ್ಯಕ್ರಮ ಇನ್ನು ಲಭ್ಯವಿಲ್ಲ. ರಿಫ್ರೆಶ್ ಮಾಡಿ ಮತ್ತೆ ಆಯ್ಕೆಮಾಡಿ.",
+  "Delete Event": "ಕಾರ್ಯಕ್ರಮ ಅಳಿಸಿ", "Delete this event? It will be removed from both dashboards and student listings. Existing tokens, orders and audit history will be preserved.": "ಈ ಕಾರ್ಯಕ್ರಮವನ್ನು ಅಳಿಸಬೇಕೇ? ಇದು ಎರಡೂ ಡ್ಯಾಶ್‌ಬೋರ್ಡ್‌ಗಳು ಮತ್ತು ವಿದ್ಯಾರ್ಥಿಗಳ ಪಟ್ಟಿಯಿಂದ ತೆಗೆದುಹಾಕಲಾಗುತ್ತದೆ. ಈಗಿರುವ ಟೋಕನ್‌ಗಳು, ಆರ್ಡರ್‌ಗಳು ಮತ್ತು ಆಡಿಟ್ ಇತಿಹಾಸ ಉಳಿಯುತ್ತವೆ.",
+  "Event deleted.": "ಕಾರ್ಯಕ್ರಮ ಅಳಿಸಲಾಗಿದೆ.", "Could not delete this event. Please refresh and try again.": "ಕಾರ್ಯಕ್ರಮ ಅಳಿಸಲಾಗಲಿಲ್ಲ. ರಿಫ್ರೆಶ್ ಮಾಡಿ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
   "Could not create the event.": "ಕಾರ್ಯಕ್ರಮ ರಚಿಸಲಾಗಲಿಲ್ಲ.", "Could not send the capacity request.": "ಸಾಮರ್ಥ್ಯದ ವಿನಂತಿ ಕಳುಹಿಸಲಾಗಲಿಲ್ಲ.",
   "Additional capacity approved and activated.": "ಹೆಚ್ಚುವರಿ ಸಾಮರ್ಥ್ಯ ಅನುಮೋದಿಸಿ ಸಕ್ರಿಯಗೊಳಿಸಲಾಗಿದೆ.", "Capacity request rejected.": "ಸಾಮರ್ಥ್ಯದ ವಿನಂತಿ ತಿರಸ್ಕರಿಸಲಾಗಿದೆ.",
   "Set a valid quantity and price for every requested food item.": "ಕೇಳಿದ ಪ್ರತಿಯೊಂದು ಆಹಾರ ಪದಾರ್ಥದ ಸರಿಯಾದ ಪ್ರಮಾಣ ಮತ್ತು ಬೆಲೆ ನಮೂದಿಸಿ.",
@@ -313,6 +342,21 @@ Object.assign(eventDashboardTranslations.kn, {
   "Wide (16:9)": "ಅಗಲ (16:9)",
   "Square (1:1)": "ಚೌಕ (1:1)",
   "Zoom:": "ಝೂಮ್:",
+});
+
+Object.assign(eventDashboardTranslations.hi, {
+  "Choose dishes and set the requested quantity.": "व्यंजन चुनें और अनुरोधित मात्रा तय करें।",
+  "Requested quantity": "अनुरोधित मात्रा",
+  "Add quantity": "मात्रा जोड़ें",
+  Food: "भोजन",
+  "Menu item": "मेनू आइटम",
+});
+Object.assign(eventDashboardTranslations.kn, {
+  "Choose dishes and set the requested quantity.": "ತಿನಿಸುಗಳನ್ನು ಆಯ್ಕೆ ಮಾಡಿ ಮತ್ತು ಬೇಕಾದ ಪ್ರಮಾಣ ನಿಗದಿಪಡಿಸಿ.",
+  "Requested quantity": "ಕೇಳಿದ ಪ್ರಮಾಣ",
+  "Add quantity": "ಪ್ರಮಾಣ ಸೇರಿಸಿ",
+  Food: "ಆಹಾರ",
+  "Menu item": "ಮೆನು ಪದಾರ್ಥ",
 });
 
 export function translateDashboardText(input: string, language: DashboardLanguage): string {

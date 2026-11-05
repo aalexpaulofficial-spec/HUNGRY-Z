@@ -11,11 +11,12 @@ vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     from: (table: string) => {
       const result = table === "faculty_events"
-        ? { data: [{ id: "event-1", name: "Hackathon", event_code: "1234567", description: "Campus coding event", event_date: "2026-12-01", venue: "Main Hall", approved_capacity: 10, status: "published", event_logo_path: fixtures.eventLogoPath }], error: null }
+        ? { data: [{ id: "event-1", name: "Hackathon", event_code: "1234567", serial_number: 1, description: "Campus coding event", event_date: "2026-12-01", venue: "Main Hall", approved_capacity: 10, status: "published", event_logo_path: fixtures.eventLogoPath, archived_at: null }], error: null }
         : { data: [], error: null };
       const query: Record<string, unknown> = {};
       query.select = vi.fn(() => query);
       query.eq = vi.fn(() => query);
+      query.is = vi.fn(() => query);
       query.neq = vi.fn(() => query);
       query.order = vi.fn(() => query);
       query.then = (resolve: (value: unknown) => unknown, reject?: (reason: unknown) => unknown) => Promise.resolve(result).then(resolve, reject);
@@ -31,28 +32,21 @@ vi.mock("@/integrations/supabase/client", () => ({
 afterEach(() => { cleanup(); vi.clearAllMocks(); fixtures.eventLogoPath = null; });
 
 describe("student event participation", () => {
-  it("keeps the Event Code placeholder and full seven-digit value visible in the mobile layout", async () => {
+  it("opens event details directly from the published card without an Event Code form", async () => {
     render(<StudentEventsTab canteenId="canteen-1" canteenName="FLAMES" userId="student-1" />);
-    fireEvent.click(await screen.findByRole("button", { name: /Hackathon/ }));
-    const input = screen.getByLabelText("7-digit Event Code") as HTMLInputElement;
-    const form = input.closest("form")!;
-    expect(input.placeholder).toBe("7-digit Event Code");
-    expect(form).toHaveClass("flex-col", "sm:flex-row", "min-w-0");
-    expect(input).toHaveClass("w-full", "min-w-0", "max-w-full", "text-sm", "tracking-[0.12em]", "placeholder:tracking-normal");
-    expect(screen.getByRole("button", { name: "Open Event" })).toHaveClass("w-full", "sm:w-auto", "min-h-12");
-
-    fireEvent.change(input, { target: { value: "1234567" } });
-    expect(input).toHaveValue("1234567");
-    expect(input.value).toHaveLength(7);
+    fireEvent.click(await screen.findByRole("button", { name: "Open event Hackathon" }));
+    expect(await screen.findByRole("dialog", { name: "Hackathon" })).toBeInTheDocument();
+    expect(screen.getAllByText("EVENT #001").length).toBeGreaterThanOrEqual(2);
+    expect(screen.queryByLabelText("7-digit Event Code")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Open Event" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Generate Token" })).toBeInTheDocument();
   });
 
   it("verifies the seven-digit code and issues a four-digit token without food checkout", async () => {
     issueToken.mockResolvedValue({ token_number: "0042", approved_capacity: 10, issued_tokens: 3, tokens_remaining: 7, already_issued: false });
     render(<StudentEventsTab canteenId="canteen-1" canteenName="FLAMES" userId="student-1" />);
 
-    fireEvent.click(await screen.findByRole("button", { name: /Hackathon/ }));
-    fireEvent.change(screen.getByLabelText("7-digit Event Code"), { target: { value: "1234567" } });
-    fireEvent.click(screen.getByRole("button", { name: "Open Event" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Open event Hackathon" }));
 
     const dialog = await screen.findByRole("dialog", { name: "Hackathon" });
     expect(dialog).toHaveTextContent("Campus coding event");
@@ -62,6 +56,7 @@ describe("student event participation", () => {
     fireEvent.click(screen.getByRole("button", { name: "Generate Token" }));
 
     expect(await screen.findByText("0042")).toBeInTheDocument();
+    expect(dialog).toHaveTextContent("EVENT #001");
     expect(dialog.querySelector("canvas")).toBeInTheDocument();
     expect(issueToken).toHaveBeenCalledWith({ data: { eventId: "event-1", eventCode: "1234567" } });
   });
@@ -69,9 +64,7 @@ describe("student event participation", () => {
   it("requests a chosen number of additional tokens without food selection", async () => {
     requestTokens.mockResolvedValue({ request_id: "request-1", status: "pending", requested_count: 2, tokens_remaining: 6 });
     render(<StudentEventsTab canteenId="canteen-1" canteenName="FLAMES" userId="student-1" />);
-    fireEvent.click(await screen.findByRole("button", { name: /Hackathon/ }));
-    fireEvent.change(screen.getByLabelText("7-digit Event Code"), { target: { value: "1234567" } });
-    fireEvent.click(screen.getByRole("button", { name: "Open Event" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Open event Hackathon" }));
     const dialog = await screen.findByRole("dialog", { name: "Hackathon" });
     fireEvent.click(screen.getByRole("button", { name: "Add one additional token" }));
     expect(screen.getByLabelText("Additional token quantity")).toHaveTextContent("2");
@@ -90,9 +83,7 @@ describe("student event participation", () => {
     expect(cardLogo).toHaveAttribute("src", "https://storage.example/student-logo");
     expect(cardLogo).toHaveClass("object-contain", "max-h-52", "max-w-full");
     expect(cardLogo.parentElement).toHaveClass("max-h-56", "overflow-hidden", "rounded-2xl");
-    fireEvent.click(screen.getByRole("button", { name: /Hackathon/ }));
-    fireEvent.change(screen.getByLabelText("7-digit Event Code"), { target: { value: "1234567" } });
-    fireEvent.click(screen.getByRole("button", { name: "Open Event" }));
+    fireEvent.click(screen.getByRole("button", { name: "Open event Hackathon" }));
     const displayedLogos = await screen.findAllByAltText("Hackathon event logo");
     expect(displayedLogos).toHaveLength(2);
     displayedLogos.forEach((logo) => expect(logo).toHaveClass("object-contain", "max-h-52", "max-w-full"));

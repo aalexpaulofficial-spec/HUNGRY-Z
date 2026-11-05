@@ -6,6 +6,7 @@ const fixtures = vi.hoisted(() => ({ events: [] as Record<string, unknown>[], re
 vi.mock("@tanstack/react-start", () => ({ useServerFn: (fn: unknown) => fn }));
 vi.mock("@/lib/hungry.functions", () => ({
   collectFacultyEventToken: vi.fn(), createFacultyEvent: vi.fn(), publishFacultyEvent: vi.fn(),
+  deleteFacultyEvent: vi.fn(),
   requestFacultyEventCapacity: vi.fn(), resolveAdditionalFacultyEventTokens: vi.fn(), resolveFacultyEventCapacity: vi.fn(),
   reviewFacultyEventQuotation: vi.fn(), reviewFacultyEventRequest: vi.fn(), submitFacultyEventQuotation: vi.fn(),
   updateFacultyEvent: vi.fn(), updateFacultyEventLogo: vi.fn(), updateFacultyEventServedQuantities: vi.fn(),
@@ -19,6 +20,7 @@ vi.mock("@/integrations/supabase/client", () => ({
       const query: Record<string, unknown> = {};
       query.select = vi.fn(() => query);
       query.eq = vi.fn(() => query);
+      query.is = vi.fn(() => query);
       query.order = vi.fn(() => query);
       query.then = (resolve: (value: unknown) => unknown, reject?: (reason: unknown) => unknown) => Promise.resolve(result).then(resolve, reject);
       return query;
@@ -30,20 +32,40 @@ vi.mock("@/integrations/supabase/client", () => ({
 }));
 
 import { EventCapacityPanel } from "@/components/foodexa/EventCapacityPanel";
-import { createFacultyEvent, reviewFacultyEventQuotation, submitFacultyEventQuotation, updateFacultyEventLogo, updateFacultyEventServedQuantities } from "@/lib/hungry.functions";
+import { createFacultyEvent, deleteFacultyEvent, reviewFacultyEventQuotation, submitFacultyEventQuotation, updateFacultyEventLogo, updateFacultyEventServedQuantities } from "@/lib/hungry.functions";
 
 afterEach(() => { cleanup(); vi.clearAllMocks(); fixtures.events = []; fixtures.realtimeCallbacks = []; });
 
 function event(overrides: Record<string, unknown> = {}) {
   return {
-    id: "event-1", faculty_user_id: "faculty-1", canteen_id: "canteen-1", name: "Revival Meeting", event_code: "1234567", token_prefix: "R",
+    id: "event-1", faculty_user_id: "faculty-1", canteen_id: "canteen-1", name: "Revival Meeting", event_code: "1234567", serial_number: 1, token_prefix: "R",
     description: "", event_date: "2026-12-01", venue: "Main Hall", food_request_message: "MAKE 10 CHICKEN BIRYANI", faculty_note: "",
-    food_requirements: {}, initial_capacity: 10, approved_capacity: 10, estimated_budget: 0, served_food_quantities: {}, status: "accepted",
+    food_requirements: {}, initial_capacity: 10, approved_capacity: 10, estimated_budget: 0, served_food_quantities: {}, archived_at: null, status: "accepted",
     canteen_note: "", food_confirmation: {}, created_at: "2026-11-05T00:00:00Z", ...overrides,
   };
 }
 
 describe("manual quotation for message-only faculty requests", () => {
+  it("shows a Faculty-only delete action and archives after confirmation", async () => {
+    fixtures.events = [event()];
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
+    vi.mocked(deleteFacultyEvent).mockImplementation(async () => { fixtures.events = []; return { deleted: true }; });
+    render(<EventCapacityPanel mode="faculty" canteenId="canteen-1" canteenName="FLAMES" userId="faculty-1" />);
+    expect(await screen.findByRole("button", { name: "Delete Event" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Delete Event" }));
+    expect(confirm).toHaveBeenCalledWith(expect.stringContaining("Existing tokens, orders and audit history will be preserved."));
+    await waitFor(() => expect(deleteFacultyEvent).toHaveBeenCalledWith({ data: { eventId: "event-1" } }));
+    expect(await screen.findByText("Event deleted.")).toBeInTheDocument();
+    confirm.mockRestore();
+  });
+
+  it("does not show event deletion controls to the canteen owner", async () => {
+    fixtures.events = [event()];
+    render(<EventCapacityPanel mode="canteen" canteenId="canteen-1" canteenName="FLAMES" />);
+    await screen.findByText("MAKE 10 CHICKEN BIRYANI");
+    expect(screen.queryByRole("button", { name: "Delete Event" })).not.toBeInTheDocument();
+  });
+
   it("lets the canteen edit manual lines, totals them, and sends the quotation", async () => {
     fixtures.events = [event()];
     vi.mocked(submitFacultyEventQuotation).mockResolvedValue({ estimatedBudget: 2500 } as never);
@@ -138,7 +160,7 @@ describe("manual quotation for message-only faculty requests", () => {
   });
 
   it("uploads an optional faculty event logo to private storage and saves its event path", async () => {
-    vi.mocked(createFacultyEvent).mockResolvedValue({ id: "event-2", event_code: "7654321" } as never);
+    vi.mocked(createFacultyEvent).mockResolvedValue({ id: "event-2", event_code: "7654321", serial_number: 2 } as never);
     vi.mocked(updateFacultyEventLogo).mockResolvedValue({ oldPath: null } as never);
     fixtures.upload.mockResolvedValue({ data: { path: "" }, error: null });
     const { container } = render(<EventCapacityPanel mode="faculty" canteenId="canteen-1" canteenName="FLAMES" userId="faculty-1" />);

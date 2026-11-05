@@ -39,13 +39,13 @@ describe("scanner camera and photo input", () => {
     vi.clearAllMocks();
     mocks.getAccess.mockResolvedValue({
       ok: true,
-      expiresAt: "2099-01-01T00:00:00Z",
-      startedAt: "2026-01-01T00:00:00Z",
-      version: "1.0",
-      active: true,
+      completed_orders: 4,
+      total_usages: 4,
+      used_usages: 0,
+      remaining_usages: 4,
     });
     mocks.listScans.mockResolvedValue([]);
-    mocks.scan.mockResolvedValue({ ok: true, scans: [row] });
+    mocks.scan.mockResolvedValue({ ok: true, scans: [row], personalizedInsight: "You often order dosa.", usage: { completed_orders: 4, total_usages: 4, used_usages: 1, remaining_usages: 3 } });
     mocks.updateFood.mockResolvedValue({ ok: true, scan: row });
     vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue(undefined);
     vi.spyOn(HTMLVideoElement.prototype, "videoWidth", "get").mockReturnValue(640);
@@ -120,9 +120,7 @@ describe("scanner camera and photo input", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: /Capture Food/i }));
     await waitFor(() =>
-      expect(mocks.scan).toHaveBeenCalledWith({
-        data: { image: "data:image/jpeg;base64,Zm9vZA==" },
-      }),
+      expect(mocks.scan).toHaveBeenCalledWith({ data: expect.objectContaining({ image: "data:image/jpeg;base64,Zm9vZA==", requestId: expect.stringMatching(/^[0-9a-f-]{36}$/i) }) }),
     );
     expect(track.stop).toHaveBeenCalled();
     expect(mocks.listScans).not.toHaveBeenCalled();
@@ -146,11 +144,11 @@ describe("scanner camera and photo input", () => {
     const file = new File(["food"], "lunch.png", { type: "image/png" });
     fireEvent.change(input, { target: { files: [file] } });
     await waitFor(() =>
-      expect(mocks.scan).toHaveBeenCalledWith({
-        data: { image: "data:image/jpeg;base64,Zm9vZA==" },
-      }),
+      expect(mocks.scan).toHaveBeenCalledWith({ data: expect.objectContaining({ image: "data:image/jpeg;base64,Zm9vZA==", requestId: expect.stringMatching(/^[0-9a-f-]{36}$/i) }) }),
     );
     expect((await screen.findAllByText("plain dosa")).length).toBeGreaterThan(0);
+    expect(screen.getByText("You often order dosa.")).toBeInTheDocument();
+    expect(screen.getByText("Usages remaining").parentElement).toHaveTextContent("4");
     expect(mocks.listScans).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: /^Close$/i }));
     expect(screen.queryByText("plain dosa")).not.toBeInTheDocument();

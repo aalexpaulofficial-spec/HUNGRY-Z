@@ -288,7 +288,8 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
     const { data: eventRows, error: eventError } = await supabase
       .from("faculty_events")
       .select("id")
-      .eq("canteen_id", canteen.id);
+      .eq("canteen_id", canteen.id)
+      .is("archived_at", null);
     if (eventError) return;
     const eventIds = (eventRows ?? []).map((event) => event.id);
     if (eventIds.length === 0) {
@@ -348,7 +349,6 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
     printLock.current = true;
     setPrinting(true);
     let finished = false;
-    let cleanupTimer: number | undefined;
     const clearPrintState = () => {
       if (finished) return;
       finished = true;
@@ -393,7 +393,7 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
       return;
     }
     window.addEventListener("afterprint", finishAfterPrint, { once: true });
-    cleanupTimer = window.setTimeout(finishWithoutPrintConfirmation, 60_000);
+    const cleanupTimer = window.setTimeout(finishWithoutPrintConfirmation, 60_000);
     try {
       flushSync(() => setPrintJob(job));
       const logo = document.querySelector<HTMLImageElement>("#hungry-thermal-print .hungry-receipt-header img");

@@ -5,7 +5,7 @@ import { canteenDecisionEmail } from "@/lib/email-templates";
 export async function sendCanteenEmail(
   kind: "approved" | "rejected",
   to: string,
-  data: { canteenName: string; university: string; code?: string; ownerLoginId?: string; ownerLoginCode?: string },
+  data: { canteenName: string; university: string; code?: string; ownerLoginId?: string; ownerLoginCode?: string; installUrl?: string },
   refId?: string,
 ): Promise<SendResult> {
   return sendEmail(kind === "approved" ? "canteen_approved" : "canteen_rejected", to, canteenDecisionEmail(kind, data), refId);

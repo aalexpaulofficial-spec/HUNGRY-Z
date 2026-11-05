@@ -892,6 +892,12 @@ export type Database = {
         }
         Relationships: []
       }
+      scanner_usage: {
+        Row: { request_id: string; user_id: string; status: string; created_at: string; completed_at: string | null }
+        Insert: { request_id: string; user_id: string; status?: string; created_at?: string; completed_at?: string | null }
+        Update: { request_id?: string; user_id?: string; status?: string; created_at?: string; completed_at?: string | null }
+        Relationships: []
+      }
       support_requests: {
         Row: {
           canteen_id: string | null
@@ -988,9 +994,9 @@ export type Database = {
         Relationships: []
       }
       faculty_events: {
-          Row: { id: string; faculty_user_id: string; canteen_id: string; name: string; event_code: string; token_prefix: string; description: string; event_date: string | null; venue: string; faculty_note: string; estimated_budget: number; served_food_quantities: Json; served_food_updated_at: string | null; event_logo_path: string | null; food_requirements: Json; food_request_message: string; food_confirmation: Json; canteen_note: string; initial_capacity: number; approved_capacity: number; next_token_sequence: number; status: string; created_at: string; updated_at: string }
-          Insert: { id?: string; faculty_user_id: string; canteen_id: string; name: string; event_code: string; token_prefix: string; description?: string; event_date?: string | null; venue?: string; faculty_note?: string; estimated_budget?: number; served_food_quantities?: Json; served_food_updated_at?: string | null; event_logo_path?: string | null; food_requirements?: Json; food_request_message?: string; food_confirmation?: Json; canteen_note?: string; initial_capacity: number; approved_capacity: number; next_token_sequence?: number; status?: string; created_at?: string; updated_at?: string }
-          Update: { id?: string; faculty_user_id?: string; canteen_id?: string; name?: string; event_code?: string; token_prefix?: string; description?: string; event_date?: string | null; venue?: string; faculty_note?: string; estimated_budget?: number; served_food_quantities?: Json; served_food_updated_at?: string | null; event_logo_path?: string | null; food_requirements?: Json; food_request_message?: string; food_confirmation?: Json; canteen_note?: string; initial_capacity?: number; approved_capacity?: number; next_token_sequence?: number; status?: string; created_at?: string; updated_at?: string }
+          Row: { id: string; faculty_user_id: string; canteen_id: string; name: string; event_code: string; serial_number: number; token_prefix: string; description: string; event_date: string | null; venue: string; faculty_note: string; estimated_budget: number; served_food_quantities: Json; served_food_updated_at: string | null; event_logo_path: string | null; archived_at: string | null; food_requirements: Json; food_request_message: string; food_confirmation: Json; canteen_note: string; initial_capacity: number; approved_capacity: number; next_token_sequence: number; status: string; created_at: string; updated_at: string }
+          Insert: { id?: string; faculty_user_id: string; canteen_id: string; name: string; event_code: string; serial_number?: number; token_prefix: string; description?: string; event_date?: string | null; venue?: string; faculty_note?: string; estimated_budget?: number; served_food_quantities?: Json; served_food_updated_at?: string | null; event_logo_path?: string | null; archived_at?: string | null; food_requirements?: Json; food_request_message?: string; food_confirmation?: Json; canteen_note?: string; initial_capacity: number; approved_capacity: number; next_token_sequence?: number; status?: string; created_at?: string; updated_at?: string }
+          Update: { id?: string; faculty_user_id?: string; canteen_id?: string; name?: string; event_code?: string; serial_number?: number; token_prefix?: string; description?: string; event_date?: string | null; venue?: string; faculty_note?: string; estimated_budget?: number; served_food_quantities?: Json; served_food_updated_at?: string | null; event_logo_path?: string | null; archived_at?: string | null; food_requirements?: Json; food_request_message?: string; food_confirmation?: Json; canteen_note?: string; initial_capacity?: number; approved_capacity?: number; next_token_sequence?: number; status?: string; created_at?: string; updated_at?: string }
         Relationships: []
       }
       faculty_event_capacity_requests: {
@@ -1097,6 +1103,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      hungry_get_scanner_usage: { Args: never; Returns: { completed_orders: number; total_usages: number; used_usages: number; remaining_usages: number }[] }
+      hungry_reserve_scanner_usage: { Args: { p_request_id: string }; Returns: { reserved: boolean; completed_orders: number; total_usages: number; used_usages: number; remaining_usages: number }[] }
+      hungry_complete_scanner_usage: { Args: { p_request_id: string }; Returns: { completed_orders: number; total_usages: number; used_usages: number; remaining_usages: number }[] }
+      hungry_release_scanner_usage: { Args: { p_request_id: string; p_user_id: string }; Returns: boolean }
       owns_canteen: { Args: { _canteen: string }; Returns: boolean }
       valid_canteen_hours: { Args: { p_hours: Json }; Returns: boolean }
     }

@@ -14,6 +14,7 @@ import { bannerCropStyle } from "@/lib/banner-crop";
 import { ORDER_LABELS, ORDER_STATUSES, canAcceptOrders, type MenuItem } from "@/lib/access";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { ScannerTab } from "@/components/foodexa/ScannerTab";
+import { canUseHungryAi } from "@/lib/scanner";
 import { SocialThankYouDialog } from "@/components/foodexa/SocialThankYouDialog";
 import { OrderStatusBadge, orderStatusBorderClass } from "@/components/foodexa/OrderStatusBadge";
 import { VerifiedCanteenLabel } from "@/components/foodexa/VerifiedCanteenLabel";
@@ -174,6 +175,10 @@ function OrderingApp() {
   useEffect(() => {
     loadProfile();
   }, [loadProfile]);
+
+  useEffect(() => {
+    if (profile && !canUseHungryAi(profile.role) && tab === "scan") setTab("home");
+  }, [profile?.role, setTab, tab]);
 
   const canteenId = canteen?.id;
   useEffect(() => {
@@ -378,7 +383,7 @@ function OrderingApp() {
 
   const ordering = canAcceptOrders(canteen, availabilityNow);
   const nextOpen = canteen.availability_mode === "open" ? null : nextScheduledOpening(canteen, availabilityNow);
-  const navTabs = [["home", "HOME", Home], ["menu", "MENU", UtensilsCrossed], ["scan", "HUNGRY AI", ScanLine], ["events", "EVENTS", Ticket], ["orders", "ORDERS", Receipt], ["you", "YOU", User]] as const;
+  const navTabs = ([["home", "HOME", Home], ["menu", "MENU", UtensilsCrossed], ["scan", "HUNGRY AI", ScanLine], ["events", "EVENTS", Ticket], ["orders", "ORDERS", Receipt], ["you", "YOU", User]] as const).filter(([key]) => key !== "scan" || canUseHungryAi(profile.role));
 
   return (
     <div className="min-h-screen bg-background">
@@ -414,7 +419,7 @@ function OrderingApp() {
               ? <FacultyEventSections canteenId={canteen.id} canteenName={canteen.name} userId={profile.id} />
               : <div className="space-y-8"><StudentEventsTab canteenId={canteen.id} canteenName={canteen.name} userId={profile.id} /></div>)}
             {tab === "orders" && <OrdersTab orders={orders} onOpen={(o) => setOpenOrderId(o.id)} />}
-            {tab === "scan" && <ScannerTab />}
+            {tab === "scan" && canUseHungryAi(profile.role) && <ScannerTab userId={profile.id} />}
             {tab === "you" && <YouTab profile={profile} canteen={canteen} onSwitch={() => setSwitching(true)} onSignOut={signOut} />}
           </motion.main>
         </AnimatePresence>

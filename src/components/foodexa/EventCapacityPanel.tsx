@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { CalendarDays, List, X } from "lucide-react";
+import { CalendarDays, List, Trash2, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { collectFacultyEventToken, createFacultyEvent, publishFacultyEvent, requestFacultyEventCapacity, resolveAdditionalFacultyEventTokens, resolveFacultyEventCapacity, reviewFacultyEventQuotation, reviewFacultyEventRequest, submitFacultyEventQuotation, updateFacultyEvent, updateFacultyEventLogo, updateFacultyEventServedQuantities } from "@/lib/hungry.functions";
+import { collectFacultyEventToken, createFacultyEvent, deleteFacultyEvent, publishFacultyEvent, requestFacultyEventCapacity, resolveAdditionalFacultyEventTokens, resolveFacultyEventCapacity, reviewFacultyEventQuotation, reviewFacultyEventRequest, submitFacultyEventQuotation, updateFacultyEvent, updateFacultyEventLogo, updateFacultyEventServedQuantities } from "@/lib/hungry.functions";
 import { FACULTY_EVENT_LOGO_BUCKET, FACULTY_EVENT_LOGO_MAX_BYTES, facultyEventLogoObjectPath, getFacultyEventLogoUrls } from "@/lib/faculty-event-logos";
 import { createCroppedEventLogoFile, EventLogoCropAdjust, EventLogoImage, type EventLogoCrop } from "@/components/foodexa/FacultyEventLogo";
+import { formatFacultyEventSerial } from "@/lib/faculty-event-serial";
 
 type EventRow = {
-  id: string; faculty_user_id: string; canteen_id: string; name: string; event_code: string; token_prefix: string;
-  description: string; event_date: string | null; venue: string; food_request_message: string; faculty_note: string;
+  id: string; faculty_user_id: string; canteen_id: string; name: string; event_code: string; serial_number: number; token_prefix: string;
+  description: string; event_date: string | null; venue: string; food_request_message: string; faculty_note: string; archived_at: string | null;
   food_requirements: Record<string, number>; initial_capacity: number; approved_capacity: number; estimated_budget: number;
   served_food_quantities: Record<string, number>; served_food_updated_at: string | null; event_logo_path: string | null; status: string; canteen_note: string;
   food_confirmation: { quantities?: Record<string, number>; prices?: Record<string, number> }; created_at: string;
@@ -67,11 +68,12 @@ export function EventCapacityPanel({ mode, canteenId, canteenName, userId }: { m
   const reviewQuotation = useServerFn(reviewFacultyEventQuotation);
   const collectToken = useServerFn(collectFacultyEventToken);
   const saveServed = useServerFn(updateFacultyEventServedQuantities);
+  const archiveEvent = useServerFn(deleteFacultyEvent);
   const handleLogoCropChange = useCallback((crop: EventLogoCrop | null) => setEventLogoCrop(crop), []);
 
   const load = useCallback(async () => {
     const [eventResult, requestResult, tokenResult, menuResult, studentRequestResult] = await Promise.all([
-      supabase.from("faculty_events").select("*").eq("canteen_id", canteenId).order("created_at", { ascending: false }),
+      supabase.from("faculty_events").select("*").eq("canteen_id", canteenId).is("archived_at", null).order("created_at", { ascending: false }),
       supabase.from("faculty_event_capacity_requests").select("*").order("created_at", { ascending: false }),
       supabase.from("faculty_event_tokens").select("id,event_id,status,token_number,customer_id,created_at").eq("canteen_id", canteenId),
       supabase.from("menu_items").select("id,name,price,image,category,stock").eq("canteen_id", canteenId).eq("available", true).order("category").order("name"),
@@ -156,7 +158,7 @@ export function EventCapacityPanel({ mode, canteenId, canteenName, userId }: { m
           logoFailureMessage = logoError instanceof Error ? `The event request was sent, but the logo could not be saved: ${logoError.message}` : "The event request was sent, but the logo could not be saved.";
         }
       }
-      setMessage(`Event request sent to ${canteenName}. Event Code: ${result.event_code}. The canteen will review the request and send a quotation.`); setName(""); setEventCode(""); setDescription(""); setEventDate(""); setVenue(""); setFoodRequestMessage(""); setFoodSelection({});
+      setMessage(`Event request sent to ${canteenName}. ${formatFacultyEventSerial(result.serial_number)} · Event Code: ${result.event_code}. The canteen will review the request and send a quotation.`); setName(""); setEventCode(""); setDescription(""); setEventDate(""); setVenue(""); setFoodRequestMessage(""); setFoodSelection({});
       if (!logoFailed) { setEventLogoFile(null); setEventLogoCrop(null); if (eventLogoInput.current) eventLogoInput.current.value = ""; }
       await load();
       if (logoFailureMessage) setError(logoFailureMessage);
@@ -281,6 +283,17 @@ export function EventCapacityPanel({ mode, canteenId, canteenName, userId }: { m
     finally { setBusy(false); }
   }
 
+  async function deleteEvent(event: EventRow) {
+    if (!window.confirm("Delete this event? It will be removed from both dashboards and student listings. Existing tokens, orders and audit history will be preserved.")) return;
+    setError(""); setMessage(""); setBusy(true);
+    try {
+      await archiveEvent({ data: { eventId: event.id } });
+      setMessage("Event deleted.");
+      await load();
+    } catch (caught) { setError(caught instanceof Error ? caught.message : "Could not delete this event."); }
+    finally { setBusy(false); }
+  }
+
   async function saveDetails(event: EventRow, formEvent: React.FormEvent<HTMLFormElement>) {
     formEvent.preventDefault(); setError(""); setMessage("");
     const form = new FormData(formEvent.currentTarget);
@@ -386,6 +399,7 @@ export function EventCapacityPanel({ mode, canteenId, canteenName, userId }: { m
           const eventTokens = tokens.filter((token) => token.event_id === event.id && token.status !== "cancelled");
           const quotationQuantities = event.food_confirmation.quantities ?? {};
           return <article key={`request-summary-${event.id}`} className="rounded-2xl border border-border bg-card p-4">
+            <p className="text-[10px] font-black tracking-[0.18em] text-primary">{formatFacultyEventSerial(event.serial_number)}</p>
             <div className="flex flex-wrap items-start justify-between gap-2"><h4 data-no-translate className="font-semibold">{event.name}</h4><span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase ${eventStatusClass(event.status)}`}>{eventStatusLabel(event.status)}</span></div>
             <p className="mt-2 text-xs text-muted-foreground">Canteen response: {event.canteen_note || "Waiting for the canteen"}</p>
             {Object.keys(quotationQuantities).length > 0 && <p className="mt-2 text-xs text-muted-foreground">Quotation: {Object.entries(quotationQuantities).map(([food, quantity]) => `${food} × ${quantity}`).join(" · ")}</p>}
@@ -409,6 +423,7 @@ export function EventCapacityPanel({ mode, canteenId, canteenName, userId }: { m
         const pending = eventRequests.some((request) => request.status === "pending");
         return <article key={event.id} className="rounded-3xl border border-border bg-card p-5">
           {eventLogoUrls[event.id] && <EventLogoImage src={eventLogoUrls[event.id]} alt={`${event.name} event logo`} className="mb-4" />}
+          <p className="mb-2 text-xs font-black tracking-[0.2em] text-primary">{formatFacultyEventSerial(event.serial_number)}</p>
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div><span className={`inline-flex rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] ${eventStatusClass(event.status)}`}>{eventStatusLabel(event.status)}</span><p data-no-translate className="mt-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">{canteenName}</p><h3 data-no-translate className="display mt-1 text-xl">{event.name}</h3><p className="mt-1 text-xs text-muted-foreground">Event Code: <span data-no-translate className="font-mono font-bold tracking-widest text-foreground">{event.event_code}</span></p></div>
             <span className="rounded-full border border-border px-3 py-1 text-xs font-semibold">{issued}/{event.approved_capacity} tokens issued</span>
@@ -418,7 +433,7 @@ export function EventCapacityPanel({ mode, canteenId, canteenName, userId }: { m
           {mode === "canteen" && event.food_request_message && <div className="mt-3 rounded-2xl border border-primary/50 bg-primary/10 p-4 shadow-[0_0_24px_hsl(var(--primary)/0.06)]"><p className="text-[10px] font-bold uppercase tracking-widest text-primary">Faculty instructions</p><p data-no-translate className="mt-1 whitespace-pre-wrap text-base font-medium text-foreground">{event.food_request_message}</p></div>}
           {mode === "canteen" && event.faculty_note && <div className="mt-2 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-3"><p className="text-[10px] font-bold uppercase tracking-widest text-amber-700">Faculty response</p><p data-no-translate className="mt-1 whitespace-pre-wrap text-sm text-foreground">{event.faculty_note}</p></div>}
           {mode === "faculty" && event.faculty_note && <p className="mt-3 rounded-xl bg-ink-soft p-3 text-xs text-muted-foreground">Your note to canteen: <span data-no-translate>{event.faculty_note}</span></p>}
-          {mode === "faculty" && <button type="button" onClick={() => { if (editingEvent !== event.id) setEditFoodSelection((current) => ({ ...current, [event.id]: event.food_requirements })); setEditingEvent((current) => current === event.id ? null : event.id); }} className="mt-3 rounded-full border border-border px-4 py-2 text-xs font-semibold text-muted-foreground">{editingEvent === event.id ? "Close event editor" : "Change event details"}</button>}
+          {mode === "faculty" && <div className="mt-3 flex flex-wrap gap-2"><button type="button" onClick={() => { if (editingEvent !== event.id) setEditFoodSelection((current) => ({ ...current, [event.id]: event.food_requirements })); setEditingEvent((current) => current === event.id ? null : event.id); }} className="rounded-full border border-border px-4 py-2 text-xs font-semibold text-muted-foreground">{editingEvent === event.id ? "Close event editor" : "Change event details"}</button><button type="button" disabled={busy} onClick={() => void deleteEvent(event)} className="inline-flex items-center gap-1.5 rounded-full border border-red-500/40 bg-red-500/10 px-4 py-2 text-xs font-bold text-red-600 transition hover:bg-red-500/15 disabled:opacity-50 dark:text-red-400"><Trash2 className="h-3.5 w-3.5" />Delete Event</button></div>}
           {mode === "faculty" && editingEvent === event.id && <form onSubmit={(formEvent) => saveDetails(event, formEvent)} className="mt-3 space-y-2 rounded-2xl border border-border p-4">
             <input name="name" defaultValue={event.name} required minLength={2} maxLength={120} aria-label="Edit event name" className="w-full rounded-xl border border-input bg-ink-soft px-3 py-2 text-sm" />
             <textarea name="description" defaultValue={event.description} maxLength={1000} aria-label="Edit event details" className="w-full rounded-xl border border-input bg-ink-soft px-3 py-2 text-sm" rows={2} />
@@ -550,25 +565,46 @@ function MenuQuantityPicker({ items, loading, quantities, onChange, label }: {
   if (loading) return <p role="status" className="rounded-2xl border border-border p-4 text-sm text-muted-foreground">Loading {label.toLowerCase()}…</p>;
   if (!items.length) return <p role="status" className="rounded-2xl border border-border p-4 text-sm text-muted-foreground">This canteen has no available menu items right now.</p>;
 
-  return <div className="space-y-3" aria-label={label}>
-    <div className="grid gap-2 sm:grid-cols-2">
+  return <div className="space-y-4" aria-label={label}>
+    <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-border bg-ink-soft px-3 py-2.5">
+      <p className="text-xs font-semibold text-foreground">Choose dishes and set the requested quantity.</p>
+      <span className="rounded-full border border-primary/35 bg-primary/10 px-3 py-1 text-[11px] font-bold tabular-nums text-primary">
+        {selected.length} items · {selected.reduce((sum, [, quantity]) => sum + quantity, 0)} total
+      </span>
+    </div>
+    <div className="grid gap-3 lg:grid-cols-2">
       {items.map((item) => {
         const quantity = quantities[item.name] ?? 0;
-        return <article key={item.id} className={`flex min-w-0 items-center gap-3 rounded-2xl border p-3 transition-colors ${quantity ? "border-primary/50 bg-primary/5" : "border-border bg-card"}`}>
-          {item.image && <img src={item.image} alt="" loading="lazy" className="h-14 w-14 shrink-0 rounded-xl bg-ink-soft object-cover" />}
-            <div className="min-w-0 flex-1">
-              <p data-no-translate className="truncate text-sm font-semibold text-foreground">{item.name}</p>
-            <p className="mt-0.5 text-xs text-muted-foreground">{item.category || "Menu item"} · ₹{Number(item.price).toFixed(0)}</p>
+        return <article key={item.id} className={`grid min-w-0 grid-cols-[3.75rem_minmax(0,1fr)] gap-x-3 gap-y-3 rounded-2xl border p-3 transition-colors sm:grid-cols-[4.25rem_minmax(0,1fr)_auto] sm:items-center sm:gap-3 sm:p-4 ${quantity ? "border-primary/55 bg-primary/[0.07] shadow-sm shadow-primary/5" : "border-border bg-card hover:border-primary/35"}`}>
+          {item.image
+            ? <img src={item.image} alt="" loading="lazy" className="h-[3.75rem] w-[3.75rem] rounded-xl border border-border/70 bg-ink-soft object-cover sm:h-[4.25rem] sm:w-[4.25rem]" />
+            : <div aria-hidden="true" className="grid h-[3.75rem] w-[3.75rem] place-items-center rounded-xl border border-border bg-ink-soft text-[10px] font-bold uppercase tracking-wide text-muted-foreground sm:h-[4.25rem] sm:w-[4.25rem]">Food</div>}
+          <div className="min-w-0 self-center">
+            <p data-no-translate className="break-words text-sm font-bold leading-snug text-foreground">{item.name}</p>
+            <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+              <span className="rounded-full bg-ink-soft px-2 py-0.5 text-[10px] font-medium text-muted-foreground">{item.category || "Menu item"}</span>
+              <span className="text-xs font-bold tabular-nums text-foreground">₹{Number(item.price).toFixed(0)}</span>
+            </div>
           </div>
-          <div className="flex shrink-0 items-center gap-2">
-            <button type="button" disabled={!quantity} aria-label={`Remove one ${item.name}`} onClick={() => update(item.name, quantity - 1)} className="grid h-8 w-8 place-items-center rounded-full border border-border text-lg text-foreground disabled:opacity-40">−</button>
-            <span aria-live="polite" aria-label={`${item.name} quantity`} className="w-7 text-center text-sm font-bold tabular-nums text-foreground">{quantity}</span>
-            <button type="button" disabled={quantity >= 100000} aria-label={`Add one ${item.name}`} onClick={() => update(item.name, quantity + 1)} className="grid h-8 w-8 place-items-center rounded-full bg-primary text-lg text-primary-foreground disabled:opacity-40">+</button>
+          <div className="col-span-2 flex min-w-0 items-center justify-between gap-3 border-t border-border/70 pt-2.5 sm:col-span-1 sm:justify-end sm:border-0 sm:pt-0">
+            <span className="text-[11px] font-medium text-muted-foreground">{quantity ? "Requested quantity" : "Add quantity"}</span>
+            <div className="flex shrink-0 items-center gap-2 rounded-full border border-border bg-background p-1">
+              <button type="button" disabled={!quantity} aria-label={`Remove one ${item.name}`} onClick={() => update(item.name, quantity - 1)} className="grid h-9 w-9 place-items-center rounded-full border border-border text-lg font-medium text-foreground transition hover:bg-ink-soft disabled:opacity-40">−</button>
+              <span aria-live="polite" aria-label={`${item.name} quantity`} className="min-w-8 text-center text-sm font-bold tabular-nums text-foreground">{quantity}</span>
+              <button type="button" disabled={quantity >= 100000} aria-label={`Add one ${item.name}`} onClick={() => update(item.name, quantity + 1)} className="grid h-9 w-9 place-items-center rounded-full bg-primary text-lg font-medium text-primary-foreground transition hover:brightness-95 disabled:opacity-40">+</button>
+            </div>
           </div>
         </article>;
       })}
     </div>
-    <FoodQuantitySummary quantities={Object.fromEntries(selected)} title="Selected items" />
+    <div className="rounded-2xl border border-primary/25 bg-primary/[0.035] p-2.5 sm:p-3">
+      <div className="rounded-xl bg-ink-soft p-3">
+        <p className="text-xs font-semibold text-foreground">Selected items</p>
+        {selected.length
+          ? <ul className="mt-2 flex flex-wrap gap-2">{selected.map(([name, quantity]) => <li key={name} className="rounded-full border border-primary/25 bg-card px-3 py-1 text-xs text-foreground"><span data-no-translate>{name}</span> × {quantity}</li>)}</ul>
+          : <p className="mt-2 text-xs text-muted-foreground">No items selected yet.</p>}
+      </div>
+    </div>
   </div>;
 }
 

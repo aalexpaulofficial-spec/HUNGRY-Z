@@ -11,9 +11,10 @@ const mocks = vi.hoisted(() => ({
 vi.mock("@/integrations/supabase/client", () => {
   const builders = (table: string) => {
     let payload: Record<string, unknown> = {};
-    const builder: Record<string, any> = {};
+    const builder: Record<string, unknown> = {};
     builder.select = () => builder;
     builder.eq = () => builder;
+    builder.is = () => builder;
     builder.order = () => builder;
     builder.limit = () => builder;
     builder.maybeSingle = async () => ({ data: table === "canteen_templates" ? mocks.storedTemplate : null, error: null });

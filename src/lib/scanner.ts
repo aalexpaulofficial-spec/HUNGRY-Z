@@ -59,6 +59,10 @@ export const STUDENT_SCANNER_PLANS: ScannerPlan[] = [
   },
 ];
 
+export function canUseHungryAi(role: string | null | undefined): boolean {
+  return role === "student";
+}
+
 /** End of the free month: same day next month (clamped to month end, like Postgres `+ interval '1 month'`). */
 export function trialEndsAt(start: Date): Date {
   const end = new Date(start.getTime());

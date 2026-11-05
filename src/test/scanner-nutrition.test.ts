@@ -49,14 +49,15 @@ describe("scanner food recognition and nutrition safety", () => {
     );
     vi.stubGlobal("fetch", fetchMock);
 
-    const result = await identifyFoodsWithGemini("data:image/jpeg;base64,Zm9vZA==");
+    const result = await identifyFoodsWithGemini("data:image/jpeg;base64,Zm9vZA==", [{ food_name: "plain dosa", order_count: 3 }]);
 
-    expect(result).toHaveLength(2);
-    expect(result[0]).toMatchObject({ food_name: "plain dosa", portion_g: 120 });
+    expect(result.foods).toHaveLength(2);
+    expect(result.foods[0]).toMatchObject({ food_name: "plain dosa", portion_g: 120 });
     expect(JSON.stringify(result)).not.toMatch(/calories|protein|carbs|fat/i);
     expect(fetchMock).toHaveBeenCalledOnce();
     expect(fetchMock.mock.calls[0][0]).toContain("/models/gemini-3.6-flash:generateContent");
     expect(fetchMock.mock.calls[0][1].headers["x-goog-api-key"]).toBe("test-key");
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body).contents[0].parts[0].text).toContain('{"food_name":"plain dosa","order_count":3}');
     expect(JSON.parse(fetchMock.mock.calls[0][1].body).contents[0].parts[1]).toEqual({
       inline_data: { mime_type: "image/jpeg", data: "Zm9vZA==" },
     });
@@ -111,7 +112,7 @@ describe("scanner food recognition and nutrition safety", () => {
     const result = await pendingResult;
     vi.useRealTimers();
 
-    expect(result[0].food_name).toBe("idli");
+    expect(result.foods[0].food_name).toBe("idli");
     expect(fetchMock).toHaveBeenCalledTimes(3);
     expect(fetchMock.mock.calls[0][0]).toContain("/models/gemini-3.6-flash:generateContent");
     expect(fetchMock.mock.calls[1][0]).toContain("/models/gemini-3.6-flash:generateContent");
@@ -129,7 +130,7 @@ describe("scanner food recognition and nutrition safety", () => {
     await vi.runAllTimersAsync();
     const result = await pendingResult;
     vi.useRealTimers();
-    expect(result[0]).toMatchObject({ food_name: "vegetable fried rice", portion_g: 320 });
+    expect(result.foods[0]).toMatchObject({ food_name: "vegetable fried rice", portion_g: 320 });
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(String(fetchMock.mock.calls[0][0])).toBe(String(fetchMock.mock.calls[1][0]));
   });
@@ -147,7 +148,7 @@ describe("scanner food recognition and nutrition safety", () => {
     await vi.runAllTimersAsync();
     const result = await pendingResult;
     vi.useRealTimers();
-    expect(result[0].food_name).toBe("idli");
+    expect(result.foods[0].food_name).toBe("idli");
     expect(fetchMock).toHaveBeenCalledTimes(3);
     expect(fetchMock.mock.calls[0][0]).toContain("/models/gemini-3.6-flash:generateContent");
     expect(fetchMock.mock.calls[1][0]).toContain("/models/gemini-3.6-flash:generateContent");
