@@ -6,6 +6,7 @@ import { collectFacultyEventToken, createFacultyEvent, deleteFacultyEvent, publi
 import { FACULTY_EVENT_LOGO_BUCKET, FACULTY_EVENT_LOGO_MAX_BYTES, facultyEventLogoObjectPath, getFacultyEventLogoUrls } from "@/lib/faculty-event-logos";
 import { createCroppedEventLogoFile, EventLogoCropAdjust, EventLogoImage, type EventLogoCrop } from "@/components/foodexa/FacultyEventLogo";
 import { formatFacultyEventSerial } from "@/lib/faculty-event-serial";
+import { originallyRequestedQuantity } from "@/lib/faculty-event-quantities";
 
 type EventRow = {
   id: string; faculty_user_id: string; canteen_id: string; name: string; event_code: string; serial_number: number; token_prefix: string;
@@ -456,7 +457,7 @@ export function EventCapacityPanel({ mode, canteenId, canteenName, userId }: { m
           </div>
           <div className="mt-3"><FoodQuantitySummary quantities={event.food_requirements} title="Faculty food request" /></div>
           {Object.keys(quotationQuantities).length > 0 && <div className="mt-2"><FoodQuantitySummary quantities={quotationQuantities} prices={quotationPrices} title="Canteen quotation and confirmed food" /></div>}
-          {mode === "faculty" && event.status === "published" && Object.keys(quotationQuantities).length > 0 && <ActualFoodQuantitiesSummary requested={event.food_requirements} planned={quotationQuantities} served={event.served_food_quantities ?? {}} updatedAt={event.served_food_updated_at} />}
+          {mode === "faculty" && event.status === "published" && Object.keys(quotationQuantities).length > 0 && <ActualFoodQuantitiesSummary requested={event.food_requirements} facultyMessage={event.food_request_message} planned={quotationQuantities} served={event.served_food_quantities ?? {}} updatedAt={event.served_food_updated_at} />}
           {event.canteen_note && <p className="mt-2 rounded-xl bg-ink-soft p-3 text-xs text-muted-foreground">Canteen response: {event.canteen_note}</p>}
 
           {studentTokenRequests.filter((request) => request.event_id === event.id).length > 0 && <section className="mt-4 space-y-2 rounded-2xl border border-border p-4" aria-label={`Additional student token requests for ${event.name}`}>
@@ -670,13 +671,13 @@ function MenuServedEditor({ planned, quantities, onChange }: { planned: Record<s
   })}</div>;
 }
 
-function ActualFoodQuantitiesSummary({ requested, planned, served, updatedAt }: { requested: Record<string, number>; planned: Record<string, number>; served: Record<string, number>; updatedAt: string | null }) {
+function ActualFoodQuantitiesSummary({ requested, facultyMessage, planned, served, updatedAt }: { requested: Record<string, number>; facultyMessage: string; planned: Record<string, number>; served: Record<string, number>; updatedAt: string | null }) {
   return <section className="mt-3 rounded-2xl border border-primary/35 bg-primary/[0.04] p-4" aria-label="Actual food quantities served">
     <h4 className="text-xs font-bold uppercase tracking-wider text-primary">Actual Food Quantities Served</h4>
     <div className="mt-3 space-y-2">
       {Object.entries(planned).map(([name]) => {
         const actual = served[name] ?? 0;
-        const originalRequest = requested[name];
+        const originalRequest = originallyRequestedQuantity(name, requested, facultyMessage, planned[name]);
         return <div key={name} className="grid gap-1 rounded-xl bg-ink-soft p-3 text-xs sm:grid-cols-4">
           <p className="font-semibold text-foreground" data-no-translate>{name}</p>
           <p className="text-muted-foreground">Originally requested: <strong className="text-foreground">{originalRequest ?? "Not specified"}</strong></p>
