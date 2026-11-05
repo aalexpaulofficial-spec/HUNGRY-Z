@@ -53,7 +53,7 @@ import { clearSessionState, useSessionState } from "@/lib/session-state";
 import { privacyPolicy, termsConditions } from "@/content/legal";
 import { downloadOrderBillPdf } from "@/lib/order-bill-pdf";
 import { describeTodayHours, formatCanteenTime, nextScheduledOpening, type WeeklyHours } from "@/lib/canteen-availability";
-import { EventCapacityPanel } from "@/components/foodexa/EventCapacityPanel";
+import { FacultyEventSections } from "@/components/foodexa/FacultyEventSections";
 import { StudentEventsTab } from "@/components/foodexa/StudentEventsTab";
 import { createOrderQrUrl } from "@/lib/order-qr";
 import { z } from "zod";
@@ -410,10 +410,9 @@ function OrderingApp() {
           <motion.main key={tab} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.25 }} className="px-5">
             {tab === "home" && <HomeTab menu={liveMenu} canteen={canteen} template={canteenTemplate} onOpen={setDetail} onAdd={add} goMenu={() => setTab("menu")} />}
             {tab === "menu" && <MenuTab menu={liveMenu} onOpen={setDetail} onAdd={add} />}
-            {tab === "events" && <div className="space-y-8">
-              {profile.role === "faculty" && <EventCapacityPanel mode="faculty" canteenId={canteen.id} canteenName={canteen.name} />}
-              <StudentEventsTab canteenId={canteen.id} canteenName={canteen.name} userId={profile.id} />
-            </div>}
+            {tab === "events" && (profile.role === "faculty"
+              ? <FacultyEventSections canteenId={canteen.id} canteenName={canteen.name} userId={profile.id} />
+              : <div className="space-y-8"><StudentEventsTab canteenId={canteen.id} canteenName={canteen.name} userId={profile.id} /></div>)}
             {tab === "orders" && <OrdersTab orders={orders} onOpen={(o) => setOpenOrderId(o.id)} />}
             {tab === "scan" && <ScannerTab />}
             {tab === "you" && <YouTab profile={profile} canteen={canteen} onSwitch={() => setSwitching(true)} onSignOut={signOut} />}
