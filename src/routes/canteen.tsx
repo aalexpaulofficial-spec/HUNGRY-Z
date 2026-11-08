@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { flushSync } from "react-dom";
 import { z } from "zod";
-import { LogOut, Plus, Trash2, Pencil, Printer, Settings } from "lucide-react";
+import { LogOut, Plus, Trash2, Pencil, Printer, Settings, Search, Minus, Pause, Play, ShoppingBag, X, Receipt, UtensilsCrossed } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { CanteenTemplatePreview } from "@/components/foodexa/CanteenTemplatePreview";
 import { OrderStatusBadge, orderStatusBorderClass } from "@/components/foodexa/OrderStatusBadge";
@@ -176,8 +176,23 @@ function CanteenPage() {
 
 type Order = { id: string; order_number: string; customer_name: string; lines: { name: string; qty: number; price: number }[]; subtotal: number; total: number; discount: number; pickup_code: string; counter: string; status: string; created_at: string; order_type: string; payment_method: string; payment_status: string; bill_print_confirmed_at: string | null; completion_workflow: string | null; food_received_confirmed_at: string | null };
 type ReceiptPaperWidth = "auto" | "58" | "80";
-type ReceiptPrintJob = { kind: "order"; order: Order } | { kind: "test"; counterName: string; createdAt: string };
+type POSLine = Pick<MenuItem, "id" | "name" | "price" | "image" | "category" | "stock"> & { qty: number };
+type HeldPOSOrder = { id: string; createdAt: string; lines: POSLine[] };
+type ReceiptPrintJob = { kind: "order"; order: Order } | { kind: "test"; counterName: string; createdAt: string } | { kind: "offline"; counterName: string; createdAt: string; orderNumber: string; lines: { name: string; qty: number; price: number }[]; subtotal: number; total: number };
 const printerPreferenceKey = (canteenId: string) => `hungry:printer-preferences:${canteenId}`;
+const offlinePOSStorageKey = (canteenId: string) => `hungry:offline-pos:${canteenId}`;
+function readOfflinePOS(canteenId: string): { current: POSLine[]; held: HeldPOSOrder[] } {
+  try {
+    const saved = JSON.parse(localStorage.getItem(offlinePOSStorageKey(canteenId)) ?? "null") as { current?: POSLine[]; held?: HeldPOSOrder[] } | null;
+    const validLine = (line: POSLine) => typeof line.id === "string" && typeof line.name === "string" && Number.isInteger(line.price) && line.price >= 0 && Number.isInteger(line.qty) && line.qty > 0;
+    return {
+      current: Array.isArray(saved?.current) ? saved.current.filter(validLine) : [],
+      held: Array.isArray(saved?.held) ? saved.held.filter((order) => typeof order.id === "string" && Array.isArray(order.lines) && order.lines.length > 0 && order.lines.every(validLine)) : [],
+    };
+  } catch {
+    return { current: [], held: [] };
+  }
+}
 function readPrinterPaperWidth(canteenId: string): ReceiptPaperWidth {
   try {
     const saved = localStorage.getItem(printerPreferenceKey(canteenId));
@@ -190,10 +205,10 @@ function readPrinterPaperWidth(canteenId: string): ReceiptPaperWidth {
 
 function ThermalReceipt({ job, paperWidth }: { job: ReceiptPrintJob; paperWidth: ReceiptPaperWidth }) {
   const isTest = job.kind === "test";
-  const createdAt = job.kind === "test" ? job.createdAt : job.order.created_at;
-  const counterName = job.kind === "test" ? job.counterName : job.order.counter;
-  const lines = job.kind === "test" ? [{ name: "Printer test item", qty: 1, price: 0 }] : job.order.lines;
-  const collectionCode = job.kind === "test" ? "1234" : job.order.pickup_code;
+  const createdAt = job.kind === "order" ? job.order.created_at : job.createdAt;
+  const counterName = job.kind === "order" ? job.order.counter : job.counterName;
+  const lines = job.kind === "order" ? job.order.lines : job.kind === "offline" ? job.lines : [{ name: "Printer test item", qty: 1, price: 0 }];
+  const collectionCode = job.kind === "order" ? job.order.pickup_code : "1234";
 
   return (
     <section id="hungry-thermal-print" className={`hungry-print-only hungry-receipt-paper-${paperWidth}`} aria-label="HUNGRY Z receipt">
@@ -205,12 +220,12 @@ function ThermalReceipt({ job, paperWidth }: { job: ReceiptPrintJob; paperWidth:
       </header>
       {isTest && <p className="hungry-receipt-test-label">TEST RECEIPT — NOT A REAL ORDER</p>}
       <div className="hungry-receipt-meta">
-        <p><span>Order ID</span><strong>{job.kind === "test" ? "TEST-0001" : job.order.order_number}</strong></p>
+        <p><span>Order ID</span><strong>{job.kind === "test" ? "TEST-0001" : job.kind === "offline" ? job.orderNumber : job.order.order_number}</strong></p>
         <p><span>Order Time</span><strong>{new Date(createdAt).toLocaleString()}</strong></p>
         <p><span>Counter Name</span><strong>{counterName || "Counter 1"}</strong></p>
-        <p><span>Order Type</span><strong>{job.kind === "test" ? "Dine In" : ORDER_TYPE_LABELS[job.order.order_type as OrderType] ?? "Dine In"}</strong></p>
-        <p><span>Payment Method</span><strong>{job.kind === "test" ? "Pay at Counter" : orderPaymentMethodLabel(job.order.payment_method)}</strong></p>
-        <p><span>Payment Status</span><strong>{job.kind === "test" ? "Pending" : orderPaymentStatusLabel(job.order.payment_status)}</strong></p>
+        <p><span>Order Type</span><strong>{job.kind === "test" ? "Dine In" : job.kind === "offline" ? "Offline counter bill" : ORDER_TYPE_LABELS[job.order.order_type as OrderType] ?? "Dine In"}</strong></p>
+        <p><span>Payment Method</span><strong>{job.kind === "test" ? "Pay at Counter" : job.kind === "offline" ? "Pay at counter" : orderPaymentMethodLabel(job.order.payment_method)}</strong></p>
+        <p><span>Payment Status</span><strong>{job.kind === "test" ? "Pending" : job.kind === "offline" ? "Not recorded" : orderPaymentStatusLabel(job.order.payment_status)}</strong></p>
       </div>
       <div className="hungry-receipt-items">
         <h2>FOOD ITEMS</h2>
@@ -220,15 +235,82 @@ function ThermalReceipt({ job, paperWidth }: { job: ReceiptPrintJob; paperWidth:
             <strong className="hungry-receipt-quantity">x {line.qty}<span>Rs {line.price * line.qty}</span></strong>
           </div>
         ))}
-        {job.kind === "order" && <div className="hungry-receipt-totals"><p><span>Subtotal</span><strong>Rs {job.order.subtotal}</strong></p>{job.order.discount > 0 && <p><span>Discount</span><strong>- Rs {job.order.discount}</strong></p>}<p className="hungry-receipt-total"><span>Total</span><strong>Rs {job.order.total}</strong></p></div>}
+        {job.kind !== "test" && <div className="hungry-receipt-totals"><p><span>Subtotal</span><strong>Rs {job.kind === "offline" ? job.subtotal : job.order.subtotal}</strong></p>{job.kind === "order" && job.order.discount > 0 && <p><span>Discount</span><strong>- Rs {job.order.discount}</strong></p>}<p className="hungry-receipt-total"><span>Total</span><strong>Rs {job.kind === "offline" ? job.total : job.order.total}</strong></p></div>}
       </div>
       <footer className="hungry-receipt-code-wrap">
-        <p>{isTest ? "SAMPLE COLLECTION CODE" : "CUSTOMER COLLECTION CODE"}</p>
-        <strong className="hungry-receipt-code">{collectionCode}</strong>
+        {job.kind === "offline" ? <><p>THANK YOU · HUNGRY Z</p><p className="mt-1">Offline counter bill</p></> : <><p>{isTest ? "SAMPLE COLLECTION CODE" : "CUSTOMER COLLECTION CODE"}</p><strong className="hungry-receipt-code">{collectionCode}</strong></>}
       </footer>
     </section>
   );
 }
+
+function OfflinePOSTab({
+  canteenName, menu, current, held, search, category, message, printing,
+  onSearch, onCategory, onAdd, onQuantity, onHold, onResume, onClear, onPrint,
+}: {
+  canteenName: string; menu: MenuItem[]; current: POSLine[]; held: HeldPOSOrder[]; search: string; category: string; message: string; printing: boolean;
+  onSearch: (value: string) => void; onCategory: (value: string) => void; onAdd: (item: MenuItem) => void; onQuantity: (id: string, delta: number) => void;
+  onHold: () => void; onResume: (order: HeldPOSOrder) => void; onClear: () => void; onPrint: () => void;
+}) {
+  const items = menu.filter((item) => item.available && item.stock !== 0);
+  const categories = ["All", ...Array.from(new Set(items.map((item) => item.category)))];
+  const filtered = items.filter((item) =>
+    (category === "All" || item.category === category) &&
+    `${item.name} ${item.category} ${item.description}`.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()),
+  );
+  const itemCount = current.reduce((sum, line) => sum + line.qty, 0);
+  const subtotal = current.reduce((sum, line) => sum + line.price * line.qty, 0);
+
+  return (
+    <section className="hz-pos mt-5" aria-labelledby="offline-pos-title">
+      <header className="mb-5 flex flex-wrap items-end justify-between gap-3">
+        <div><p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">Counter billing · {canteenName}</p><h2 id="offline-pos-title" className="display mt-2 text-2xl sm:text-3xl">Offline POS</h2><p className="mt-2 text-xs text-muted-foreground">Quick sale using your published canteen menu and current prices.</p></div>
+        <div className="rounded-2xl border border-border bg-card px-4 py-2 text-right"><p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Items in bill</p><p className="text-xl font-black tabular-nums">{itemCount}</p></div>
+      </header>
+
+      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.55fr)_minmax(19rem,.9fr)]">
+        <div className="min-w-0 rounded-3xl border border-border bg-card p-4 shadow-[var(--shadow-device)] sm:p-5">
+          <label className="relative block">
+            <Search aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <input aria-label="Search POS menu" type="search" value={search} onChange={(event) => onSearch(event.currentTarget.value)} placeholder="Search dishes by name or category" className="hz-pos-search w-full rounded-2xl border border-input bg-ink-soft py-3 pl-11 pr-4 text-sm text-foreground outline-none focus:border-primary" />
+            {search && <button type="button" aria-label="Clear search" onClick={() => onSearch("")} className="absolute right-2 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-full text-muted-foreground hover:bg-muted"><X className="h-4 w-4" /></button>}
+          </label>
+          <div className="hz-pos-categories mt-4 flex gap-2 overflow-x-auto pb-1" aria-label="Food categories">
+            {categories.map((name) => <button key={name} type="button" onClick={() => onCategory(name)} aria-pressed={category === name} className={cn("min-h-10 shrink-0 rounded-full border px-4 text-xs font-bold transition", category === name ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background text-muted-foreground hover:border-primary/50 hover:text-foreground")}>{name}</button>)}
+          </div>
+          {filtered.length ? <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
+            {filtered.map((item) => <button key={item.id} type="button" onClick={() => onAdd(item)} aria-label={`Add ${item.name}, ₹${item.price}`} className="hz-pos-item group min-h-36 overflow-hidden rounded-2xl border border-border bg-background text-left transition hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-lg active:scale-[.98]">
+              <img src={foodImage(item.image)} alt="" loading="lazy" className="h-24 w-full object-cover transition duration-300 group-hover:scale-[1.03]" />
+              <span className="block p-3"><span data-no-translate className="line-clamp-2 block min-h-9 text-xs font-bold leading-snug">{item.name}</span><span className="mt-1 flex items-center justify-between gap-1"><span className="text-sm font-black text-primary">₹{item.price}</span>{item.stock !== null && <span className="text-[9px] text-muted-foreground">{item.stock} left</span>}</span></span>
+            </button>)}
+          </div> : <div className="mt-5 rounded-2xl border border-dashed border-border px-5 py-12 text-center"><UtensilsCrossed className="mx-auto h-7 w-7 text-muted-foreground" /><p className="mt-3 text-sm font-bold">{items.length ? "No matching dishes" : "No available menu items"}</p><p className="mt-1 text-xs text-muted-foreground">{items.length ? "Try another search or category." : "Add and publish items from the Menu section to use Offline POS."}</p></div>}
+          <p className="mt-4 text-[10px] leading-relaxed text-muted-foreground">Menu, availability, prices, and stock are loaded live from this canteen’s Supabase menu.</p>
+        </div>
+
+        <aside className="hz-pos-bill rounded-3xl border border-border bg-card p-4 shadow-[var(--shadow-device)] sm:p-5" aria-label="Current counter bill">
+          <div className="flex items-start justify-between gap-3"><div><p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">Current bill</p><h3 className="display mt-1 text-xl">Selected items</h3></div><Receipt className="mt-1 h-5 w-5 text-primary" /></div>
+          <div className="mt-4 max-h-[22rem] space-y-2 overflow-y-auto pr-1">
+            {current.map((line) => <div key={line.id} className="flex items-center gap-3 rounded-2xl border border-border bg-background p-3">
+              <img src={foodImage(line.image)} alt="" className="h-12 w-12 shrink-0 rounded-xl object-cover" />
+              <div className="min-w-0 flex-1"><p data-no-translate className="truncate text-xs font-bold">{line.name}</p><p className="mt-1 text-[11px] text-muted-foreground">₹{line.price} × {line.qty} <span className="font-bold text-foreground">= ₹{line.price * line.qty}</span></p></div>
+              <div className="flex shrink-0 items-center gap-1"><button type="button" aria-label={`Decrease ${line.name}`} onClick={() => onQuantity(line.id, -1)} className="grid h-9 w-9 place-items-center rounded-xl border border-border hover:border-primary/50"><Minus className="h-3.5 w-3.5" /></button><span className="w-6 text-center text-xs font-black tabular-nums">{line.qty}</span><button type="button" aria-label={`Increase ${line.name}`} onClick={() => onQuantity(line.id, 1)} disabled={line.qty >= 20 || (line.stock !== null && line.qty >= line.stock)} className="grid h-9 w-9 place-items-center rounded-xl border border-border hover:border-primary/50 disabled:opacity-40"><Plus className="h-3.5 w-3.5" /></button></div>
+            </div>)}
+            {!current.length && <div className="grid min-h-36 place-items-center rounded-2xl border border-dashed border-border px-4 text-center"><div><ShoppingBag className="mx-auto h-6 w-6 text-muted-foreground" /><p className="mt-2 text-xs font-semibold text-muted-foreground">Tap menu items to add them to this bill.</p></div></div>}
+          </div>
+          <div className="mt-4 space-y-2 border-t border-border pt-4"><div className="flex justify-between text-sm text-muted-foreground"><span>Subtotal</span><span className="tabular-nums">₹{subtotal}</span></div><div className="flex items-baseline justify-between"><span className="text-xs font-bold uppercase tracking-wider">Total</span><strong className="text-2xl font-black tabular-nums">₹{subtotal}</strong></div></div>
+          {message && <p role="status" className="mt-3 rounded-xl border border-primary/25 bg-primary/10 p-3 text-xs text-foreground">{message}</p>}
+          <div className="mt-4 grid grid-cols-2 gap-2"><button type="button" onClick={onHold} disabled={!current.length} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border px-3 text-xs font-bold disabled:opacity-40"><Pause className="h-4 w-4" /> Hold order</button><button type="button" onClick={onClear} disabled={!current.length} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border px-3 text-xs font-bold text-muted-foreground hover:border-primary/40 hover:text-primary disabled:opacity-40"><Trash2 className="h-4 w-4" /> Clear order</button></div>
+          <button type="button" onClick={onPrint} disabled={!current.length || printing} className="mt-2 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-black text-primary-foreground shadow-[var(--shadow-cinema)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-45"><Printer className="h-4 w-4" /> {printing ? "Preparing bill…" : "Print Bill"}</button>
+          <p className="mt-3 text-[10px] leading-relaxed text-muted-foreground">Printing creates a local counter bill. It does not create an online customer order or collect payment.</p>
+          <div className="mt-5 border-t border-border pt-4"><div className="mb-3 flex items-center justify-between"><h4 className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Held orders</h4><span className="rounded-full bg-muted px-2 py-1 text-[10px] font-bold">{held.length}</span></div>
+            {held.length ? <div className="max-h-44 space-y-2 overflow-y-auto">{held.map((order) => <div key={order.id} className="flex items-center justify-between gap-2 rounded-xl border border-border bg-background px-3 py-2"><div className="min-w-0"><p className="font-mono text-[10px] font-bold">{order.id}</p><p className="text-[10px] text-muted-foreground">{order.lines.reduce((sum, line) => sum + line.qty, 0)} items · ₹{order.lines.reduce((sum, line) => sum + line.qty * line.price, 0)}</p></div><button type="button" onClick={() => onResume(order)} disabled={!!current.length} className="inline-flex min-h-9 shrink-0 items-center gap-1 rounded-lg bg-primary px-3 text-[10px] font-bold text-primary-foreground disabled:opacity-40"><Play className="h-3 w-3" /> Resume</button></div>)}</div> : <p className="text-[11px] text-muted-foreground">No held bills on this device.</p>}
+          </div>
+        </aside>
+      </div>
+    </section>
+  );
+}
+
 type CanteenTemplate = { canteen_id: string; banner_image_url: string | null; heading: string; description: string; banner_crop_x: number; banner_crop_y: number; banner_crop_zoom: number; updated_at?: string };
 function normalizeCanteenTemplate(value: Partial<CanteenTemplate> | null | undefined, canteenId: string): CanteenTemplate {
   const crop = normalizeBannerCrop({ x: value?.banner_crop_x, y: value?.banner_crop_y, zoom: value?.banner_crop_zoom });
@@ -247,12 +329,16 @@ const uid = () => Math.random().toString(36).slice(2);
 const NEXT: Record<string, string | undefined> = { placed: "preparing", preparing: "ready", ready: "collected" };
 const BANNER_IMAGE_TYPES: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/avif": "avif" };
 export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { canteen: Canteen; onSignOut: () => void; language: "en" | "hi" | "kn"; onLanguageChange: (language: "en" | "hi" | "kn") => void }) {
-  const [tab, setTab] = useSessionState<"menu" | "orders" | "template" | "analytics" | "events">(`hungry-canteen-dashboard-tab-${canteen.id}`, "menu");
+  const [tab, setTab] = useSessionState<"menu" | "orders" | "pos" | "template" | "analytics" | "events">(`hungry-canteen-dashboard-tab-${canteen.id}`, "menu");
   const [pendingEventRequests, setPendingEventRequests] = useState(0);
   const [activeOrderCount, setActiveOrderCount] = useState(0);
   const [eventUpdateNotice, setEventUpdateNotice] = useState(false);
   const [menu, setMenu] = useState<MenuItem[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [posState, setPOSState] = useState(() => readOfflinePOS(canteen.id));
+  const [posMessage, setPOSMessage] = useState("");
+  const [posSearch, setPOSSearch] = useState("");
+  const [posCategory, setPOSCategory] = useState("All");
   const [editing, setEditing] = useState<Partial<MenuItem> | null>(null);
   const [foodImageFile, setFoodImageFile] = useState<File | null>(null);
   const [foodImagePreview, setFoodImagePreview] = useState<string | null>(null);
@@ -283,6 +369,22 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
   const move = useServerFn(ownerUpdateOrderStatus);
   const recordConfirmedPrint = useServerFn(ownerRecordConfirmedBillPrint);
   const saveAvailability = useServerFn(saveCanteenAvailability);
+
+  useEffect(() => {
+    try { localStorage.setItem(offlinePOSStorageKey(canteen.id), JSON.stringify(posState)); }
+    catch { setPOSMessage("This browser could not save the current or held counter orders locally."); }
+  }, [canteen.id, posState]);
+
+  useEffect(() => {
+    if (!menu.length) return;
+    setPOSState((current) => ({
+      ...current,
+      current: current.current.map((line) => {
+        const item = menu.find((candidate) => candidate.id === line.id);
+        return item ? { ...line, name: item.name, price: item.price, image: item.image, category: item.category, stock: item.stock } : line;
+      }),
+    }));
+  }, [menu]);
 
   const refreshPendingEventRequests = useCallback(async () => {
     const { data: eventRows, error: eventError } = await supabase
@@ -344,6 +446,88 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
     }
   }
 
+  function addPOSItem(item: MenuItem) {
+    if (!item.available || item.stock === 0) return;
+    setPOSMessage("");
+    const existing = posState.current.find((line) => line.id === item.id);
+    const nextQty = (existing?.qty ?? 0) + 1;
+    if (nextQty > 20 || (item.stock !== null && nextQty > item.stock)) {
+      setPOSMessage(`Only ${item.stock ?? 20} ${item.name} available for this bill.`);
+      return;
+    }
+    setPOSState((current) => {
+      const line: POSLine = { id: item.id, name: item.name, price: item.price, image: item.image, category: item.category, stock: item.stock, qty: nextQty };
+      return { ...current, current: existing ? current.current.map((row) => row.id === item.id ? line : row) : [...current.current, line] };
+    });
+  }
+
+  function setPOSQuantity(itemId: string, delta: number) {
+    setPOSMessage("");
+    const line = posState.current.find((row) => row.id === itemId);
+    const item = menu.find((candidate) => candidate.id === itemId);
+    const nextQty = (line?.qty ?? 0) + delta;
+    if (line && delta > 0 && (!item || !item.available)) {
+      setPOSMessage(`${line.name} is no longer available. Remove it from the bill to continue.`);
+      return;
+    }
+    if (line && (nextQty > 20 || (item?.stock != null && nextQty > item.stock))) {
+      setPOSMessage(`Only ${item?.stock ?? 20} ${line?.name ?? "this item"} available for this bill.`);
+      return;
+    }
+    setPOSState((current) => ({
+      ...current,
+      current: current.current.flatMap((line) => {
+        if (line.id !== itemId) return [line];
+        const nextQty = line.qty + delta;
+        if (nextQty < 1) return [];
+        return [{ ...line, ...(item ? { name: item.name, price: item.price, image: item.image, category: item.category, stock: item.stock } : {}), qty: nextQty }];
+      }),
+    }));
+  }
+
+  function holdPOSOrder() {
+    if (!posState.current.length) return;
+    const heldOrder: HeldPOSOrder = { id: `H-${crypto.randomUUID().slice(0, 8).toUpperCase()}`, createdAt: new Date().toISOString(), lines: posState.current };
+    setPOSState((current) => ({ current: [], held: [heldOrder, ...current.held] }));
+    setPOSMessage(`Order ${heldOrder.id} held on this device.`);
+  }
+
+  function resumePOSOrder(heldOrder: HeldPOSOrder) {
+    if (posState.current.length) {
+      setPOSMessage("Hold or clear the current bill before resuming another order.");
+      return;
+    }
+    const restored = heldOrder.lines.flatMap((line) => {
+      const item = menu.find((candidate) => candidate.id === line.id && candidate.available);
+      if (!item || item.stock === 0) return [];
+      return [{ id: item.id, name: item.name, price: item.price, image: item.image, category: item.category, stock: item.stock, qty: Math.min(line.qty, item.stock ?? line.qty, 20) }];
+    });
+    setPOSState((current) => ({ current: restored, held: current.held.filter((order) => order.id !== heldOrder.id) }));
+    setPOSMessage(restored.length ? `Order ${heldOrder.id} resumed.` : "Those menu items are no longer available; the held order was removed.");
+  }
+
+  function clearPOSOrder() {
+    if (!posState.current.length) return;
+    setPOSState((current) => ({ ...current, current: [] }));
+    setPOSMessage("Current bill cleared.");
+  }
+
+  function printPOSBill() {
+    if (!posState.current.length) return;
+    const unavailable = posState.current.find((line) => {
+      const item = menu.find((candidate) => candidate.id === line.id);
+      return !item?.available || (item.stock !== null && item.stock < line.qty);
+    });
+    if (unavailable) {
+      setPOSMessage(`${unavailable.name} is unavailable or has insufficient stock. Update the bill before printing.`);
+      return;
+    }
+    const subtotal = posState.current.reduce((sum, line) => sum + line.price * line.qty, 0);
+    const createdAt = new Date().toISOString();
+    const orderNumber = `POS-${Date.now()}`;
+    void startReceiptPrint({ kind: "offline", counterName: canteen.name, createdAt, orderNumber, lines: posState.current.map(({ name, qty, price }) => ({ name, qty, price })), subtotal, total: subtotal });
+  }
+
   async function startReceiptPrint(job: ReceiptPrintJob) {
     if (printLock.current) return;
     printLock.current = true;
@@ -362,7 +546,16 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
     };
     const finishAfterPrint = () => {
       clearPrintState();
-      if (job.kind !== "order") {
+      if (job.kind === "offline") {
+        if (window.confirm(`Did ${job.orderNumber} print or save as PDF successfully? Confirming clears this bill from the current counter order.`)) {
+          setPOSState((current) => ({ ...current, current: [] }));
+          setPOSMessage(`${job.orderNumber} printed. The counter bill was cleared.`);
+        } else {
+          setPOSMessage("Print was not confirmed. The current bill is still available.");
+        }
+        return;
+      }
+      if (job.kind === "test") {
         setOrderMsg("Test print dialog closed. No order or payment data was changed.");
         return;
       }
@@ -383,13 +576,15 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
     };
     const finishWithoutPrintConfirmation = () => {
       clearPrintState();
-      setOrderMsg("Print dialog was not confirmed. The order and payment statuses were not changed.");
+      if (job.kind === "offline") setPOSMessage("Print dialog was not confirmed. The current bill is still available.");
+      else setOrderMsg("Print dialog was not confirmed. The order and payment statuses were not changed.");
     };
 
     if (typeof window.print !== "function") {
       printLock.current = false;
       setPrinting(false);
-      setOrderMsg("Printing is not supported in this browser. The order was left unchanged.");
+      if (job.kind === "offline") setPOSMessage("Printing is not supported in this browser. The current bill was left unchanged.");
+      else setOrderMsg("Printing is not supported in this browser. The order was left unchanged.");
       return;
     }
     window.addEventListener("afterprint", finishAfterPrint, { once: true });
@@ -413,7 +608,9 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
       window.print();
     } catch (cause) {
       clearPrintState();
-      setOrderMsg(cause instanceof Error ? `${cause.message} The bill was not printed.` : "Could not open the browser print dialog.");
+      const message = cause instanceof Error ? `${cause.message} The bill was not printed.` : "Could not open the browser print dialog.";
+      if (job.kind === "offline") setPOSMessage(message);
+      else setOrderMsg(message);
     }
   }
 
@@ -651,8 +848,8 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
           onSave={updateAvailability}
         />
         <nav aria-label="Canteen dashboard sections" className="hz-canteen-nav mt-5 flex flex-nowrap items-center gap-2 overflow-x-auto rounded-3xl border border-border bg-card p-2">
-          {([['menu', `Menu (${menu.length})`], ['orders', `Live Orders (${activeOrderCount})`], ['events', `${eventUpdateNotice ? "• " : ""}Faculty Events (${pendingEventRequests} requests)`], ['template', "Change Template"], ['analytics', "Analytics"]] as const).map(([k, l]) => (
-            <button key={k} type="button" onClick={() => { setTab(k); if (k === "orders") void refreshActiveOrderCount(); if (k === "events") { setEventUpdateNotice(false); void refreshPendingEventRequests(); } }} className={cn("rounded-full border px-4 py-2 text-xs font-semibold", tab === k ? "border-primary bg-primary text-primary-foreground" : "border-border text-muted-foreground")}>{l}</button>
+          {([['menu', `Menu (${menu.length})`], ['orders', "ONLINE"], ['pos', "OFFLINE POS"], ['events', `${eventUpdateNotice ? "• " : ""}Faculty Events (${pendingEventRequests} requests)`], ['template', "Change Template"], ['analytics', "Analytics"]] as const).map(([k, l]) => (
+            <button key={k} type="button" aria-current={tab === k ? "page" : undefined} onClick={() => { setTab(k); if (k === "orders") void refreshActiveOrderCount(); if (k === "events") { setEventUpdateNotice(false); void refreshPendingEventRequests(); } }} className={cn("rounded-full border px-4 py-2 text-xs font-semibold", tab === k ? "border-primary bg-primary text-primary-foreground" : "border-border text-muted-foreground")}>{l}{k === "orders" && activeOrderCount > 0 && <span className="ml-2 rounded-full bg-primary-foreground/20 px-1.5 py-0.5 text-[10px]">{activeOrderCount}</span>}</button>
           ))}
           {tab === "orders" && <button type="button" onClick={() => { setPrinterSettingsOpen((open) => !open); setPrinterSettingsMsg(""); }} aria-expanded={printerSettingsOpen} className="ml-auto inline-flex shrink-0 items-center gap-2 rounded-full border border-border px-4 py-2 text-xs font-semibold text-muted-foreground transition hover:border-primary/50 hover:text-foreground"><Settings className="h-3.5 w-3.5" /> Printer Settings</button>}
         </nav>
@@ -680,7 +877,7 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
             </div>
           </section>
         )}
-        {tab === "orders" ? (
+        {tab === "pos" ? <OfflinePOSTab canteenName={canteen.name} menu={menu} current={posState.current} held={posState.held} search={posSearch} category={posCategory} message={posMessage} printing={printing} onSearch={setPOSSearch} onCategory={setPOSCategory} onAdd={addPOSItem} onQuantity={setPOSQuantity} onHold={holdPOSOrder} onResume={resumePOSOrder} onClear={clearPOSOrder} onPrint={printPOSBill} /> : tab === "orders" ? (
           <div className="mt-6 grid gap-3 sm:grid-cols-2">
             {!orders.length && <p className="rounded-3xl border border-border bg-card p-8 text-center text-sm text-muted-foreground sm:col-span-2">No orders yet. New orders appear here instantly.</p>}
             {orders.map((o) => (

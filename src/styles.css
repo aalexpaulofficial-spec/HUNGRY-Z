@@ -365,6 +365,12 @@ html[data-theme="light"] .hungry-install-page svg path[stroke="rgba(255,255,255,
 .hz-canteen-header h1 { overflow-wrap: anywhere; }
 .hz-canteen-nav { scrollbar-width: thin; }
 .hz-canteen-nav > button { flex: 0 0 auto; min-height: 2.65rem; }
+.hz-pos { min-width: 0; }
+.hz-pos-search { min-height: 2.9rem; }
+.hz-pos-categories { scrollbar-width: thin; }
+.hz-pos-item { min-width: 0; }
+.hz-pos-item img { transform-origin: center; }
+.hz-pos-bill { min-width: 0; }
 .hz-canteen-app section.rounded-3xl,
 .hz-canteen-app form.rounded-3xl,
 .hz-canteen-app [class*="rounded-3xl border bg-card"] { box-shadow: var(--hz-shadow-card); }
@@ -393,6 +399,11 @@ html[data-theme="light"] .hz-canteen-nav { background: color-mix(in oklab, white
   .hz-canteen-header { align-items: flex-start; }
   .hz-canteen-header > div:last-child { width: 100%; justify-content: flex-start; flex-wrap: wrap; }
   .hz-canteen-nav { margin-right: -1rem; border-radius: 1.2rem 0 0 1.2rem; }
+  .hz-pos-bill { padding: 1rem; }
+  .hz-pos-item { min-height: 8.5rem; }
+}
+@media (min-width: 1024px) {
+  .hz-pos-bill { position: sticky; top: 1.25rem; }
 }
 @media (prefers-reduced-motion: reduce) {
   .hz-customer-content .group.overflow-hidden.rounded-3xl { transition: none; }
