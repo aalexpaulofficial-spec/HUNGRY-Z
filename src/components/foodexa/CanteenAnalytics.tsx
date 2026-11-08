@@ -226,7 +226,7 @@ function TrendChart({ data }: { data: { label: string; revenue: number; orders: 
       viewBox="0 0 710 245"
       className="h-full w-full"
       role="img"
-      aria-label="Revenue bars and order trend line"
+      aria-label="ONLINE revenue bars and ONLINE order trend line"
     >
       {[0, 1, 2, 3].map((tick) => (
         <g key={tick}>
@@ -280,7 +280,7 @@ function TrendChart({ data }: { data: { label: string; revenue: number; orders: 
         </circle>
       ))}
       <text x="48" y="240" fill="#aaa" fontSize="9">
-        Revenue (bars) · Orders (line)
+        ONLINE revenue (bars) · ONLINE orders (line)
       </text>
     </svg>
   );
@@ -633,10 +633,10 @@ export function CanteenAnalytics({
       const round = (value: number) => Math.round(value * 100) / 100;
       const workbook = buildXlsx([
         {
-          name: "Summary",
+          name: "ONLINE Summary",
           widths: [42, 28],
           rows: [
-            ["HUNGRY Z Canteen Analytics", ""],
+            ["HUNGRY Z ONLINE Canteen Analytics", ""],
             ["Canteen", canteenName],
             [
               "Period",
@@ -644,16 +644,16 @@ export function CanteenAnalytics({
             ],
             [],
             ["Metric", "Value"],
-            ["Total Orders", filteredOrders.length],
-            ["Revenue (paid, excluding cancelled/refunded)", round(revenue)],
-            ["Today's Orders", todayOrders.length],
-            ["Today's Revenue", round(todayRevenue)],
-            ["Average Order Value", round(average)],
-            ["Completed Orders", completed],
-            ["Cancelled Orders", cancelled],
-            ["Pending Orders", pending],
-            ["This Month Revenue to Date", round(monthComparison.current)],
-            ["Previous Month Revenue (same period)", round(monthComparison.previous)],
+            ["ONLINE Total Orders", filteredOrders.length],
+            ["ONLINE Revenue (paid, excluding cancelled/refunded)", round(revenue)],
+            ["ONLINE Today's Orders", todayOrders.length],
+            ["ONLINE Today's Revenue", round(todayRevenue)],
+            ["ONLINE Average Order Value", round(average)],
+            ["ONLINE Completed Orders", completed],
+            ["ONLINE Cancelled Orders", cancelled],
+            ["ONLINE Pending Orders", pending],
+            ["ONLINE This Month Revenue to Date", round(monthComparison.current)],
+            ["ONLINE Previous Month Revenue (same period)", round(monthComparison.previous)],
             [
               "Month Growth %",
               monthComparison.growth === null ? "N/A" : round(monthComparison.growth),
@@ -661,7 +661,7 @@ export function CanteenAnalytics({
           ],
         },
         {
-          name: "Food Items",
+          name: "ONLINE Food Items",
           widths: [34, 22, 16, 20, 16],
           filter: true,
           rows: [
@@ -683,7 +683,7 @@ export function CanteenAnalytics({
           ],
         },
         {
-          name: "Best & Least",
+          name: "ONLINE Best & Least",
           widths: [14, 34, 18, 20],
           filter: true,
           rows: [
@@ -703,7 +703,7 @@ export function CanteenAnalytics({
           ],
         },
         {
-          name: "Category Revenue",
+          name: "ONLINE Categories",
           widths: [28, 16, 20],
           filter: true,
           rows: [
@@ -717,7 +717,7 @@ export function CanteenAnalytics({
           ],
         },
         {
-          name: "Daily Performance",
+          name: "ONLINE Daily",
           widths: [16, 14, 20],
           filter: true,
           rows: [
@@ -731,7 +731,7 @@ export function CanteenAnalytics({
           ],
         },
         {
-          name: "Monthly Performance",
+          name: "ONLINE Monthly",
           widths: [16, 14, 20],
           filter: true,
           rows: [
@@ -745,7 +745,7 @@ export function CanteenAnalytics({
           ],
         },
         {
-          name: "Payments",
+          name: "ONLINE Payments",
           widths: [18, 14],
           filter: true,
           rows: [
@@ -755,7 +755,7 @@ export function CanteenAnalytics({
           ],
         },
         {
-          name: "Orders",
+          name: "ONLINE Orders",
           widths: [18, 24, 16, 16, 20, 23, 60],
           filter: true,
           rows: [
@@ -792,7 +792,7 @@ export function CanteenAnalytics({
       const url = URL.createObjectURL(workbook);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `HUNGRY Z-${canteenName.replace(/[^a-z0-9]+/gi, "-")}-analytics.xlsx`;
+      link.download = `HUNGRY-Z-${canteenName.replace(/[^a-z0-9]+/gi, "-")}-ONLINE-analytics.xlsx`;
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -827,7 +827,7 @@ export function CanteenAnalytics({
       .write(`<!doctype html><html><head><meta charset="utf-8"><title>HUNGRY Z Analytics — ${escapeHtml(canteenName)}</title><style>
       *{box-sizing:border-box}body{font:13px Arial,sans-serif;color:#171717;margin:30px}header{border-bottom:4px solid #ef233c;padding-bottom:16px}h1{font-size:28px;margin:0;color:#ef233c;letter-spacing:3px}h2{font-size:16px;margin:26px 0 12px}.muted{color:#666}.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:18px}.card{border:1px solid #ddd;border-radius:9px;padding:12px}.card small{display:block;color:#666}.card strong{display:block;font-size:19px;margin-top:7px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:25px}.barrow{display:grid;grid-template-columns:120px 1fr 75px;gap:8px;align-items:center;margin:8px 0}.barrow div{height:12px;background:#eee;border-radius:9px}.barrow i{height:100%;display:block;background:#ef233c;border-radius:9px}.barrow b{text-align:right}.chart{width:100%;border-collapse:collapse}.chart th,.chart td{border-bottom:1px solid #ddd;text-align:left;padding:7px}.chart th{background:#f7f7f7}footer{margin-top:30px;color:#777;border-top:1px solid #ddd;padding-top:12px}@media print{body{margin:12mm}.cards,.grid{break-inside:avoid}h2{break-after:avoid}}
       </style></head><body><header><h1>HUNGRY Z</h1><p><b>${escapeHtml(canteenName)}</b> · Analytics Report</p><p class="muted">Report period: ${escapeHtml(period)}</p></header>
-      <section class="cards"><div class="card"><small>Total Orders</small><strong>${filteredOrders.length}</strong></div><div class="card"><small>Paid Revenue</small><strong>${money(revenue)}</strong></div><div class="card"><small>Average Order Value</small><strong>${money(average)}</strong></div><div class="card"><small>Completed / Cancelled</small><strong>${completed} / ${cancelled}</strong></div></section>
+      <section class="cards"><div class="card"><small>ONLINE Total Orders</small><strong>${filteredOrders.length}</strong></div><div class="card"><small>ONLINE Paid Revenue</small><strong>${money(revenue)}</strong></div><div class="card"><small>ONLINE Average Order Value</small><strong>${money(average)}</strong></div><div class="card"><small>ONLINE Completed / Cancelled</small><strong>${completed} / ${cancelled}</strong></div></section>
       <div class="grid"><section><h2>Food Item Revenue</h2>${bars(
         itemRows
           .filter((row) => row.revenue > 0)
@@ -875,11 +875,11 @@ export function CanteenAnalytics({
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-primary-bright">
-            Business insights
+            ONLINE BUSINESS INSIGHTS
           </p>
-          <h2 className="display mt-1 text-2xl">Analytics</h2>
+          <h2 className="display mt-1 text-2xl">ONLINE Analytics</h2>
           <p className="mt-1 text-xs text-muted-foreground">
-            Live order data for {canteenName}. Revenue includes paid orders only.
+            ONLINE orders for {canteenName}. ONLINE revenue includes paid orders only.
           </p>
         </div>
         <div className="relative">
@@ -981,14 +981,14 @@ export function CanteenAnalytics({
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {[
-          ["Total Orders", filteredOrders.length.toLocaleString("en-IN")],
-          ["Total Revenue", currency(revenue)],
-          ["Today's Orders", todayOrders.length.toLocaleString("en-IN")],
-          ["Today's Revenue", currency(todayRevenue)],
-          ["Average Order Value", currency(average)],
-          ["Completed Orders", completed.toLocaleString("en-IN")],
-          ["Cancelled Orders", cancelled.toLocaleString("en-IN")],
-          ["Pending Orders", pending.toLocaleString("en-IN")],
+          ["ONLINE · Total orders", filteredOrders.length.toLocaleString("en-IN")],
+          ["ONLINE · Revenue", currency(revenue)],
+          ["ONLINE · Today's orders", todayOrders.length.toLocaleString("en-IN")],
+          ["ONLINE · Today's revenue", currency(todayRevenue)],
+          ["ONLINE · Average order value", currency(average)],
+          ["ONLINE · Completed orders", completed.toLocaleString("en-IN")],
+          ["ONLINE · Cancelled orders", cancelled.toLocaleString("en-IN")],
+          ["ONLINE · Pending orders", pending.toLocaleString("en-IN")],
         ].map(([label, value]) => (
           <article key={label} className={`${cardClass} min-w-0`}>
             <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
@@ -1003,7 +1003,7 @@ export function CanteenAnalytics({
         <article className={cardClass}>
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
-              <h3 className="display text-lg">Revenue & Orders</h3>
+          <h3 className="display text-lg">ONLINE Revenue & Orders</h3>
               <p className="mt-1 text-[11px] text-muted-foreground">Grouped by selected interval</p>
             </div>
             <div className="flex gap-1">
@@ -1029,7 +1029,7 @@ export function CanteenAnalytics({
           </div>
         </article>
         <article className={cardClass}>
-          <h3 className="display text-lg">Revenue by Category</h3>
+          <h3 className="display text-lg">ONLINE Revenue by Category</h3>
           <p className="mt-1 text-[11px] text-muted-foreground">
             {mostPopularCategory
               ? `Most popular: ${mostPopularCategory.name} (${mostPopularCategory.quantity} items sold)`
@@ -1069,7 +1069,7 @@ export function CanteenAnalytics({
           </div>
         </article>
         <article className={cardClass}>
-          <h3 className="display text-lg">Peak Ordering Hours</h3>
+          <h3 className="display text-lg">ONLINE Peak Ordering Hours</h3>
           <p className="mt-1 text-[11px] text-muted-foreground">
             Local time · excludes cancelled and failed orders
           </p>
@@ -1133,7 +1133,7 @@ export function CanteenAnalytics({
           </div>
         </article>
         <article className={cardClass}>
-          <h3 className="display text-lg">Payment Breakdown</h3>
+          <h3 className="display text-lg">ONLINE Payment Breakdown</h3>
           <p className="mt-1 text-[11px] text-muted-foreground">
             Paid, unpaid/pending and failed orders
           </p>
@@ -1178,19 +1178,19 @@ export function CanteenAnalytics({
       <section className={`${cardClass} grid gap-4 md:grid-cols-3`}>
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-            This Month Revenue
+            ONLINE This Month Revenue
           </p>
           <p className="display mt-2 text-2xl">{currency(monthComparison.current)}</p>
         </div>
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-            Previous Month (same period)
+            ONLINE Previous Month (same period)
           </p>
           <p className="display mt-2 text-2xl">{currency(monthComparison.previous)}</p>
         </div>
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-            Revenue Growth
+            ONLINE Revenue Growth
           </p>
           <p className="display mt-2 text-2xl">
             {monthComparison.growth === null
@@ -1206,8 +1206,8 @@ export function CanteenAnalytics({
 
       <div className="grid gap-4 xl:grid-cols-2">
         {[
-          { title: "Top 5 Best-Selling Food Items", rows: best },
-          { title: "Top 5 Least-Selling Food Items", rows: least },
+          { title: "ONLINE Top 5 Best-Selling Food Items", rows: best },
+          { title: "ONLINE Top 5 Least-Selling Food Items", rows: least },
         ].map(({ title, rows }) => (
           <article key={title} className={cardClass}>
             <h3 className="display text-lg">{title}</h3>
@@ -1240,7 +1240,7 @@ export function CanteenAnalytics({
       <article className={cardClass}>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h3 className="display text-lg">Food Item Sales</h3>
+            <h3 className="display text-lg">ONLINE Food Item Sales</h3>
             <p className="mt-1 text-[11px] text-muted-foreground">
               Quantities and revenue from paid orders in the selected period
             </p>
@@ -1285,7 +1285,7 @@ export function CanteenAnalytics({
       </article>
 
       <article className={cardClass}>
-        <h3 className="display text-lg">Items with Zero Sales</h3>
+        <h3 className="display text-lg">ONLINE Items with Zero Sales</h3>
         <p className="mt-1 text-[11px] text-muted-foreground">
           Menu items with no paid quantity in this period
         </p>
