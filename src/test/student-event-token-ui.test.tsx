@@ -69,7 +69,7 @@ describe("faculty event access-code gate", () => {
   });
 
   it("generates a unique token only after verification and no longer shows additional-token controls", async () => {
-    verifyCode.mockResolvedValueOnce(eventDetails()).mockResolvedValueOnce(eventDetails([{ id: "token-1", token_number: "0042", status: "issued" }]));
+    verifyCode.mockResolvedValueOnce(eventDetails()).mockResolvedValueOnce(eventDetails([{ id: "00000000-0000-4000-8000-000000000042", token_number: "0042", status: "issued" }]));
     render(<StudentEventsTab canteenId="00000000-0000-0000-0000-000000000001" canteenName="FLAMES" userId="student-1" />);
     fireEvent.click(await screen.findByRole("button", { name: "View event EVENT #001" }));
     fireEvent.change(await screen.findByLabelText("7-digit Event Access Code"), { target: { value: "1234567" } });

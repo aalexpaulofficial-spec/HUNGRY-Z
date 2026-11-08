@@ -4,7 +4,9 @@ import { CalendarDays, MapPin, Ticket, X } from "lucide-react";
 import { QRCodeCanvas } from "qrcode.react";
 import { issueFacultyEventToken, listPublishedFacultyEventCards, verifyFacultyEventAccessCode } from "@/lib/hungry.functions";
 import { EventLogoImage } from "@/components/foodexa/FacultyEventLogo";
+import { SocialIconLinks } from "@/components/foodexa/SocialIconLinks";
 import { formatFacultyEventSerial } from "@/lib/faculty-event-serial";
+import { createFacultyEventTokenQrUrl } from "@/lib/faculty-event-token-qr";
 
 type EventCard = {
   id: string;
@@ -24,9 +26,8 @@ type VerifiedEvent = {
   description: string;
   event_date: string | null;
   venue: string;
-  approved_capacity: number;
-  issued_tokens: number;
-  tokens_remaining: number;
+  tokens_remaining: number | null;
+  is_event_creator: boolean;
   capacity_available: boolean;
   my_tokens: EventToken[];
   event_logo_url: string | null;
@@ -183,14 +184,21 @@ export function StudentEventsTab({ canteenId, canteenName, userId }: { canteenId
         <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-xs text-muted-foreground">
           {opened.event_date && <span className="flex items-center gap-1.5"><CalendarDays className="h-4 w-4 text-primary" />{new Date(`${opened.event_date}T00:00:00`).toLocaleDateString()}</span>}
           {opened.venue && <span data-no-translate className="flex items-center gap-1.5"><MapPin className="h-4 w-4 text-primary" />{opened.venue}</span>}
-          <span>{opened.tokens_remaining} places remaining</span>
+          {opened.is_event_creator && opened.tokens_remaining !== null && <span>{opened.tokens_remaining} places remaining</span>}
         </div>
-        {opened.capacity_available && opened.tokens_remaining < 1 && opened.my_tokens.length === 0 && <p role="status" className="mt-4 rounded-2xl border border-amber-500/35 bg-amber-500/10 p-3 text-sm font-semibold text-amber-800 dark:text-amber-200">This event has reached its token capacity.</p>}
+        {opened.is_event_creator && !opened.capacity_available && opened.my_tokens.length === 0 && <p role="status" className="mt-4 rounded-2xl border border-amber-500/35 bg-amber-500/10 p-3 text-sm font-semibold text-amber-800 dark:text-amber-200">This event has reached its token capacity.</p>}
         <div className="mt-5 rounded-2xl bg-ink-soft p-3 text-center text-xs text-muted-foreground"><span data-no-translate>{canteenName}</span> · Published event</div>
         {opened.my_tokens.length > 0 ? <div className="mt-5 space-y-3">
           <p className="text-center text-xs font-bold uppercase tracking-[0.18em] text-primary">Your event tokens</p>
-          <div className="grid gap-3 sm:grid-cols-2">{opened.my_tokens.map((item) => <div key={item.id} className="rounded-2xl border border-border p-3 text-center"><p className="text-[10px] font-black tracking-[0.18em] text-primary">{formatFacultyEventSerial(opened.serial_number)}</p><p className="display mt-2 text-4xl tracking-[0.2em]">{item.token_number}</p><p className="mt-1 text-xs text-muted-foreground">Show this token at {canteenName} when you attend.</p><div className="mx-auto mt-3 grid w-fit place-items-center rounded-2xl bg-white p-2"><QRCodeCanvas value={`${opened.id}:${item.token_number}`} size={128} /></div></div>)}</div>
-        </div> : <button type="button" disabled={issuing || !opened.capacity_available || opened.tokens_remaining < 1} onClick={() => void generateToken()} className="mt-5 w-full rounded-full bg-primary py-3.5 text-sm font-bold text-primary-foreground disabled:opacity-50">{issuing ? "Generating…" : opened.tokens_remaining < 1 ? "EVENT FULL" : "Generate Token"}</button>}
+          <div className="grid gap-3 sm:grid-cols-2">{opened.my_tokens.map((item) => <div key={item.id} className="rounded-2xl border border-primary/30 bg-card p-4 text-center shadow-[0_12px_36px_-24px_var(--primary-bright)]">
+            <p className="text-xs font-black tracking-[0.22em] text-primary">FOLLOW US</p>
+            <SocialIconLinks className="mt-2 gap-2" />
+            <p className="mt-4 text-[10px] font-black tracking-[0.18em] text-primary">{formatFacultyEventSerial(opened.serial_number)}</p>
+            <p aria-label="Your event token number" className="display mt-1 text-5xl font-black leading-none tracking-[0.18em] text-foreground sm:text-6xl">{item.token_number}</p>
+            <p className="mt-3 text-xs font-semibold text-muted-foreground">Show this token number at <span data-no-translate>{canteenName}</span> when you attend.</p>
+            <div className="mx-auto mt-3 grid w-fit place-items-center rounded-2xl bg-white p-2"><QRCodeCanvas value={createFacultyEventTokenQrUrl(item.id)} size={160} level="M" title="Scan to view secure HUNGRY Z event token details" /></div>
+          </div>)}</div>
+        </div> : <button type="button" disabled={issuing || (opened.is_event_creator && !opened.capacity_available)} onClick={() => void generateToken()} className="mt-5 w-full rounded-full bg-primary py-3.5 text-sm font-bold text-primary-foreground disabled:opacity-50">{issuing ? "Generating…" : opened.is_event_creator && !opened.capacity_available ? "EVENT FULL" : "Generate Token"}</button>}
         {error && <p role="alert" className="mt-4 rounded-2xl border border-primary/30 bg-primary/10 p-3 text-sm text-primary-bright">{error}</p>}
       </section>
     </div>}

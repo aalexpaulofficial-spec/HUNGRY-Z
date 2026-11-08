@@ -390,7 +390,7 @@ export const verifyFacultyEventAccessCode = createServerFn({ method: "POST" })
     }
 
     const { data: event, error: eventError } = await db.from("faculty_events")
-      .select("id,canteen_id,name,serial_number,description,event_date,venue,approved_capacity,event_logo_path")
+      .select("id,canteen_id,faculty_user_id,name,serial_number,description,event_date,venue,approved_capacity,event_logo_path")
       .eq("id", data.eventId).eq("event_code", data.eventCode).eq("canteen_id", profile.current_canteen_id)
       .eq("status", "published").is("archived_at", null).maybeSingle();
     if (eventError || !event) throw new Error("Invalid Event Access Code. Check the 7-digit code and try again.");
@@ -406,6 +406,7 @@ export const verifyFacultyEventAccessCode = createServerFn({ method: "POST" })
     const issuedTokens = tokenCountResult.count ?? 0;
     const reservedTokens = (requestsResult.data ?? []).reduce((sum, request) => sum + request.requested_count, 0);
     const tokensRemaining = Math.max(0, event.approved_capacity - issuedTokens - reservedTokens);
+    const isEventCreator = event.faculty_user_id === context.userId;
     let eventLogoUrl: string | null = null;
     if (event.event_logo_path) {
       const { data: signedLogo, error: logoError } = await db.storage.from("faculty-event-logos").createSignedUrl(event.event_logo_path, 60 * 60);
@@ -422,9 +423,44 @@ export const verifyFacultyEventAccessCode = createServerFn({ method: "POST" })
       venue: event.venue,
       approved_capacity: event.approved_capacity,
       issued_tokens: issuedTokens,
-      tokens_remaining: tokensRemaining,
-      capacity_available: true,
+      tokens_remaining: isEventCreator ? tokensRemaining : null,
+      is_event_creator: isEventCreator,
+      capacity_available: isEventCreator ? tokensRemaining > 0 : true,
       my_tokens: tokensResult.data ?? [],
+      event_logo_url: eventLogoUrl,
+    };
+  });
+
+/** A token UUID is an unguessable bearer reference for the public scan page. */
+export const getPublicFacultyEventTokenDetails = createServerFn({ method: "GET" })
+  .inputValidator((input: unknown) => z.object({ tokenId: z.string().uuid() }).parse(input))
+  .handler(async ({ data }) => {
+    const db = await admin();
+    const { data: token, error: tokenError } = await db.from("faculty_event_tokens")
+      .select("id,event_id,token_number,status,canteen_id")
+      .eq("id", data.tokenId).maybeSingle();
+    if (tokenError || !token) throw new Error("This event token could not be found.");
+    const [{ data: event, error: eventError }, { data: canteen, error: canteenError }] = await Promise.all([
+      db.from("faculty_events").select("id,name,serial_number,description,event_date,venue,event_logo_path")
+        .eq("id", token.event_id).maybeSingle(),
+      db.from("canteens").select("name").eq("id", token.canteen_id).maybeSingle(),
+    ]);
+    if (eventError || canteenError || !event || !canteen) throw new Error("Event details are unavailable.");
+    let eventLogoUrl: string | null = null;
+    if (event.event_logo_path) {
+      const { data: signedLogo } = await db.storage.from("faculty-event-logos").createSignedUrl(event.event_logo_path, 60 * 60);
+      eventLogoUrl = signedLogo?.signedUrl ?? null;
+    }
+    return {
+      token_id: token.id,
+      token_number: token.token_number,
+      token_status: token.status,
+      event_name: event.name,
+      event_serial_number: event.serial_number,
+      event_description: event.description,
+      event_date: event.event_date,
+      venue: event.venue,
+      canteen_name: canteen.name,
       event_logo_url: eventLogoUrl,
     };
   });
@@ -450,7 +486,7 @@ export const issueFacultyEventToken = createServerFn({ method: "POST" })
     }
     const token = (tokens as { token_number: string; approved_capacity: number; issued_tokens: number; tokens_remaining: number; already_issued: boolean }[] | null)?.[0];
     if (!token) throw new Error("Could not generate the event token. Please try again.");
-    return token;
+    return { token_number: token.token_number, already_issued: token.already_issued };
   });
 
 export const requestAdditionalFacultyEventTokens = createServerFn({ method: "POST" })

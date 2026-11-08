@@ -126,7 +126,7 @@ function CanteenPage() {
   if (state === "ok" && canteen) return <Dashboard canteen={canteen} onSignOut={signOut} language={language} onLanguageChange={saveLanguage} />;
 
   return (
-    <div className="grain relative min-h-screen overflow-hidden bg-background px-4 py-10">
+    <div className="hz-canteen-login grain relative min-h-screen overflow-hidden bg-background px-4 py-10">
       <div className="ember anim-pulse-glow pointer-events-none absolute -top-40 left-1/2 h-[520px] w-[520px] -translate-x-1/2" />
       <div className="relative mx-auto w-full max-w-md">
         {siteNavigationEnabled ? (
@@ -624,9 +624,9 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="mx-auto max-w-5xl px-5 py-8">
-        <header className="flex flex-wrap items-center justify-between gap-3">
+    <div className="hz-canteen-app min-h-screen bg-background">
+      <div className="hz-canteen-shell mx-auto max-w-6xl px-4 py-5 sm:px-6 sm:py-8">
+        <header className="hz-canteen-header flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-border bg-card p-4 sm:p-5">
           <div className="flex min-w-0 items-start gap-3">
           <BackButton inline />
           <img src="/HUNGRY%20Z%20CANTEEN%20DAHSBOARD%20LOGO.png" alt="HUNGRY Z Canteen Dashboard" className="h-12 w-12 shrink-0 rounded-full object-contain" />
@@ -650,12 +650,12 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
           saving={availabilitySaving}
           onSave={updateAvailability}
         />
-        <div className="mt-6 flex flex-wrap items-center gap-2">
+        <nav aria-label="Canteen dashboard sections" className="hz-canteen-nav mt-5 flex flex-nowrap items-center gap-2 overflow-x-auto rounded-3xl border border-border bg-card p-2">
           {([['menu', `Menu (${menu.length})`], ['orders', `Live Orders (${activeOrderCount})`], ['events', `${eventUpdateNotice ? "• " : ""}Faculty Events (${pendingEventRequests} requests)`], ['template', "Change Template"], ['analytics', "Analytics"]] as const).map(([k, l]) => (
             <button key={k} type="button" onClick={() => { setTab(k); if (k === "orders") void refreshActiveOrderCount(); if (k === "events") { setEventUpdateNotice(false); void refreshPendingEventRequests(); } }} className={cn("rounded-full border px-4 py-2 text-xs font-semibold", tab === k ? "border-primary bg-primary text-primary-foreground" : "border-border text-muted-foreground")}>{l}</button>
           ))}
-          {tab === "orders" && <button type="button" onClick={() => { setPrinterSettingsOpen((open) => !open); setPrinterSettingsMsg(""); }} aria-expanded={printerSettingsOpen} className="ml-auto inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-xs font-semibold text-muted-foreground transition hover:border-primary/50 hover:text-foreground"><Settings className="h-3.5 w-3.5" /> Printer Settings</button>}
-        </div>
+          {tab === "orders" && <button type="button" onClick={() => { setPrinterSettingsOpen((open) => !open); setPrinterSettingsMsg(""); }} aria-expanded={printerSettingsOpen} className="ml-auto inline-flex shrink-0 items-center gap-2 rounded-full border border-border px-4 py-2 text-xs font-semibold text-muted-foreground transition hover:border-primary/50 hover:text-foreground"><Settings className="h-3.5 w-3.5" /> Printer Settings</button>}
+        </nav>
 
         {orderMsg && tab === "orders" && <p className="mt-4 rounded-2xl border border-primary/40 bg-primary/10 p-3 text-sm">{orderMsg}</p>}
         {tab === "orders" && printerSettingsOpen && (

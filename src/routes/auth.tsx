@@ -70,7 +70,7 @@ function AuthPage() {
   );
 
   return (
-    <div className="grain relative min-h-screen overflow-x-hidden bg-background px-4 py-10">
+    <div className="hz-auth-page grain relative min-h-screen overflow-x-hidden bg-background px-4 py-10">
       <ThemeToggle className="absolute right-4 top-4 z-20 sm:right-6 sm:top-6" />
       <div className="ember anim-pulse-glow pointer-events-none absolute -top-40 left-1/2 h-[520px] w-[520px] -translate-x-1/2" />
       <div className="relative mx-auto w-full max-w-md">
@@ -80,7 +80,7 @@ function AuthPage() {
           <a href="/" className="mb-8 flex items-center justify-center gap-2.5">{brand}</a>
         )}
 
-        <div className="glass-red anim-rise rounded-[2rem] p-6 sm:p-8">
+        <div className="hz-auth-panel glass-red anim-rise rounded-[2rem] p-6 sm:p-8">
           <div className="mb-6 grid grid-cols-2 rounded-full bg-ink p-1">
             {(["signup", "login"] as const).map((m) => (
               <button

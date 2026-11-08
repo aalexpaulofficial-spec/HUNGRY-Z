@@ -77,10 +77,10 @@ export function ResetPasswordPage() {
   }
 
   return (
-    <main className="grain relative flex min-h-screen items-center justify-center overflow-hidden bg-background px-4 py-10">
+    <main className="hz-auth-page grain relative flex min-h-screen items-center justify-center overflow-hidden bg-background px-4 py-10">
       <ThemeToggle className="absolute right-4 top-4 z-20 sm:right-6 sm:top-6" />
       <div className="ember anim-pulse-glow pointer-events-none absolute -top-40 left-1/2 h-[520px] w-[520px] -translate-x-1/2" />
-      <section className="glass-red anim-rise relative w-full max-w-md rounded-[2rem] p-6 sm:p-8">
+      <section className="hz-auth-panel glass-red anim-rise relative w-full max-w-md rounded-[2rem] p-6 sm:p-8">
         <Link to="/" className="mb-8 flex items-center justify-center gap-2.5">
           <img src="/HUNGRY%20Z%20Q%20LOGO.png" alt="" className="h-8 w-8 rounded-lg object-contain" />
           <span className="display text-[15px] tracking-[0.3em]">HUNGRY Z</span>

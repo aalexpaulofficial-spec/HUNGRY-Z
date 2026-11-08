@@ -389,23 +389,23 @@ function OrderingApp() {
 
   const ordering = canAcceptOrders(canteen, availabilityNow);
   const nextOpen = canteen.availability_mode === "open" ? null : nextScheduledOpening(canteen, availabilityNow);
-  const navTabs = [["home", "HOME", Home], ["menu", "MENU", UtensilsCrossed], ["scan", "HUNGRY AI", ScanLine], ["events", "EVENTS", Ticket], ["orders", "ORDERS", Receipt], ["you", "YOU", User]] as const;
+  const navTabs = [["home", "Home", Home], ["menu", "Menu", UtensilsCrossed], ["scan", "HUNGRY AI", ScanLine], ["events", "Events", Ticket], ["orders", "Orders", Receipt], ["you", "You", User]] as const;
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="relative mx-auto min-h-screen w-full max-w-3xl pb-32">
-        <header className="sticky top-0 z-30 flex flex-wrap items-center gap-x-3 gap-y-2 bg-background/80 px-4 py-3 backdrop-blur-xl sm:flex-nowrap sm:justify-between sm:gap-3 sm:px-5 sm:py-4">
+    <div className="hz-customer-app min-h-screen bg-background">
+      <div className="hz-customer-shell relative mx-auto min-h-screen w-full max-w-5xl pb-32">
+        <header className="hz-customer-header sticky top-0 z-30 flex flex-wrap items-center gap-x-3 gap-y-2 bg-background/85 px-4 py-3 backdrop-blur-xl sm:flex-nowrap sm:justify-between sm:gap-3 sm:px-7 sm:py-4">
           <div className="flex min-w-0 basis-full items-center gap-2 sm:basis-auto sm:gap-3">
             <BackButton inline />
             <img src="/HUNGRY%20Z%20Q%20LOGO.png" alt="HUNGRY Z" className="h-8 w-8 shrink-0 rounded-full object-contain" />
             <div className="min-w-0 flex-1">
-              <p className="truncate whitespace-nowrap text-xs text-muted-foreground">{`Hi, ${profile.full_name} 👋`}</p>
-              <p className="display truncate whitespace-nowrap text-lg tracking-[0.2em]">HUNGRY?</p>
+              <p className="truncate whitespace-nowrap text-xs font-medium text-muted-foreground">{`Good food, ${profile.full_name.split(" ")[0]}`}</p>
+              <p className="display truncate whitespace-nowrap text-lg tracking-[0.18em]">HUNGRY Z</p>
             </div>
           </div>
           <div className="flex min-w-0 flex-1 items-center justify-end gap-2 sm:flex-initial">
             <ThemeToggle />
-            <button onClick={() => setSwitching(true)} className="glass flex min-w-0 flex-1 items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-semibold sm:max-w-[55%] sm:flex-initial">
+            <button onClick={() => setSwitching(true)} className="hz-campus-switch glass flex min-w-0 flex-1 items-center gap-2 rounded-2xl px-3 py-2 sm:max-w-[55%] sm:flex-initial">
               <MapPin className="h-3.5 w-3.5 shrink-0 text-primary-bright" />
               <span className="min-w-0 truncate text-left"><span data-no-translate className="block truncate">{canteen.name}</span><span className={cn("mt-0.5 block text-[9px] font-bold", ordering ? "text-emerald-500" : "text-red-500")}>{ordering ? "OPEN — Accepting Orders" : "CLOSED — Not Accepting Orders"}</span></span>
             </button>
@@ -413,12 +413,12 @@ function OrderingApp() {
           </div>
         </header>
 
-        <div className={cn("mx-5 mb-3 rounded-2xl border px-4 py-3 text-xs", ordering ? "border-border bg-card text-muted-foreground" : "border-red-500/30 bg-red-500/10 text-red-500")}>
+        <div className={cn("hz-hours-banner mx-4 mb-5 rounded-2xl border px-4 py-3 text-xs sm:mx-7", ordering ? "border-border bg-card text-muted-foreground" : "border-red-500/30 bg-red-500/10 text-red-500")}>
           <p>{ordering ? `Today's operating hours: ${describeTodayHours(canteen, availabilityNow)}` : canteen.availability_mode === "closed" ? "The owner has temporarily closed the canteen." : canteen.visibility === "maintenance" ? "The canteen is under maintenance." : nextOpen ? `Next opening: ${formatCanteenTime(nextOpen)}` : "The canteen is outside its operating hours."}</p>
         </div>
 
         <AnimatePresence mode="wait">
-          <motion.main key={tab} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.25 }} className="px-5">
+          <motion.main key={tab} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.25 }} className="hz-customer-content px-4 sm:px-7">
             {tab === "home" && <HomeTab menu={liveMenu} canteen={canteen} template={canteenTemplate} onOpen={setDetail} onAdd={add} goMenu={() => setTab("menu")} />}
             {tab === "menu" && <MenuTab menu={liveMenu} onOpen={setDetail} onAdd={add} />}
             {tab === "events" && (profile.role === "faculty"
@@ -437,9 +437,9 @@ function OrderingApp() {
           </motion.button>
         )}
 
-        <nav className="glass fixed inset-x-0 bottom-0 z-40 mx-auto flex max-w-3xl justify-around rounded-t-3xl px-1.5 pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-3 sm:px-2">
+        <nav aria-label="Main navigation" className="hz-bottom-nav glass fixed inset-x-0 bottom-0 z-40 mx-auto flex max-w-5xl justify-around rounded-t-3xl px-1.5 pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-3 sm:px-4">
           {navTabs.map(([k, label, Icon]) => (
-            <button key={k} onClick={() => setTab(k)} className={cn("flex min-w-0 flex-1 flex-col items-center gap-1 whitespace-nowrap py-1 text-[8px] font-bold tracking-normal transition sm:text-[10px] sm:tracking-widest", tab === k ? "text-primary-bright" : "text-muted-foreground")}>
+            <button key={k} aria-current={tab === k ? "page" : undefined} onClick={() => setTab(k)} className={cn("flex min-w-0 flex-1 flex-col items-center gap-1 whitespace-nowrap py-1 text-[8px] font-bold tracking-normal transition sm:text-[10px] sm:tracking-widest", tab === k ? "text-primary-bright" : "text-muted-foreground")}>
               <span className="relative"><Icon className={cn("h-5 w-5 transition", tab === k && "scale-110")} />{k === "events" && publishedEventCount > 0 && <span className="absolute -right-5 -top-2 whitespace-nowrap rounded-full bg-primary px-1.5 py-0.5 text-[7px] leading-none tracking-normal text-primary-foreground">NEW · {publishedEventCount}</span>}</span>
               {label}
             </button>
@@ -638,7 +638,8 @@ export function FoodCard({ item, onOpen, onAdd, wide }: { item: MenuItem; onOpen
       </button>
       <div className="flex min-w-0 items-end justify-between gap-2 p-3 sm:p-4">
         <button onClick={() => onOpen(item)} className="min-w-0 flex-1 text-left">
-          <p data-no-translate className="line-clamp-2 break-words text-sm font-semibold leading-tight sm:line-clamp-none sm:break-normal">{item.name}</p>
+          <p data-no-translate className="line-clamp-2 break-words text-sm font-semibold leading-tight">{item.name}</p>
+          {item.description && <p data-no-translate className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-muted-foreground">{item.description}</p>}
           <p className="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground sm:flex-nowrap sm:gap-2">
             <span className="flex shrink-0 items-center gap-0.5"><Clock className="h-3 w-3" />{item.prep_minutes}m</span>
             <span className="shrink-0">{item.veg ? "Veg" : "Non-veg"}</span>
@@ -661,8 +662,8 @@ function HomeTab({ menu, canteen, template, onOpen, onAdd, goMenu }: { menu: Men
   const featured = menu.filter((m) => m.tag);
   const quick = menu.filter((m) => m.prep_minutes <= 8);
   return (
-    <div className="space-y-8 pt-2">
-      <div className="relative overflow-hidden rounded-[2rem] border border-primary/30">
+      <div className="hz-home-page space-y-8 pt-2">
+      <div className="hz-feature-hero relative overflow-hidden rounded-[2rem] border border-primary/30">
         <img src={template?.banner_image_url || foodImage("food-indian")} alt="" className="h-52 w-full object-cover opacity-70" style={bannerCropStyle({ x: template?.banner_crop_x, y: template?.banner_crop_y, zoom: template?.banner_crop_zoom })} />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
         <div className="absolute bottom-5 left-5 right-5">
@@ -697,16 +698,18 @@ function MenuTab({ menu, onOpen, onAdd }: { menu: MenuItem[]; onOpen: (i: MenuIt
   const list = useMemo(() => menu.filter((m) => (cat === "All" || m.category === cat) && m.name.toLowerCase().includes(q.toLowerCase())), [menu, cat, q]);
   if (!menu.length) return <Empty title="No menu yet" text="Your canteen hasn't published its menu on HUNGRY Z yet." />;
   return (
-    <div className="pt-2">
-      <input value={q} onChange={(e) => setQ(e.target.value)} maxLength={50} placeholder="Search dishes…" className="w-full rounded-full border border-input bg-card px-5 py-3 text-sm outline-none focus:border-primary" />
+    <div className="hz-menu-page pt-2">
+      <div className="mb-5"><p className="text-[11px] font-bold uppercase tracking-[0.2em] text-primary">Campus kitchen</p><h1 className="display mt-2 text-3xl">Find your next favorite</h1><p className="mt-2 text-sm text-muted-foreground">Freshly prepared at your canteen.</p></div>
+      <input aria-label="Search dishes" value={q} onChange={(e) => setQ(e.target.value)} maxLength={50} placeholder="Search dishes…" className="hz-search-field w-full rounded-2xl border border-input bg-card px-5 py-3.5 text-sm outline-none focus:border-primary" />
       <div className="-mx-5 mt-4 flex gap-2 overflow-x-auto px-5">
         {cats.map((c) => (
           <button data-no-translate key={c} onClick={() => setCat(c)} className={cn("shrink-0 rounded-full border px-4 py-2 text-xs font-semibold transition", cat === c ? "border-primary bg-primary text-primary-foreground" : "border-border text-muted-foreground")}>{c}</button>
         ))}
       </div>
-      <div className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-3">
+      <p className="mt-5 text-xs font-semibold text-muted-foreground">{list.length} {list.length === 1 ? "dish" : "dishes"}</p>
+      {list.length ? <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
         {list.map((m) => <FoodCard key={m.id} item={m} onOpen={onOpen} onAdd={onAdd} />)}
-      </div>
+      </div> : <Empty title="No dishes found" text="Try another search or choose a different category." />}
     </div>
   );
 }

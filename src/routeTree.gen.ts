@@ -19,6 +19,7 @@ import { Route as RegisterCanteenRouteImport } from './routes/register-canteen'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/app'
+import { Route as EventTokenTokenIdRouteImport } from './routes/event-token.$tokenId'
 import { Route as InstallCanteenRouteImport } from './routes/install.canteen'
 import { Route as ApiPublicRazorpayWebhookRouteImport } from './routes/api/public/razorpay-webhook'
 
@@ -71,6 +72,11 @@ const AuthenticatedAppRoute = AuthenticatedAppRouteImport.update({
   path: '/app',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const EventTokenTokenIdRoute = EventTokenTokenIdRouteImport.update({
+  id: '/event-token/$tokenId',
+  path: '/event-token/$tokenId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const InstallCanteenRoute = InstallCanteenRouteImport.update({
   id: '/install/canteen',
   path: '/install/canteen',
@@ -93,6 +99,7 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/terms': typeof TermsRoute
   '/app': typeof AuthenticatedAppRoute
+  '/event-token/$tokenId': typeof EventTokenTokenIdRoute
   '/install/canteen': typeof InstallCanteenRoute
   '/api/public/razorpay-webhook': typeof ApiPublicRazorpayWebhookRoute
 }
@@ -106,6 +113,7 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/terms': typeof TermsRoute
   '/app': typeof AuthenticatedAppRoute
+  '/event-token/$tokenId': typeof EventTokenTokenIdRoute
   '/install/canteen': typeof InstallCanteenRoute
   '/api/public/razorpay-webhook': typeof ApiPublicRazorpayWebhookRoute
 }
@@ -121,6 +129,7 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/terms': typeof TermsRoute
   '/_authenticated/app': typeof AuthenticatedAppRoute
+  '/event-token/$tokenId': typeof EventTokenTokenIdRoute
   '/install/canteen': typeof InstallCanteenRoute
   '/api/public/razorpay-webhook': typeof ApiPublicRazorpayWebhookRoute
 }
@@ -136,6 +145,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/terms'
     | '/app'
+    | '/event-token/$tokenId'
     | '/install/canteen'
     | '/api/public/razorpay-webhook'
   fileRoutesByTo: FileRoutesByTo
@@ -149,6 +159,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/terms'
     | '/app'
+    | '/event-token/$tokenId'
     | '/install/canteen'
     | '/api/public/razorpay-webhook'
   id:
@@ -163,6 +174,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/terms'
     | '/_authenticated/app'
+    | '/event-token/$tokenId'
     | '/install/canteen'
     | '/api/public/razorpay-webhook'
   fileRoutesById: FileRoutesById
@@ -177,6 +189,7 @@ export interface RootRouteChildren {
   RegisterCanteenRoute: typeof RegisterCanteenRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   TermsRoute: typeof TermsRoute
+  EventTokenTokenIdRoute: typeof EventTokenTokenIdRoute
   InstallCanteenRoute: typeof InstallCanteenRoute
   ApiPublicRazorpayWebhookRoute: typeof ApiPublicRazorpayWebhookRoute
 }
@@ -253,6 +266,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/event-token/$tokenId': {
+      id: '/event-token/$tokenId'
+      path: '/event-token/$tokenId'
+      fullPath: '/event-token/$tokenId'
+      preLoaderRoute: typeof EventTokenTokenIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/install/canteen': {
       id: '/install/canteen'
       path: '/install/canteen'
@@ -291,6 +311,7 @@ const rootRouteChildren: RootRouteChildren = {
   RegisterCanteenRoute: RegisterCanteenRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   TermsRoute: TermsRoute,
+  EventTokenTokenIdRoute: EventTokenTokenIdRoute,
   InstallCanteenRoute: InstallCanteenRoute,
   ApiPublicRazorpayWebhookRoute: ApiPublicRazorpayWebhookRoute,
 }
