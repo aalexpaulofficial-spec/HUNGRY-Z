@@ -664,8 +664,7 @@ function HomeTab({ menu, canteen, template, onOpen, onAdd, goMenu }: { menu: Men
   return (
       <div className="hz-home-page space-y-8 pt-2">
       <div className="hz-feature-hero relative overflow-hidden rounded-[2rem] border border-primary/30">
-        <img src={template?.banner_image_url || foodImage("food-indian")} alt="" className="h-52 w-full object-cover opacity-70" style={bannerCropStyle({ x: template?.banner_crop_x, y: template?.banner_crop_y, zoom: template?.banner_crop_zoom })} />
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
+        <img src={template?.banner_image_url || foodImage("food-indian")} alt="" className="block h-auto w-full object-contain" style={bannerCropStyle({ x: template?.banner_crop_x, y: template?.banner_crop_y, zoom: template?.banner_crop_zoom })} />
         <div className="absolute bottom-5 left-5 right-5">
           <p data-no-translate className="text-xs font-semibold uppercase tracking-widest text-primary-bright">{canteen.name} · {canteen.university_name}</p>
           <p data-no-translate={template?.heading?.trim() ? "" : undefined} className="display mt-1 break-words text-2xl sm:break-normal sm:text-3xl">{template?.heading?.trim() || "Browse campus food."}</p>

@@ -287,12 +287,11 @@ function OfflinePOSTab({
             {categories.map((name) => <button key={name} type="button" onClick={() => onCategory(name)} aria-pressed={category === name} className={cn("min-h-10 shrink-0 rounded-full border px-4 text-xs font-bold transition", category === name ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background text-muted-foreground hover:border-primary/50 hover:text-foreground")}>{name}</button>)}
           </div>
           {filtered.length ? <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
-            {filtered.map((item) => <button key={item.id} type="button" onClick={() => onAdd(item)} aria-label={`Add ${item.name}, ₹${item.price}`} className="hz-pos-item group min-h-36 overflow-hidden rounded-2xl border border-border bg-background text-left transition hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-lg active:scale-[.98]">
-              <img src={foodImage(item.image)} alt="" loading="lazy" className="h-24 w-full object-cover transition duration-300 group-hover:scale-[1.03]" />
-              <span className="block p-3"><span data-no-translate className="line-clamp-2 block min-h-9 text-xs font-bold leading-snug">{item.name}</span><span className="mt-1 flex items-center justify-between gap-1"><span className="text-sm font-black text-primary">₹{item.price}</span>{item.stock !== null && <span className="text-[9px] text-muted-foreground">{item.stock} left</span>}</span></span>
+            {filtered.map((item) => <button key={item.id} type="button" onClick={() => onAdd(item)} aria-label={`Add ${item.name}, ₹${item.price}`} className="hz-pos-item flex min-h-28 flex-col justify-between rounded-2xl border border-border bg-background p-4 text-left transition hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-lg active:scale-[.98]">
+              <span data-no-translate className="line-clamp-2 block text-sm font-bold leading-snug">{item.name}</span>
+              <span className="mt-3 block text-base font-black text-primary">₹{item.price}</span>
             </button>)}
           </div> : <div className="mt-5 rounded-2xl border border-dashed border-border px-5 py-12 text-center"><UtensilsCrossed className="mx-auto h-7 w-7 text-muted-foreground" /><p className="mt-3 text-sm font-bold">{items.length ? "No matching dishes" : "No available menu items"}</p><p className="mt-1 text-xs text-muted-foreground">{items.length ? "Try another search or category." : "Add and publish items from the Menu section to use Offline POS."}</p></div>}
-          <p className="mt-4 text-[10px] leading-relaxed text-muted-foreground">Menu, availability, prices, and stock are loaded live from this canteen’s Supabase menu.</p>
         </div>
 
         <aside className="hz-pos-bill rounded-3xl border border-border bg-card p-4 shadow-[var(--shadow-device)] sm:p-5" aria-label="Current counter bill">

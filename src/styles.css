@@ -322,8 +322,7 @@ html[data-theme="light"] .hungry-install-page svg path[stroke="rgba(255,255,255,
 .hz-campus-switch { border: 1px solid var(--border); box-shadow: var(--hz-shadow-card); text-align: left; }
 .hz-hours-banner { line-height: 1.55; box-shadow: 0 5px 18px color-mix(in oklab, black 5%, transparent); }
 .hz-customer-content { padding-bottom: 1.5rem; }
-.hz-feature-hero { min-height: 18rem; box-shadow: var(--hz-shadow-card); }
-.hz-feature-hero > img { min-height: 18rem; }
+.hz-feature-hero { box-shadow: var(--hz-shadow-card); }
 .hz-customer-content .rounded-3xl.border,
 .hz-customer-content .rounded-\[2rem\].border,
 .hz-customer-content .glass-red { box-shadow: var(--hz-shadow-card); }
@@ -369,7 +368,6 @@ html[data-theme="light"] .hungry-install-page svg path[stroke="rgba(255,255,255,
 .hz-pos-search { min-height: 2.9rem; }
 .hz-pos-categories { scrollbar-width: thin; }
 .hz-pos-item { min-width: 0; }
-.hz-pos-item img { transform-origin: center; }
 .hz-pos-bill { min-width: 0; }
 .hz-canteen-app section.rounded-3xl,
 .hz-canteen-app form.rounded-3xl,
@@ -381,12 +379,10 @@ html[data-theme="light"] .hz-canteen-app,
 html[data-theme="light"] .hz-auth-page {
   --hz-shadow-card: 0 12px 32px rgb(35 24 18 / 6%), 0 0 0 1px rgb(45 30 20 / 3%);
 }
-html[data-theme="light"] .hz-feature-hero .absolute.inset-0 { background-image: linear-gradient(to top, rgb(255 255 255 / 96%), rgb(255 255 255 / 40%) 48%, transparent) !important; }
 html[data-theme="light"] .hz-bottom-nav { background: rgb(255 255 255 / 92%); }
 html[data-theme="light"] .hz-canteen-nav { background: color-mix(in oklab, white 92%, var(--primary) 8%); }
 
 @media (min-width: 640px) {
-  .hz-feature-hero, .hz-feature-hero > img { min-height: 22rem; }
   .hz-customer-content { padding-bottom: 2rem; }
 }
 @media (max-width: 639px) {

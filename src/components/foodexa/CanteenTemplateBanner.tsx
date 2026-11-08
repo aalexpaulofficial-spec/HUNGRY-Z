@@ -60,8 +60,7 @@ export function CanteenTemplateBanner({
       onPointerCancel={() => { drag.current = null; }}
       onLostPointerCapture={() => { drag.current = null; }}
     >
-      <img src={imageUrl || foodImage("food-indian")} alt="" className="h-52 w-full object-cover opacity-70" style={bannerCropStyle({ x: cropX, y: cropY, zoom: cropZoom })} />
-      <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
+      <img src={imageUrl || foodImage("food-indian")} alt="" className="block h-auto w-full object-contain" style={bannerCropStyle({ x: cropX, y: cropY, zoom: cropZoom })} />
       <div className="absolute bottom-5 left-5 right-5">
         <p data-no-translate className="text-xs font-semibold uppercase tracking-widest text-primary-bright">{canteenName} · {universityName}</p>
         <h2 data-no-translate={heading?.trim() ? "" : undefined} className="display mt-1 text-3xl">{heading?.trim() || "Browse campus food."}</h2>
