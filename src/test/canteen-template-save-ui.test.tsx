@@ -74,8 +74,8 @@ beforeEach(() => {
 describe("canteen template save flow", () => {
   it("uploads the selected image, saves crop settings, returns to Menu, and restores the saved crop", async () => {
     const { container } = render(<Dashboard canteen={{ id: "canteen-1", code: "ABC1234", name: "Main Canteen", university_name: "Campus", visibility: "public", is_active: true, availability_mode: "schedule", timezone: "Asia/Kolkata", operating_hours: { mon: { open: "00:00", close: "24:00" }, tue: { open: "00:00", close: "24:00" }, wed: { open: "00:00", close: "24:00" }, thu: { open: "00:00", close: "24:00" }, fri: { open: "00:00", close: "24:00" }, sat: { open: "00:00", close: "24:00" }, sun: { open: "00:00", close: "24:00" } } }} language="en" onLanguageChange={() => undefined} onSignOut={() => undefined} />);
-    await waitFor(() => expect(screen.getByRole("button", { name: /Change Template/ })).toBeInTheDocument());
-    fireEvent.click(screen.getByRole("button", { name: /Change Template/ }));
+    await waitFor(() => expect(screen.getByRole("button", { name: /CHANGE TEMPLATE/ })).toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: /CHANGE TEMPLATE/ }));
 
     const file = new File([new Uint8Array([1, 2, 3])], "banner.png", { type: "image/png" });
     fireEvent.change(screen.getByLabelText("Choose canteen banner image"), { target: { files: [file] } });
@@ -112,9 +112,9 @@ describe("canteen template save flow", () => {
       banner_crop_zoom: 1.8,
     }));
     expect(mocks.uploadedPath).toMatch(/^canteen-1\//);
-    await waitFor(() => expect(screen.getByRole("button", { name: /Menu/ })).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole("button", { name: /MENU/ })).toBeInTheDocument());
 
-    fireEvent.click(screen.getByRole("button", { name: /Change Template/ }));
+    fireEvent.click(screen.getByRole("button", { name: /CHANGE TEMPLATE/ }));
     await waitFor(() => expect(screen.getByRole("slider", { name: "Banner image zoom" })).toHaveValue("1.8"));
     expect(container.querySelector(".cursor-grab img")).toHaveStyle({ transform: "translate(40%, -40%) scale(1.8)" });
   });

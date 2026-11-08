@@ -68,13 +68,16 @@ export type OrderEmailData = {
   prepMinutes: number;
 };
 
-export function registrationConfirmationEmail(d: { name: string }): EmailContent {
+export function registrationConfirmationEmail(d: { name: string; registrationType?: "customer" | "canteen_owner" }): EmailContent {
   const greeting = d.name.trim() ? `Hi ${d.name.trim()},` : "Hello,";
-  const confirmation = "Thank you for registering with HUNGRY Z. We have received your registration using this email address. For canteen applications, this message confirms receipt only; the application remains subject to admin review.";
+  const canteenOwner = d.registrationType === "canteen_owner";
+  const confirmation = canteenOwner
+    ? "Thank you for applying to register your canteen with HUNGRY Z. Your application has been received and is pending admin verification. We will email you when a decision is made."
+    : "Your HUNGRY Z account registration was successful. You can now sign in and continue setting up your account.";
   return {
-    subject: "Thank you for registering with HUNGRY Z",
+    subject: canteenOwner ? "HUNGRY Z canteen application received" : "Your HUNGRY Z account is ready",
     text: `${greeting}\n\n${confirmation}\n\n— Team HUNGRY Z`,
-    html: wrap("Thank you for registering", `<p>${esc(greeting)}</p><p>${esc(confirmation)}</p>`),
+    html: wrap(canteenOwner ? "Canteen application received" : "Your account is ready", `<p>${esc(greeting)}</p><p>${esc(confirmation)}</p>`),
   };
 }
 

@@ -1023,6 +1023,12 @@ export type Database = {
         Update: { id?: number; event_id?: string; actor_id?: string | null; action?: string; details?: Json; created_at?: string }
         Relationships: []
       }
+      offline_pos_transactions: {
+        Row: { transaction_id: string; canteen_id: string; owner_user_id: string; client_created_at: string; lines: Json; subtotal: number; total: number; payment_method: string; payment_status: string; created_at: string }
+        Insert: { transaction_id: string; canteen_id: string; owner_user_id: string; client_created_at: string; lines: Json; subtotal: number; total: number; payment_method: string; payment_status: string; created_at?: string }
+        Update: { transaction_id?: string; canteen_id?: string; owner_user_id?: string; client_created_at?: string; lines?: Json; subtotal?: number; total?: number; payment_method?: string; payment_status?: string; created_at?: string }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

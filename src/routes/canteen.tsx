@@ -68,15 +68,25 @@ function CanteenPage() {
     setErr("");
     setState("loading");
     try {
-      const { data, error: authError } = await supabase.auth.getUser();
-      if (authError) throw new Error("Could not verify your owner session. Please sign in again.");
-      if (!data.user) {
+      const { data, error: authError } = await supabase.auth.getSession();
+      if (authError) throw new Error("Could not read your owner session. Please sign in again.");
+      const sessionUser = data.session?.user;
+      if (!sessionUser) {
         setOwnerUserId(null);
         setCanteen(null);
         setState("auth");
         return;
       }
-      setOwnerUserId(data.user.id);
+      setOwnerUserId(sessionUser.id);
+      const cachedOwner = (() => {
+        try { return JSON.parse(localStorage.getItem(`hungry:offline-canteen:${sessionUser.id}`) ?? "null") as { ownerUserId: string; canteen: Canteen } | null; }
+        catch { return null; }
+      })();
+      if (!navigator.onLine && cachedOwner?.ownerUserId === sessionUser.id && cachedOwner.canteen?.id) {
+        setCanteen(cachedOwner.canteen);
+        setState("ok");
+        return;
+      }
       const access = await ownerAccess({ data: {} });
       if (access.status !== "approved") {
         setCanteen(null);
@@ -86,13 +96,25 @@ function CanteenPage() {
       const q = supabase
         .from("canteens")
         .select("id, code, name, university_name, visibility, is_active, availability_mode, operating_hours, timezone")
-        .eq("owner_user_id", data.user.id);
+        .eq("owner_user_id", sessionUser.id);
       const { data: rows, error } = await q.limit(1);
       if (error) throw new Error("Could not load your canteen. Please try again.");
       const c = (rows?.[0] as Canteen | undefined) ?? null;
       setCanteen(c);
+      if (c) localStorage.setItem(`hungry:offline-canteen:${sessionUser.id}`, JSON.stringify({ ownerUserId: sessionUser.id, canteen: c }));
       setState(c ? "ok" : "missing");
     } catch (e) {
+      try {
+        const { data } = await supabase.auth.getSession();
+        const user = data.session?.user;
+        const cached = user ? JSON.parse(localStorage.getItem(`hungry:offline-canteen:${user.id}`) ?? "null") as { ownerUserId: string; canteen: Canteen } | null : null;
+        if (user && cached?.ownerUserId === user.id && cached.canteen?.id && (!navigator.onLine || e instanceof TypeError)) {
+          setOwnerUserId(user.id);
+          setCanteen(cached.canteen);
+          setState("ok");
+          return;
+        }
+      } catch { /* No usable local session/snapshot; show the actual access error. */ }
       setErr(e instanceof Error ? e.message : "Could not verify your canteen access. Please try again.");
       setState("error");
     }
@@ -179,12 +201,19 @@ type Order = { id: string; order_number: string; customer_name: string; lines: {
 type ReceiptPaperWidth = "auto" | "58" | "80";
 type POSLine = Pick<MenuItem, "id" | "name" | "price" | "image" | "category" | "stock"> & { qty: number };
 type OfflinePaymentMethod = "cash" | "upi" | "card";
-type OfflineSale = { id: string; createdAt: string; lines: POSLine[]; subtotal: number; total: number; paymentMethod: OfflinePaymentMethod; paymentStatus: "paid" | "unpaid" };
+type OfflineSale = { id: string; createdAt: string; lines: POSLine[]; subtotal: number; total: number; paymentMethod: OfflinePaymentMethod; paymentStatus: "paid" | "unpaid"; syncStatus?: "pending" | "synced" };
 type HeldPOSOrder = { id: string; createdAt: string; lines: POSLine[]; paymentMethod?: OfflinePaymentMethod; paymentStatus?: "paid" | "unpaid" };
 type OfflinePOSState = { current: POSLine[]; held: HeldPOSOrder[]; completed: OfflineSale[]; paymentMethod: OfflinePaymentMethod; paymentStatus: "paid" | "unpaid" };
-type ReceiptPrintJob = { kind: "order"; order: Order } | { kind: "test"; counterName: string; createdAt: string } | { kind: "offline"; counterName: string; createdAt: string; orderNumber: string; lines: { name: string; qty: number; price: number }[]; saleLines: POSLine[]; subtotal: number; total: number; paymentMethod: OfflinePaymentMethod; paymentStatus: "paid" | "unpaid" };
+type ReceiptPrintJob = { kind: "order"; order: Order } | { kind: "test"; counterName: string; createdAt: string } | { kind: "offline"; counterName: string; createdAt: string; orderNumber: string; transactionId: string; lines: { name: string; qty: number; price: number }[]; saleLines: POSLine[]; subtotal: number; total: number; paymentMethod: OfflinePaymentMethod; paymentStatus: "paid" | "unpaid" };
 const printerPreferenceKey = (canteenId: string) => `hungry:printer-preferences:${canteenId}`;
 const offlinePOSStorageKey = (canteenId: string) => `hungry:offline-pos:${canteenId}`;
+const offlineMenuStorageKey = (canteenId: string) => `hungry:offline-menu:${canteenId}`;
+function readOfflineMenu(canteenId: string): MenuItem[] {
+  try {
+    const value = JSON.parse(localStorage.getItem(offlineMenuStorageKey(canteenId)) ?? "[]");
+    return Array.isArray(value) ? value.filter((item) => item && typeof item.id === "string" && typeof item.name === "string" && Number.isInteger(item.price)) as MenuItem[] : [];
+  } catch { return []; }
+}
 function readOfflinePOS(canteenId: string): OfflinePOSState {
   try {
     const saved = JSON.parse(localStorage.getItem(offlinePOSStorageKey(canteenId)) ?? "null") as Partial<OfflinePOSState> | null;
@@ -253,14 +282,15 @@ function ThermalReceipt({ job, paperWidth }: { job: ReceiptPrintJob; paperWidth:
 }
 
 function OfflinePOSTab({
-  canteenName, menu, current, held, search, category, message, printing, paymentMethod, paymentStatus,
+  canteenName, menu, current, held, pendingSyncCount, search, category, message, printing, paymentMethod, paymentStatus,
   onSearch, onCategory, onAdd, onQuantity, onHold, onResume, onClear, onPrint, onPaymentMethod, onPaymentStatus,
 }: {
-  canteenName: string; menu: MenuItem[]; current: POSLine[]; held: HeldPOSOrder[]; search: string; category: string; message: string; printing: boolean; paymentMethod: OfflinePaymentMethod; paymentStatus: "paid" | "unpaid";
+  canteenName: string; menu: MenuItem[]; current: POSLine[]; held: HeldPOSOrder[]; pendingSyncCount: number; search: string; category: string; message: string; printing: boolean; paymentMethod: OfflinePaymentMethod; paymentStatus: "paid" | "unpaid";
   onSearch: (value: string) => void; onCategory: (value: string) => void; onAdd: (item: MenuItem) => void; onQuantity: (id: string, delta: number) => void;
   onHold: () => void; onResume: (order: HeldPOSOrder) => void; onClear: () => void; onPrint: () => void; onPaymentMethod: (value: OfflinePaymentMethod) => void; onPaymentStatus: (value: "paid" | "unpaid") => void;
 }) {
-  const items = menu.filter((item) => item.available && item.stock !== 0);
+  // Online stock/availability controls online ordering only. Counter staff can bill any saved menu item.
+  const items = menu;
   const categories = ["All", ...Array.from(new Set(items.map((item) => item.category)))];
   const filtered = items.filter((item) =>
     (category === "All" || item.category === category) &&
@@ -298,9 +328,8 @@ function OfflinePOSTab({
           <div className="flex items-start justify-between gap-3"><div><p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">Current bill</p><h3 className="display mt-1 text-xl">Selected items</h3></div><Receipt className="mt-1 h-5 w-5 text-primary" /></div>
           <div className="mt-4 max-h-[22rem] space-y-2 overflow-y-auto pr-1">
             {current.map((line) => <div key={line.id} className="flex items-center gap-3 rounded-2xl border border-border bg-background p-3">
-              <img src={foodImage(line.image)} alt="" className="h-12 w-12 shrink-0 rounded-xl object-cover" />
               <div className="min-w-0 flex-1"><p data-no-translate className="truncate text-xs font-bold">{line.name}</p><p className="mt-1 text-[11px] text-muted-foreground">₹{line.price} × {line.qty} <span className="font-bold text-foreground">= ₹{line.price * line.qty}</span></p></div>
-              <div className="flex shrink-0 items-center gap-1"><button type="button" aria-label={`Decrease ${line.name}`} onClick={() => onQuantity(line.id, -1)} className="grid h-9 w-9 place-items-center rounded-xl border border-border hover:border-primary/50"><Minus className="h-3.5 w-3.5" /></button><span className="w-6 text-center text-xs font-black tabular-nums">{line.qty}</span><button type="button" aria-label={`Increase ${line.name}`} onClick={() => onQuantity(line.id, 1)} disabled={line.qty >= 20 || (line.stock !== null && line.qty >= line.stock)} className="grid h-9 w-9 place-items-center rounded-xl border border-border hover:border-primary/50 disabled:opacity-40"><Plus className="h-3.5 w-3.5" /></button></div>
+              <div className="flex shrink-0 items-center gap-1"><button type="button" aria-label={`Decrease ${line.name}`} onClick={() => onQuantity(line.id, -1)} className="grid h-9 w-9 place-items-center rounded-xl border border-border hover:border-primary/50"><Minus className="h-3.5 w-3.5" /></button><span className="w-6 text-center text-xs font-black tabular-nums">{line.qty}</span><button type="button" aria-label={`Increase ${line.name}`} onClick={() => onQuantity(line.id, 1)} className="grid h-9 w-9 place-items-center rounded-xl border border-border hover:border-primary/50"><Plus className="h-3.5 w-3.5" /></button></div>
             </div>)}
             {!current.length && <div className="grid min-h-36 place-items-center rounded-2xl border border-dashed border-border px-4 text-center"><div><ShoppingBag className="mx-auto h-6 w-6 text-muted-foreground" /><p className="mt-2 text-xs font-semibold text-muted-foreground">Tap menu items to add them to this bill.</p></div></div>}
           </div>
@@ -313,8 +342,17 @@ function OfflinePOSTab({
           <div className="mt-4 grid grid-cols-2 gap-2"><button type="button" onClick={onHold} disabled={!current.length} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border px-3 text-xs font-bold disabled:opacity-40"><Pause className="h-4 w-4" /> Hold order</button><button type="button" onClick={onClear} disabled={!current.length} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border px-3 text-xs font-bold text-muted-foreground hover:border-primary/40 hover:text-primary disabled:opacity-40"><Trash2 className="h-4 w-4" /> Clear order</button></div>
           <button type="button" onClick={onPrint} disabled={!current.length || printing} className="mt-2 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-black text-primary-foreground shadow-[var(--shadow-cinema)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-45"><Printer className="h-4 w-4" /> {printing ? "Preparing bill…" : "Print Bill"}</button>
           <p className="mt-3 text-[10px] leading-relaxed text-muted-foreground">OFFLINE POS bills are saved on this device after print confirmation. Payment status is a manual counter record; it does not alter online orders or payment records.</p>
-          <div className="mt-5 border-t border-border pt-4"><div className="mb-3 flex items-center justify-between"><h4 className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Held orders</h4><span className="rounded-full bg-muted px-2 py-1 text-[10px] font-bold">{held.length}</span></div>
-            {held.length ? <div className="max-h-44 space-y-2 overflow-y-auto">{held.map((order) => <div key={order.id} className="flex items-center justify-between gap-2 rounded-xl border border-border bg-background px-3 py-2"><div className="min-w-0"><p className="font-mono text-[10px] font-bold">{order.id}</p><p className="text-[10px] text-muted-foreground">{order.lines.reduce((sum, line) => sum + line.qty, 0)} items · ₹{order.lines.reduce((sum, line) => sum + line.qty * line.price, 0)}</p></div><button type="button" onClick={() => onResume(order)} disabled={!!current.length} className="inline-flex min-h-9 shrink-0 items-center gap-1 rounded-lg bg-primary px-3 text-[10px] font-bold text-primary-foreground disabled:opacity-40"><Play className="h-3 w-3" /> Resume</button></div>)}</div> : <p className="text-[11px] text-muted-foreground">No held bills on this device.</p>}
+          {pendingSyncCount > 0 && <p role="status" className="mt-3 rounded-xl border border-amber-500/25 bg-amber-500/10 p-3 text-xs text-foreground">{pendingSyncCount} OFFLINE POS transaction{pendingSyncCount === 1 ? "" : "s"} waiting to sync to Supabase.</p>}
+          <div className="mt-5 border-t border-border pt-4">
+            <div className="mb-3 flex items-center justify-between"><h4 className="text-sm font-bold">Held orders</h4><span className="rounded-full bg-muted px-2 py-1 text-[10px] font-bold">{held.length}</span></div>
+            {held.length ? <div className="max-h-80 space-y-3 overflow-y-auto">{held.map((order) => {
+              const heldTotal = order.lines.reduce((sum, line) => sum + line.qty * line.price, 0);
+              return <article key={order.id} className="rounded-2xl border border-primary/25 bg-primary/5 p-3">
+                <div className="flex items-start justify-between gap-2"><div><p className="font-mono text-xs font-bold">Order ID · {order.id}</p><p className="mt-1 text-[10px] text-muted-foreground">{new Date(order.createdAt).toLocaleString()}</p></div><button type="button" onClick={() => onResume(order)} disabled={!!current.length} className="inline-flex min-h-9 shrink-0 items-center gap-1 rounded-lg bg-primary px-3 text-[10px] font-bold text-primary-foreground disabled:opacity-40"><Play className="h-3 w-3" /> RESUME</button></div>
+                <ul className="my-3 space-y-1 border-y border-border/70 py-2">{order.lines.map((line) => <li key={line.id} className="flex justify-between gap-3 text-xs"><span className="truncate">{line.qty} × {line.name}</span><span className="shrink-0 tabular-nums">₹{line.qty * line.price}</span></li>)}</ul>
+                <p className="flex justify-between text-sm font-bold"><span>Total</span><span>₹{heldTotal}</span></p><p className="mt-1 text-[10px] text-muted-foreground">{(order.paymentMethod ?? "cash").toUpperCase()} · {(order.paymentStatus ?? "unpaid").toUpperCase()}</p>
+              </article>;
+            })}</div> : <p className="text-[11px] text-muted-foreground">No held bills on this device.</p>}
           </div>
         </aside>
       </div>
@@ -344,9 +382,10 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
   const [pendingEventRequests, setPendingEventRequests] = useState(0);
   const [activeOrderCount, setActiveOrderCount] = useState(0);
   const [eventUpdateNotice, setEventUpdateNotice] = useState(false);
-  const [menu, setMenu] = useState<MenuItem[]>([]);
+  const [menu, setMenu] = useState<MenuItem[]>(() => readOfflineMenu(canteen.id));
   const [orders, setOrders] = useState<Order[]>([]);
   const [posState, setPOSState] = useState(() => readOfflinePOS(canteen.id));
+  const offlineSyncLock = useRef(false);
   const [analyticsMode, setAnalyticsMode] = useSessionState<"online" | "offline">(`hungry-canteen-analytics-mode-${canteen.id}`, "online");
   const [posMessage, setPOSMessage] = useState("");
   const [posSearch, setPOSSearch] = useState("");
@@ -370,6 +409,7 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
   const [printerSettingsOpen, setPrinterSettingsOpen] = useState(false);
   const [printerPaperWidth, setPrinterPaperWidth] = useState<ReceiptPaperWidth>(() => readPrinterPaperWidth(canteen.id));
   const [printerSettingsMsg, setPrinterSettingsMsg] = useState("");
+  const [canteenCodeCopied, setCanteenCodeCopied] = useState(false);
   const [printJob, setPrintJob] = useState<ReceiptPrintJob | null>(null);
   const [printing, setPrinting] = useState(false);
   const printLock = useRef(false);
@@ -386,6 +426,46 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
     try { localStorage.setItem(offlinePOSStorageKey(canteen.id), JSON.stringify(posState)); }
     catch { setPOSMessage("This browser could not save the current or held counter orders locally."); }
   }, [canteen.id, posState]);
+
+  useEffect(() => {
+    if (menu.length) {
+      try { localStorage.setItem(offlineMenuStorageKey(canteen.id), JSON.stringify(menu)); }
+      catch { setPOSMessage("The menu could not be saved for offline POS on this device."); }
+    }
+  }, [canteen.id, menu]);
+
+  useEffect(() => {
+    const syncPending = async () => {
+      if (!navigator.onLine || offlineSyncLock.current) return;
+      const pending = posState.completed.filter((sale) => sale.syncStatus !== "synced");
+      if (!pending.length) return;
+      offlineSyncLock.current = true;
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const ownerUserId = sessionData.session?.user.id;
+        if (!ownerUserId) return;
+        for (const sale of pending) {
+          const { error } = await supabase.from("offline_pos_transactions").upsert({
+            transaction_id: sale.id,
+            canteen_id: canteen.id,
+            owner_user_id: ownerUserId,
+            client_created_at: sale.createdAt,
+            lines: sale.lines.map(({ id, name, qty, price }) => ({ menu_item_id: id, name, qty, unit_price: price })),
+            subtotal: sale.subtotal,
+            total: sale.total,
+            payment_method: sale.paymentMethod,
+            payment_status: sale.paymentStatus,
+          }, { onConflict: "transaction_id", ignoreDuplicates: true });
+          if (error) break;
+          setPOSState((current) => ({ ...current, completed: current.completed.map((row) => row.id === sale.id ? { ...row, syncStatus: "synced" } : row) }));
+        }
+      } catch { /* Leave every unconfirmed transaction queued for the next retry. */ }
+      finally { offlineSyncLock.current = false; }
+    };
+    void syncPending();
+    window.addEventListener("online", syncPending);
+    return () => window.removeEventListener("online", syncPending);
+  }, [canteen.id, posState.completed]);
 
   useEffect(() => {
     if (!menu.length) return;
@@ -459,12 +539,11 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
   }
 
   function addPOSItem(item: MenuItem) {
-    if (!item.available || item.stock === 0) return;
     setPOSMessage("");
     const existing = posState.current.find((line) => line.id === item.id);
     const nextQty = (existing?.qty ?? 0) + 1;
-    if (nextQty > 20 || (item.stock !== null && nextQty > item.stock)) {
-      setPOSMessage(`Only ${item.stock ?? 20} ${item.name} available for this bill.`);
+    if (nextQty < 1) {
+      setPOSMessage("Quantity must be at least one.");
       return;
     }
     setPOSState((current) => {
@@ -478,12 +557,7 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
     const line = posState.current.find((row) => row.id === itemId);
     const item = menu.find((candidate) => candidate.id === itemId);
     const nextQty = (line?.qty ?? 0) + delta;
-    if (line && delta > 0 && (!item || !item.available)) {
-      setPOSMessage(`${line.name} is no longer available. Remove it from the bill to continue.`);
-      return;
-    }
-    if (line && (nextQty > 20 || (item?.stock != null && nextQty > item.stock))) {
-      setPOSMessage(`Only ${item?.stock ?? 20} ${line?.name ?? "this item"} available for this bill.`);
+    if (line && nextQty < 1) {
       return;
     }
     setPOSState((current) => ({
@@ -509,13 +583,9 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
       setPOSMessage("Hold or clear the current bill before resuming another order.");
       return;
     }
-    const restored = heldOrder.lines.flatMap((line) => {
-      const item = menu.find((candidate) => candidate.id === line.id && candidate.available);
-      if (!item || item.stock === 0) return [];
-      return [{ id: item.id, name: item.name, price: item.price, image: item.image, category: item.category, stock: item.stock, qty: Math.min(line.qty, item.stock ?? line.qty, 20) }];
-    });
+    const restored = heldOrder.lines;
     setPOSState((current) => ({ ...current, current: restored, held: current.held.filter((order) => order.id !== heldOrder.id), paymentMethod: heldOrder.paymentMethod ?? current.paymentMethod, paymentStatus: heldOrder.paymentStatus ?? current.paymentStatus }));
-    setPOSMessage(restored.length ? `Order ${heldOrder.id} resumed.` : "Those menu items are no longer available; the held order was removed.");
+    setPOSMessage(`Order ${heldOrder.id} resumed with its saved items, quantities and prices.`);
   }
 
   function clearPOSOrder() {
@@ -526,18 +596,11 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
 
   function printPOSBill() {
     if (!posState.current.length) return;
-    const unavailable = posState.current.find((line) => {
-      const item = menu.find((candidate) => candidate.id === line.id);
-      return !item?.available || (item.stock !== null && item.stock < line.qty);
-    });
-    if (unavailable) {
-      setPOSMessage(`${unavailable.name} is unavailable or has insufficient stock. Update the bill before printing.`);
-      return;
-    }
     const subtotal = posState.current.reduce((sum, line) => sum + line.price * line.qty, 0);
     const createdAt = new Date().toISOString();
-    const orderNumber = `POS-${Date.now()}`;
-    void startReceiptPrint({ kind: "offline", counterName: canteen.name, createdAt, orderNumber, lines: posState.current.map(({ name, qty, price }) => ({ name, qty, price })), saleLines: posState.current, subtotal, total: subtotal, paymentMethod: posState.paymentMethod, paymentStatus: posState.paymentStatus });
+    const transactionId = crypto.randomUUID();
+    const orderNumber = `POS-${transactionId.slice(0, 8).toUpperCase()}`;
+    void startReceiptPrint({ kind: "offline", counterName: canteen.name, createdAt, orderNumber, transactionId, lines: posState.current.map(({ name, qty, price }) => ({ name, qty, price })), saleLines: posState.current, subtotal, total: subtotal, paymentMethod: posState.paymentMethod, paymentStatus: posState.paymentStatus });
   }
 
   async function startReceiptPrint(job: ReceiptPrintJob) {
@@ -560,7 +623,7 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
       clearPrintState();
       if (job.kind === "offline") {
         if (window.confirm(`Did ${job.orderNumber} print or save as PDF successfully? Confirming clears this bill from the current counter order.`)) {
-          const sale: OfflineSale = { id: job.orderNumber, createdAt: job.createdAt, lines: job.saleLines, subtotal: job.subtotal, total: job.total, paymentMethod: job.paymentMethod, paymentStatus: job.paymentStatus };
+          const sale: OfflineSale = { id: job.transactionId, createdAt: job.createdAt, lines: job.saleLines, subtotal: job.subtotal, total: job.total, paymentMethod: job.paymentMethod, paymentStatus: job.paymentStatus, syncStatus: "pending" };
           setPOSState((current) => ({ ...current, current: [], completed: [sale, ...current.completed] }));
           setPOSMessage(`${job.orderNumber} printed and added to this device's OFFLINE POS history.`);
         } else {
@@ -665,8 +728,12 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
 
   useEffect(() => {
     const loadMenu = async () => {
-      const { data } = await supabase.from("menu_items").select("*").eq("canteen_id", canteen.id).order("category").order("name");
-      setMenu((data as MenuItem[]) ?? []);
+      const { data, error } = await supabase.from("menu_items").select("*").eq("canteen_id", canteen.id).order("category").order("name");
+      if (data && !error) {
+        const loadedMenu = data as MenuItem[];
+        setMenu(loadedMenu);
+        try { localStorage.setItem(`hungry:offline-menu:${canteen.id}`, JSON.stringify(loadedMenu)); } catch { /* Keep online menu usable when local storage is full. */ }
+      }
     };
     const loadOrders = async () => {
       const { data } = await supabase.from("orders").select("*").eq("canteen_id", canteen.id).order("created_at", { ascending: false }).limit(100);
@@ -841,8 +908,9 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
           <BackButton inline />
           <img src="/HUNGRY%20Z%20CANTEEN%20DAHSBOARD%20LOGO.png" alt="HUNGRY Z Canteen Dashboard" className="h-12 w-12 shrink-0 rounded-full object-contain" />
           <div className="min-w-0">
-            <p className="text-[10px] tracking-[0.3em] text-primary-bright">CANTEEN DASHBOARD · {canteen.code}</p>
+            <p className="text-[10px] tracking-[0.3em] text-primary-bright">CANTEEN DASHBOARD</p>
             <h1 data-no-translate className="display text-3xl">{canteen.name}</h1>
+            <button type="button" onClick={() => { void navigator.clipboard.writeText(canteen.code).then(() => { setCanteenCodeCopied(true); window.setTimeout(() => setCanteenCodeCopied(false), 1800); }).catch(() => setCanteenCodeCopied(false)); }} className="mt-2 inline-flex min-h-10 items-center gap-2 rounded-xl border border-primary/35 bg-primary/10 px-3 font-mono text-sm font-black tracking-[0.18em] text-primary" aria-label="Copy HUNGRY Z Canteen Code">CANTEEN CODE · <span data-no-translate>{canteen.code}</span> <span className="font-sans text-[10px] tracking-normal">{canteenCodeCopied ? "COPIED" : "COPY"}</span></button>
             <p className="text-sm text-muted-foreground"><span data-no-translate>{canteen.university_name}</span> · <span className="capitalize">{canteen.visibility}</span></p>
           </div>
           </div>
@@ -861,7 +929,7 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
           onSave={updateAvailability}
         />
         <nav aria-label="Canteen dashboard sections" className="hz-canteen-nav mt-5 flex flex-nowrap items-center gap-2 overflow-x-auto rounded-3xl border border-border bg-card p-2">
-          {([['menu', `MENU (${menu.length})`], ['orders', "ONLINE"], ['pos', "OFFLINE POS"], ['events', `${eventUpdateNotice ? "• " : ""}FACULTY EVENTS (${pendingEventRequests} REQUESTS)`], ['template', "CHANGE TEMPLATE"], ['analytics', "ANALYTICS"]] as const).map(([k, l]) => (
+          {([['menu', `MENU (${menu.length})`], ['orders', "ONLINE ORDERS"], ['pos', "OFFLINE POS"], ['events', `${eventUpdateNotice ? "• " : ""}FACULTY EVENTS (${pendingEventRequests} REQUESTS)`], ['template', "CHANGE TEMPLATE"], ['analytics', "ANALYTICS"]] as const).map(([k, l]) => (
             <button key={k} type="button" aria-current={tab === k ? "page" : undefined} onClick={() => { setTab(k); if (k === "orders") void refreshActiveOrderCount(); if (k === "events") { setEventUpdateNotice(false); void refreshPendingEventRequests(); } }} className={cn("rounded-full border px-4 py-2 text-xs font-semibold", tab === k ? "border-primary bg-primary text-primary-foreground" : "border-border text-muted-foreground")}>{l}{k === "orders" && activeOrderCount > 0 && <span className="ml-2 rounded-full bg-primary-foreground/20 px-1.5 py-0.5 text-[10px]">{activeOrderCount}</span>}</button>
           ))}
           {tab === "orders" && <button type="button" onClick={() => { setPrinterSettingsOpen((open) => !open); setPrinterSettingsMsg(""); }} aria-expanded={printerSettingsOpen} className="ml-auto inline-flex shrink-0 items-center gap-2 rounded-full border border-border px-4 py-2 text-xs font-semibold text-muted-foreground transition hover:border-primary/50 hover:text-foreground"><Settings className="h-3.5 w-3.5" /> Printer Settings</button>}
@@ -890,8 +958,9 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
             </div>
           </section>
         )}
-        {tab === "pos" ? <OfflinePOSTab canteenName={canteen.name} menu={menu} current={posState.current} held={posState.held} search={posSearch} category={posCategory} message={posMessage} printing={printing} paymentMethod={posState.paymentMethod} paymentStatus={posState.paymentStatus} onPaymentMethod={(paymentMethod) => setPOSState((current) => ({ ...current, paymentMethod }))} onPaymentStatus={(paymentStatus) => setPOSState((current) => ({ ...current, paymentStatus }))} onSearch={setPOSSearch} onCategory={setPOSCategory} onAdd={addPOSItem} onQuantity={setPOSQuantity} onHold={holdPOSOrder} onResume={resumePOSOrder} onClear={clearPOSOrder} onPrint={printPOSBill} /> : tab === "orders" ? (
+        {tab === "pos" ? <OfflinePOSTab canteenName={canteen.name} menu={menu} current={posState.current} held={posState.held} pendingSyncCount={posState.completed.filter((sale) => sale.syncStatus !== "synced").length} search={posSearch} category={posCategory} message={posMessage} printing={printing} paymentMethod={posState.paymentMethod} paymentStatus={posState.paymentStatus} onPaymentMethod={(paymentMethod) => setPOSState((current) => ({ ...current, paymentMethod }))} onPaymentStatus={(paymentStatus) => setPOSState((current) => ({ ...current, paymentStatus }))} onSearch={setPOSSearch} onCategory={setPOSCategory} onAdd={addPOSItem} onQuantity={setPOSQuantity} onHold={holdPOSOrder} onResume={resumePOSOrder} onClear={clearPOSOrder} onPrint={printPOSBill} /> : tab === "orders" ? (
           <div className="mt-6 grid gap-3 sm:grid-cols-2">
+            <section className="rounded-3xl border border-primary/25 bg-primary/5 p-5 sm:col-span-2"><h2 className="display text-xl">ONLINE ORDERS</h2><p className="mt-2 text-sm text-muted-foreground">Customers must enter this canteen’s correct seven-character HUNGRY Z Canteen Code to access its menu and place orders here.</p><p className="mt-2 font-mono text-sm font-black tracking-[0.18em] text-primary">{canteen.code}</p></section>
             {!orders.length && <p className="rounded-3xl border border-border bg-card p-8 text-center text-sm text-muted-foreground sm:col-span-2">No orders yet. New orders appear here instantly.</p>}
             {orders.map((o) => (
               <div key={o.id} className={cn("rounded-3xl border bg-card p-5", orderStatusBorderClass(o.status))}>

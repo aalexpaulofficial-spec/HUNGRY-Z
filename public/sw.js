@@ -1,5 +1,5 @@
 const CACHE_PREFIX = "hungry-public-";
-const CACHE_NAME = `${CACHE_PREFIX}v3`;
+const CACHE_NAME = `${CACHE_PREFIX}v4`;
 const PRECACHE_URLS = [
   "/offline.html",
   "/manifest-student.webmanifest",
@@ -41,7 +41,23 @@ self.addEventListener("fetch", (event) => {
   if (/^\/(?:api|_server|_serverFn|server-fn)(?:\/|$)/i.test(url.pathname)) return;
 
   if (request.mode === "navigate") {
-    // Owner pages and all server data remain network-only; never cache authenticated HTML.
+    // Cache only the static client-rendered canteen shell so an installed owner app
+    // can start offline. Authenticated app HTML and all server data stay network-only.
+    if (url.pathname === "/canteen") {
+      event.respondWith((async () => {
+        try {
+          const response = await fetch(request);
+          if (response.ok && response.type === "basic") {
+            const cache = await caches.open(CACHE_NAME);
+            await cache.put("/canteen", response.clone());
+          }
+          return response;
+        } catch {
+          return (await caches.match("/canteen")) || (await caches.match("/offline.html")) || Response.error();
+        }
+      })());
+      return;
+    }
     event.respondWith(fetch(request).catch(async () => {
       const offline = await caches.match("/offline.html");
       return offline || Response.error();

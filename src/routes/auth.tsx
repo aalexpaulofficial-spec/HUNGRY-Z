@@ -167,14 +167,14 @@ export function SignupForm({ onDone, orderId, language }: { onDone: () => void; 
     // The profile is created by the auth.users trigger. Send a registration receipt
     // only after Supabase has accepted the account creation.
     let confirmationSent: boolean | undefined;
-    if ((v.role === "student" || v.role === "faculty") && signed.user?.id) {
+    if ((v.role === "student" || v.role === "faculty" || v.role === "guest") && signed.user?.id) {
       try {
         const result = await registrationConfirmation({ data: { userId: signed.user.id } });
         confirmationSent = result.sent;
       } catch {
         confirmationSent = false;
       }
-    } else if (v.role === "student" || v.role === "faculty") {
+    } else if (v.role === "student" || v.role === "faculty" || v.role === "guest") {
       confirmationSent = false;
     }
     // The existing welcome email remains tied to the first authenticated session.

@@ -144,7 +144,7 @@ export const submitCanteenApplicationWithDocuments = createServerFn({ method: "P
       const email = await sendEmailOnce(
         "registration_confirmation",
         data.application.contactEmail,
-        registrationConfirmationEmail({ name: data.application.ownerName }),
+        registrationConfirmationEmail({ name: data.application.ownerName, registrationType: "canteen_owner" }),
         `canteen-registration:${application.id}`,
       );
       return { ok: true, emailSent: email.sent };
@@ -1150,7 +1150,7 @@ export const ensureWelcomeEmail = createServerFn({ method: "POST" })
     return sendWelcomeOnce(context.userId);
   });
 
-/** Sends a registration receipt only for a persisted student or faculty account. */
+/** Sends a registration receipt only for a persisted student, faculty, or guest account. */
 export const sendRegistrationConfirmation = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ userId: z.string().uuid() }).parse(input))
   .handler(async ({ data }) => {
@@ -1161,7 +1161,7 @@ export const sendRegistrationConfirmation = createServerFn({ method: "POST" })
     ]);
     if (authError || profileError || !authResult.user || !profile ||
       !authResult.user.email || authResult.user.email.toLowerCase() !== profile.email.toLowerCase() ||
-      !["student", "faculty"].includes(profile.role)) {
+      !["student", "faculty", "guest"].includes(profile.role)) {
       return { sent: false, reason: "registration_not_verified" };
     }
     const { registrationConfirmationEmail } = await import("@/lib/email-templates");
@@ -1169,7 +1169,7 @@ export const sendRegistrationConfirmation = createServerFn({ method: "POST" })
     return sendEmailOnce(
       "registration_confirmation",
       profile.email,
-      registrationConfirmationEmail({ name: profile.full_name }),
+      registrationConfirmationEmail({ name: profile.full_name, registrationType: "customer" }),
       `registration:${data.userId}`,
     );
   });
