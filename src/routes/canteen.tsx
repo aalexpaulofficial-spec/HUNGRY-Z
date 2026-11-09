@@ -4,9 +4,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { flushSync } from "react-dom";
 import { z } from "zod";
-import { LogOut, Plus, Trash2, Pencil, Printer, Settings, Search, Minus, Pause, Play, ShoppingBag, X, Receipt, UtensilsCrossed } from "lucide-react";
+import { LogOut, Plus, Trash2, Pencil, Printer, Settings, Search, Minus, Pause, Play, ShoppingBag, X, Receipt, UtensilsCrossed, LayoutDashboard, CalendarDays, Image as ImageIcon, ChartNoAxesCombined, CircleHelp, Store, ArrowUpRight, Clock3 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { CanteenTemplatePreview } from "@/components/foodexa/CanteenTemplatePreview";
+import { CanteenTemplateBanner } from "@/components/foodexa/CanteenTemplateBanner";
 import { OrderStatusBadge, orderStatusBorderClass } from "@/components/foodexa/OrderStatusBadge";
 import { DEFAULT_BANNER_CROP, normalizeBannerCrop } from "@/lib/banner-crop";
 import { createCanteenMenuImageUpload, getCanteenOwnerAccess, ownerRecordConfirmedBillPrint, ownerUpdateOrderStatus, saveCanteenAvailability } from "@/lib/hungry.functions";
@@ -429,7 +430,7 @@ const uid = () => Math.random().toString(36).slice(2);
 const NEXT: Record<string, string | undefined> = { placed: "preparing", preparing: "ready", ready: "collected" };
 const BANNER_IMAGE_TYPES: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/avif": "avif" };
 export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { canteen: Canteen; onSignOut: () => void; language: "en" | "hi" | "kn"; onLanguageChange: (language: "en" | "hi" | "kn") => void }) {
-  const [tab, setTab] = useSessionState<"menu" | "orders" | "pos" | "template" | "analytics" | "events">(`hungry-canteen-dashboard-tab-${canteen.id}`, "menu");
+  const [tab, setTab] = useSessionState<"overview" | "menu" | "orders" | "pos" | "template" | "analytics" | "events">(`hungry-canteen-dashboard-tab-v2-${canteen.id}`, "overview");
   const [pendingEventRequests, setPendingEventRequests] = useState(0);
   const [activeOrderCount, setActiveOrderCount] = useState(0);
   const [eventUpdateNotice, setEventUpdateNotice] = useState(false);
@@ -452,7 +453,7 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
   const [templateError, setTemplateError] = useState("");
   const [savingTemplate, setSavingTemplate] = useState(false);
   const [bannerCrop, setBannerCrop] = useState(DEFAULT_BANNER_CROP);
-  useBackStep(tab !== "menu", () => setTab("menu"));
+  useBackStep(tab !== "overview", () => setTab("overview"));
   useBackStep(!!editing, () => setEditing(null));
   const [err, setErr] = useState("");
   const [orderMsg, setOrderMsg] = useState("");
@@ -472,6 +473,31 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
   const move = useServerFn(ownerUpdateOrderStatus);
   const recordConfirmedPrint = useServerFn(ownerRecordConfirmedBillPrint);
   const saveAvailability = useServerFn(saveCanteenAvailability);
+  const onlineCollectedRevenue = orders.filter((order) => order.payment_status === "paid" && order.status !== "cancelled").reduce((sum, order) => sum + order.total, 0);
+  const offlineCollectedRevenue = posState.completed.filter((sale) => sale.paymentStatus === "paid").reduce((sum, sale) => sum + sale.total, 0);
+  const onlineOrderActivity = Array.from({ length: 7 }, (_, index) => {
+    const day = new Date();
+    day.setHours(0, 0, 0, 0);
+    day.setDate(day.getDate() - (6 - index));
+    const count = orders.filter((order) => new Date(order.created_at).toDateString() === day.toDateString()).length;
+    return { day, count };
+  });
+  const maxOnlineOrderActivity = Math.max(1, ...onlineOrderActivity.map(({ count }) => count));
+  const sidebarSections = [
+    { key: "overview", label: "Dashboard", icon: LayoutDashboard },
+    { key: "menu", label: `MENU (${menu.length})`, icon: UtensilsCrossed },
+    { key: "orders", label: "ONLINE ORDERS", icon: ShoppingBag, count: activeOrderCount },
+    { key: "pos", label: "OFFLINE POS", icon: Receipt },
+    { key: "events", label: "FACULTY EVENTS", icon: CalendarDays, count: pendingEventRequests },
+    { key: "template", label: "CHANGE TEMPLATE", icon: ImageIcon },
+    { key: "analytics", label: "ANALYTICS", icon: ChartNoAxesCombined },
+  ] as const;
+
+  function selectSection(key: typeof sidebarSections[number]["key"]) {
+    setTab(key);
+    if (key === "orders") void refreshActiveOrderCount();
+    if (key === "events") { setEventUpdateNotice(false); void refreshPendingEventRequests(); }
+  }
 
   useEffect(() => {
     try { localStorage.setItem(offlinePOSStorageKey(canteen.id), JSON.stringify(posState)); }
@@ -953,7 +979,19 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
 
   return (
     <div className="hz-canteen-app min-h-screen bg-background">
-      <div className="hz-canteen-shell mx-auto w-full max-w-screen-2xl px-4 py-5 sm:px-6 sm:py-8 xl:px-8">
+      <div className="hz-canteen-layout mx-auto w-full max-w-[1760px]">
+        <aside className="hz-canteen-sidebar" aria-label="Canteen dashboard navigation">
+          <div className="hz-canteen-sidebar-brand"><img src="/HUNGRY%20Z%20Q%20LOGO.png" alt="HUNGRY Z" /><span>CANTEEN</span></div>
+          <nav className="hz-canteen-sidebar-nav" aria-label="Canteen dashboard sections">
+            {sidebarSections.map((item) => { const { key, label, icon: Icon } = item; const count = "count" in item ? item.count : 0; return <button key={key} type="button" aria-current={tab === key ? "page" : undefined} onClick={() => selectSection(key)} className={cn("hz-canteen-side-link", tab === key && "is-active")}><Icon aria-hidden="true" /><span>{label}</span>{count > 0 && <span className="hz-canteen-side-count">{count}</span>}</button>; })}
+          </nav>
+          <div className="hz-canteen-sidebar-footer">
+            <button type="button" onClick={() => { setTab("orders"); setPrinterSettingsOpen(true); setPrinterSettingsMsg(""); }} className="hz-canteen-side-link"><Settings aria-hidden="true" /><span>Settings</span></button>
+            <button type="button" onClick={() => setOwnerFeedbackOpen(true)} className="hz-canteen-side-link"><CircleHelp aria-hidden="true" /><span>Help &amp; Support</span></button>
+            <div className="hz-canteen-plan-card"><Store aria-hidden="true" /><div><strong data-no-translate>{canteen.name}</strong><span>Active canteen</span></div></div>
+          </div>
+        </aside>
+        <main className="hz-canteen-main"><div className="hz-canteen-content">
         <header className="hz-canteen-header grid grid-cols-1 gap-4 rounded-3xl border border-border bg-card p-4 sm:p-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center lg:gap-6">
           <div className="hz-canteen-brand flex min-w-0 items-start gap-3 sm:gap-4">
             <BackButton inline />
@@ -972,19 +1010,38 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
           </div>
         </header>
         {canteen.visibility === "maintenance" && <p className="mt-4 rounded-2xl border border-primary/40 bg-primary/10 p-3 text-sm text-primary-bright">Your canteen is in maintenance mode — customers can't place orders.</p>}
-        <CanteenAvailabilityPanel
+        {tab === "overview" && <section className="hz-canteen-overview-banner"><CanteenTemplateBanner imageUrl={template.banner_image_url} heading={template.heading} description={template.description} canteenName={canteen.name} universityName={canteen.university_name} cropX={template.banner_crop_x} cropY={template.banner_crop_y} cropZoom={template.banner_crop_zoom} /></section>}
+        <div id="canteen-availability"><CanteenAvailabilityPanel
           isActive={availability.is_active}
           visibility={availability.visibility}
           settings={{ availability_mode: availability.availability_mode, operating_hours: availability.operating_hours }}
           saving={availabilitySaving}
           onSave={updateAvailability}
-        />
-        <nav aria-label="Canteen dashboard sections" className="hz-canteen-nav mt-5 flex flex-nowrap items-center gap-2 overflow-x-auto rounded-3xl border border-border bg-card p-2">
-          {([['menu', `MENU (${menu.length})`], ['orders', "ONLINE ORDERS"], ['pos', "OFFLINE POS"], ['events', `${eventUpdateNotice ? "• " : ""}FACULTY EVENTS (${pendingEventRequests} REQUESTS)`], ['template', "CHANGE TEMPLATE"], ['analytics', "ANALYTICS"]] as const).map(([k, l]) => (
-            <button key={k} type="button" aria-current={tab === k ? "page" : undefined} onClick={() => { setTab(k); if (k === "orders") void refreshActiveOrderCount(); if (k === "events") { setEventUpdateNotice(false); void refreshPendingEventRequests(); } }} className={cn("rounded-full border px-4 py-2 text-xs font-semibold", tab === k ? "border-primary bg-primary text-primary-foreground" : "border-border text-muted-foreground")}>{l}{k === "orders" && activeOrderCount > 0 && <span className="ml-2 rounded-full bg-primary-foreground/20 px-1.5 py-0.5 text-[10px]">{activeOrderCount}</span>}</button>
-          ))}
-          {tab === "orders" && <button type="button" onClick={() => { setPrinterSettingsOpen((open) => !open); setPrinterSettingsMsg(""); }} aria-expanded={printerSettingsOpen} className="ml-auto inline-flex shrink-0 items-center gap-2 rounded-full border border-border px-4 py-2 text-xs font-semibold text-muted-foreground transition hover:border-primary/50 hover:text-foreground"><Settings className="h-3.5 w-3.5" /> Printer Settings</button>}
-        </nav>
+        /></div>
+        {tab === "orders" && <div className="mt-4 flex justify-end"><button type="button" onClick={() => { setPrinterSettingsOpen((open) => !open); setPrinterSettingsMsg(""); }} aria-expanded={printerSettingsOpen} className="inline-flex min-h-10 items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-xs font-semibold text-muted-foreground transition hover:border-primary/50 hover:text-foreground"><Settings className="h-3.5 w-3.5" /> Printer Settings</button></div>}
+
+        {tab === "overview" && <section className="hz-canteen-overview" aria-label="Dashboard overview">
+          <div className="hz-canteen-metric-grid">
+            <button type="button" onClick={() => selectSection("orders")} className="hz-canteen-metric hz-metric-online"><span className="hz-canteen-metric-icon"><ShoppingBag aria-hidden="true" /></span><span><small>ONLINE ACTIVE ORDERS</small><strong>{activeOrderCount.toLocaleString()}</strong></span><ArrowUpRight aria-hidden="true" className="hz-canteen-metric-arrow" /></button>
+            <button type="button" onClick={() => selectSection("pos")} className="hz-canteen-metric hz-metric-offline"><span className="hz-canteen-metric-icon"><Receipt aria-hidden="true" /></span><span><small>OFFLINE POS BILLS</small><strong>{posState.completed.length.toLocaleString()}</strong></span><ArrowUpRight aria-hidden="true" className="hz-canteen-metric-arrow" /></button>
+            <button type="button" onClick={() => { setAnalyticsMode("online"); selectSection("analytics"); }} className="hz-canteen-metric hz-metric-online"><span className="hz-canteen-metric-icon"><ChartNoAxesCombined aria-hidden="true" /></span><span><small>ONLINE COLLECTED REVENUE (LOADED ORDERS)</small><strong>{"\u20b9"}{onlineCollectedRevenue.toLocaleString("en-IN")}</strong></span><ArrowUpRight aria-hidden="true" className="hz-canteen-metric-arrow" /></button>
+            <button type="button" onClick={() => { setAnalyticsMode("offline"); selectSection("analytics"); }} className="hz-canteen-metric hz-metric-offline"><span className="hz-canteen-metric-icon"><Store aria-hidden="true" /></span><span><small>OFFLINE COLLECTED REVENUE</small><strong>{"\u20b9"}{offlineCollectedRevenue.toLocaleString("en-IN")}</strong></span><ArrowUpRight aria-hidden="true" className="hz-canteen-metric-arrow" /></button>
+          </div>
+          <div className="hz-canteen-overview-panels">
+            <section className="hz-canteen-overview-panel" aria-labelledby="recent-online-heading">
+              <div className="hz-canteen-panel-heading"><div><p className="hz-canteen-eyebrow">ONLINE</p><h2 id="recent-online-heading">Recent Online Orders</h2></div><button type="button" onClick={() => selectSection("orders")} className="hz-canteen-text-action">View all <ArrowUpRight aria-hidden="true" /></button></div>
+              {!orders.length ? <div className="hz-canteen-empty"><ShoppingBag aria-hidden="true" /><p>No online orders yet.</p><span>New customer orders will appear here.</span></div> : <div className="hz-canteen-recent-orders">{orders.slice(0, 4).map((order) => <button key={order.id} type="button" onClick={() => selectSection("orders")} className="hz-canteen-recent-order"><span className="hz-canteen-recent-id">{order.order_number}</span><span className="hz-canteen-recent-items" data-no-translate>{order.lines.slice(0, 2).map((line) => `${line.qty} \u00d7 ${line.name}`).join(", ")}{order.lines.length > 2 ? ` +${order.lines.length - 2}` : ""}</span><strong>{"\u20b9"}{order.total.toLocaleString("en-IN")}</strong><span className={cn("hz-canteen-order-status", `is-${order.status}`)}>{ORDER_LABELS[order.status] ?? order.status}</span></button>)}</div>}
+            </section>
+            <section className="hz-canteen-overview-panel" aria-labelledby="online-activity-heading">
+              <div className="hz-canteen-panel-heading"><div><p className="hz-canteen-eyebrow">ONLINE</p><h2 id="online-activity-heading">Online Orders · Last 7 Days</h2></div><Clock3 aria-hidden="true" className="text-primary" /></div>
+              <p className="hz-canteen-chart-note">Daily orders from the latest 100 loaded online orders.</p>
+              <div className="hz-canteen-sales-chart" role="img" aria-label="Online order counts by day over the last seven days">
+                {onlineOrderActivity.map(({ day, count }) => <div key={day.toISOString()} className="hz-canteen-sales-column"><span>{count}</span><div className="hz-canteen-sales-track"><i style={{ height: `${Math.max(count ? 8 : 3, count / maxOnlineOrderActivity * 100)}%` }} /></div><small>{day.toLocaleDateString(language === "hi" ? "hi-IN" : language === "kn" ? "kn-IN" : "en-IN", { weekday: "short" })}</small></div>)}
+              </div>
+              <div className="hz-canteen-code-row"><Store aria-hidden="true" /><div><span>SHARE CANTEEN CODE</span><strong>{canteen.code}</strong></div><button type="button" onClick={() => { void navigator.clipboard.writeText(canteen.code).then(() => { setCanteenCodeCopied(true); window.setTimeout(() => setCanteenCodeCopied(false), 1800); }).catch(() => setCanteenCodeCopied(false)); }}>{canteenCodeCopied ? "COPIED" : "COPY"}</button></div>
+            </section>
+          </div>
+        </section>}
 
         {orderMsg && tab === "orders" && <p className="mt-4 rounded-2xl border border-primary/40 bg-primary/10 p-3 text-sm">{orderMsg}</p>}
         {tab === "orders" && printerSettingsOpen && (
@@ -1151,14 +1208,16 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
             </div>
           </div>
         )}
-      </div>
-      <section className="mx-auto mt-5 max-w-5xl rounded-3xl border border-border bg-card p-4 sm:p-5" aria-label="Canteen owner support and legal information">
+        <section className="mt-4 rounded-3xl border border-border bg-card p-4 sm:p-5" aria-label="Canteen owner support and legal information">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div><h2 className="display text-base">Owner Help &amp; Legal</h2><p className="mt-1 text-[11px] text-muted-foreground">For order, payment and canteen operations support.</p></div>
           <div className="flex flex-wrap gap-2"><button type="button" onClick={() => setOwnerLegalPage("privacy")} className="rounded-full border border-border px-3 py-2 text-xs text-muted-foreground hover:text-foreground">Privacy Policy</button><button type="button" onClick={() => setOwnerLegalPage("terms")} className="rounded-full border border-border px-3 py-2 text-xs text-muted-foreground hover:text-foreground">Terms &amp; Conditions</button><button type="button" onClick={() => setOwnerFeedbackOpen(true)} className="rounded-full border border-primary/50 px-3 py-2 text-xs font-semibold text-foreground hover:bg-primary/10">Feedback &amp; Report</button></div>
         </div>
         <p className="mt-3 text-[11px] text-muted-foreground">Payment support: <a href="mailto:hungryofficialx@gmail.com" className="text-primary-bright underline">hungryofficialx@gmail.com</a>. Include the Order ID and payment reference.</p>
       </section>
+        </div></main>
+      </div>
+
       {ownerFeedbackOpen && <FeedbackDialog mode="canteen-report" onClose={() => setOwnerFeedbackOpen(false)} />}
       {ownerLegalPage && <LegalDialog legalDocument={ownerLegalPage === "privacy" ? privacyPolicy : termsConditions} onClose={() => setOwnerLegalPage(null)} />}
       {printJob && <ThermalReceipt job={printJob} paperWidth={printerPaperWidth} />}
