@@ -1057,7 +1057,7 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
     <div className="hz-canteen-app min-h-screen bg-background">
       <div className={cn("hz-canteen-layout mx-auto w-full max-w-[1760px]", sidebarCollapsed && "is-sidebar-collapsed")}>
         <aside id="hz-canteen-sidebar" className="hz-canteen-sidebar" aria-label="Canteen dashboard navigation">
-          <div className="hz-canteen-sidebar-brand"><img src="/HUNGRY%20Z%20Q%20LOGO.png" alt="HUNGRY Z" /><span>HUNGRY Z</span><button type="button" className="hz-canteen-sidebar-toggle" aria-controls="hz-canteen-sidebar" aria-expanded={!sidebarCollapsed} aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"} title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"} onClick={() => setSidebarCollapsed((collapsed) => !collapsed)}>{sidebarCollapsed ? <ChevronRight aria-hidden="true" /> : <ChevronLeft aria-hidden="true" />}</button></div>
+          <div className="hz-canteen-sidebar-brand"><span>HUNGRY Z</span><button type="button" className="hz-canteen-sidebar-toggle" aria-controls="hz-canteen-sidebar" aria-expanded={!sidebarCollapsed} aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"} title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"} onClick={() => setSidebarCollapsed((collapsed) => !collapsed)}>{sidebarCollapsed ? <ChevronRight aria-hidden="true" /> : <ChevronLeft aria-hidden="true" />}</button></div>
           <nav className="hz-canteen-sidebar-nav" aria-label="Canteen dashboard sections">
             {sidebarSections.map((item) => { const { key, label, icon: Icon } = item; const count = "count" in item ? item.count : 0; return <button key={key} type="button" title={sidebarCollapsed ? label : undefined} aria-current={tab === key ? "page" : undefined} onClick={() => selectSection(key)} className={cn("hz-canteen-side-link", tab === key && "is-active")}><Icon aria-hidden="true" /><span>{label}</span>{count > 0 && <span className="hz-canteen-side-count">{count}</span>}</button>; })}
           </nav>
@@ -1071,7 +1071,6 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
         {tab === "overview" && <header className="hz-canteen-header grid grid-cols-1 gap-4 rounded-3xl border border-border bg-card p-4 sm:p-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center lg:gap-6">
           <div className="hz-canteen-brand flex min-w-0 items-start gap-3 sm:gap-4">
             <BackButton inline />
-            <img src="/HUNGRY%20Z%20CANTEEN%20DAHSBOARD%20LOGO.png" alt="HUNGRY Z Canteen Dashboard" className="h-11 w-11 shrink-0 rounded-full object-contain sm:h-12 sm:w-12" />
             <div className="hz-canteen-brand-copy min-w-0 flex-1">
               <p className="mb-0.5 text-[10px] font-semibold tracking-[0.22em] text-primary-bright">CANTEEN DASHBOARD</p>
               <h1 data-no-translate className="display truncate text-xl leading-tight sm:text-2xl">{canteen.name}</h1>
