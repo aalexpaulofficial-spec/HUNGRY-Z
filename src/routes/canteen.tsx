@@ -1029,7 +1029,7 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
     <div className="hz-canteen-app min-h-screen bg-background">
       <div className="hz-canteen-layout mx-auto w-full max-w-[1760px]">
         <aside className="hz-canteen-sidebar" aria-label="Canteen dashboard navigation">
-          <div className="hz-canteen-sidebar-brand"><img src="/HUNGRY%20Z%20Q%20LOGO.png" alt="HUNGRY Z" /><span>CANTEEN</span></div>
+          <div className="hz-canteen-sidebar-brand"><img src="/HUNGRY%20Z%20Q%20LOGO.png" alt="HUNGRY Z" /><span>HUNGRY Z</span></div>
           <nav className="hz-canteen-sidebar-nav" aria-label="Canteen dashboard sections">
             {sidebarSections.map((item) => { const { key, label, icon: Icon } = item; const count = "count" in item ? item.count : 0; return <button key={key} type="button" aria-current={tab === key ? "page" : undefined} onClick={() => selectSection(key)} className={cn("hz-canteen-side-link", tab === key && "is-active")}><Icon aria-hidden="true" /><span>{label}</span>{count > 0 && <span className="hz-canteen-side-count">{count}</span>}</button>; })}
           </nav>
@@ -1047,7 +1047,7 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
             <div className="hz-canteen-brand-copy min-w-0 flex-1">
               <p className="mb-0.5 text-[10px] font-semibold tracking-[0.22em] text-primary-bright">CANTEEN DASHBOARD</p>
               <h1 data-no-translate className="display truncate text-xl leading-tight sm:text-2xl">{canteen.name}</h1>
-              <button type="button" onClick={() => { void navigator.clipboard.writeText(canteen.code).then(() => { setCanteenCodeCopied(true); window.setTimeout(() => setCanteenCodeCopied(false), 1800); }).catch(() => setCanteenCodeCopied(false)); }} className="mt-1.5 inline-flex min-h-10 max-w-full flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border border-primary/35 bg-primary/10 px-3 py-1.5 font-mono text-sm font-black tracking-[0.18em] text-primary" aria-label="Copy HUNGRY Z Canteen Code"><span>CANTEEN CODE</span><span aria-hidden="true">·</span><span data-no-translate>{canteen.code}</span><span className="font-sans text-[10px] tracking-normal">{canteenCodeCopied ? "COPIED" : "COPY"}</span></button>
+              <button type="button" onClick={() => { void navigator.clipboard.writeText(canteen.code).then(() => { setCanteenCodeCopied(true); window.setTimeout(() => setCanteenCodeCopied(false), 1800); }).catch(() => setCanteenCodeCopied(false)); }} className="mt-1.5 inline-flex min-h-10 max-w-full flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border border-primary/35 bg-primary/10 px-3 py-1.5 font-sans text-sm font-semibold tracking-wide text-primary" aria-label="Copy HUNGRY Z Canteen Code"><span className="text-xs font-bold tracking-[0.08em]">CANTEEN CODE</span><span aria-hidden="true">·</span><span data-no-translate className="font-mono text-sm font-bold tracking-[0.08em]">{canteen.code}</span><span className="font-sans text-[10px] font-bold tracking-normal">{canteenCodeCopied ? "COPIED" : "COPY"}</span></button>
               <p className="mt-1.5 flex flex-wrap items-center gap-x-2 text-xs leading-snug text-muted-foreground sm:text-sm"><span data-no-translate className="break-words">{canteen.university_name}</span><span aria-hidden="true">·</span><span className="capitalize">{canteen.visibility}</span></p>
             </div>
           </div>
