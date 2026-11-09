@@ -625,8 +625,8 @@ export function localizeDashboard(root: HTMLElement, language: DashboardLanguage
   return () => observer.disconnect();
 }
 
-export function LanguageSelect({ language, onChange }: { language: DashboardLanguage; onChange: (value: DashboardLanguage) => void }) {
-  return <select value={language} onChange={event => onChange(event.target.value as DashboardLanguage)} aria-label="Language" className="w-[104px] shrink-0 rounded-full border border-border bg-background px-2 py-2 text-xs text-muted-foreground outline-none focus:border-primary sm:w-auto sm:max-w-[42vw] sm:px-3">
+export function LanguageSelect({ language, onChange, className = "" }: { language: DashboardLanguage; onChange: (value: DashboardLanguage) => void; className?: string }) {
+  return <select value={language} onChange={event => onChange(event.target.value as DashboardLanguage)} aria-label="Language" className={`w-[104px] shrink-0 rounded-full border border-border bg-background px-2 py-2 text-xs text-muted-foreground outline-none focus:border-primary sm:w-auto sm:max-w-[42vw] sm:px-3 ${className}`}>
     {DASHBOARD_LANGUAGES.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
   </select>;
 }

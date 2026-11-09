@@ -900,6 +900,9 @@ html[data-theme="light"] .hz-canteen-nav { background: color-mix(in oklab, white
 .hz-canteen-code-button > span:nth-child(3) { font-family: inherit; font-size: 1rem; font-weight: 750; letter-spacing: .035em; line-height: 1.1; }
 .hz-canteen-code-button > span:last-child { display: inline-flex; min-height: 1.75rem; align-items: center; justify-content: center; border-radius: .55rem; background: var(--primary); padding: 0 .6rem; color: var(--primary-foreground); font-size: .62rem; font-weight: 800; letter-spacing: .045em; line-height: 1; }
 .hz-canteen-actions { align-self: center; }
+.hz-canteen-actions .hz-canteen-header-control { min-height: 2.5rem; border: 1px solid var(--border); border-radius: 999px; background: var(--card); padding: .55rem 1rem; color: var(--foreground); font-size: .75rem; font-weight: 650; line-height: 1; box-shadow: 0 1px 2px color-mix(in oklab, var(--foreground) 8%, transparent), 0 7px 18px -15px color-mix(in oklab, var(--foreground) 26%, transparent); transition: background .16s ease, border-color .16s ease, box-shadow .16s ease; }
+.hz-canteen-actions .hz-canteen-header-control:hover { border-color: color-mix(in oklab, var(--border) 70%, var(--foreground)); background: color-mix(in oklab, var(--card) 94%, var(--foreground)); color: var(--foreground); box-shadow: 0 2px 5px color-mix(in oklab, var(--foreground) 10%, transparent), 0 8px 20px -15px color-mix(in oklab, var(--foreground) 30%, transparent); }
+.hz-canteen-actions .hz-canteen-header-control:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
 .hz-canteen-overview-banner { aspect-ratio: 5.04 / 1; overflow: hidden; border: 1px solid var(--border); border-radius: 1.8rem; background: var(--card); box-shadow: var(--hz-shadow-card); }
 .hz-canteen-overview-banner > div { width: 100%; height: 100%; border: 0; border-radius: inherit; }
 .hz-canteen-overview-banner img { width: 100%; height: 100%; max-height: 100%; object-fit: contain; }
