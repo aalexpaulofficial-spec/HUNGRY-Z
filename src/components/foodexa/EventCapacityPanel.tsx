@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { CalendarDays, List, Trash2, X } from "lucide-react";
+import { CalendarDays, CircleX, Coins, Layers3, List, MapPin, Store, Ticket, Trash2, Utensils, UsersRound, Wallet, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { collectFacultyEventToken, createFacultyEvent, deleteFacultyEvent, publishFacultyEvent, requestFacultyEventCapacity, resolveAdditionalFacultyEventTokens, resolveFacultyEventCapacity, reviewFacultyEventQuotation, reviewFacultyEventRequest, submitFacultyEventQuotation, updateFacultyEvent, updateFacultyEventLogo, updateFacultyEventServedQuantities } from "@/lib/hungry.functions";
 import { FACULTY_EVENT_LOGO_BUCKET, FACULTY_EVENT_LOGO_MAX_BYTES, facultyEventLogoObjectPath, getFacultyEventLogoUrls } from "@/lib/faculty-event-logos";
 import { createCroppedEventLogoFile, EventLogoCropAdjust, EventLogoImage, type EventLogoCrop } from "@/components/foodexa/FacultyEventLogo";
 import { formatFacultyEventSerial } from "@/lib/faculty-event-serial";
 import { originallyRequestedQuantity } from "@/lib/faculty-event-quantities";
+import { foodImage } from "@/lib/foodexa-images";
 
 type EventRow = {
   id: string; faculty_user_id: string; canteen_id: string; name: string; event_code: string; serial_number: number; token_prefix: string;
@@ -422,15 +423,30 @@ export function EventCapacityPanel({ mode, canteenId, canteenName, userId }: { m
         const finalExpenditure = Object.entries(event.served_food_quantities ?? {}).reduce((sum, [food, quantity]) => sum + quantity * (quotationPrices[food] ?? 0), 0);
         const eventRequests = requestsByEvent.get(event.id) ?? [];
         const pending = eventRequests.some((request) => request.status === "pending");
-        return <article key={event.id} className="rounded-3xl border border-border bg-card p-5">
-          {eventLogoUrls[event.id] && <EventLogoImage src={eventLogoUrls[event.id]} alt={`${event.name} event logo`} className="mb-4" />}
-          <p className="mb-2 text-xs font-black tracking-[0.2em] text-primary">{formatFacultyEventSerial(event.serial_number)}</p>
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div><span className={`inline-flex rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] ${eventStatusClass(event.status)}`}>{eventStatusLabel(event.status)}</span><p data-no-translate className="mt-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">{canteenName}</p><h3 data-no-translate className="display mt-1 text-xl">{event.name}</h3><p className="mt-1 text-xs text-muted-foreground">Event Code: <span data-no-translate className="font-mono font-bold tracking-widest text-foreground">{event.event_code}</span></p></div>
-            <span className="rounded-full border border-border px-3 py-1 text-xs font-semibold">{issued}/{event.approved_capacity} tokens issued</span>
-          </div>
-          {event.description && <p data-no-translate className="mt-3 text-sm text-muted-foreground">{event.description}</p>}
-          <div className="mt-3 grid gap-2 rounded-2xl bg-ink-soft p-3 text-xs sm:grid-cols-3"><p><CalendarDays className="mr-1 inline h-3.5 w-3.5 text-primary" />{event.event_date ? new Date(`${event.event_date}T00:00:00`).toLocaleDateString() : "Date not set"}</p><p><strong>Venue:</strong> <span data-no-translate>{event.venue || "Not set"}</span></p><p><strong>Expected participants:</strong> {event.initial_capacity}</p></div>
+        const requestedFoodImageKey = menuItems.find((item) => (event.food_requirements[item.name] ?? 0) > 0)?.image ?? menuItems[0]?.image;
+        const requestedFoodImage = requestedFoodImageKey ? foodImage(requestedFoodImageKey) : undefined;
+        const eventImage = eventLogoUrls[event.id] ?? requestedFoodImage ?? foodImage("food-indian");
+        return <article key={event.id} className={mode === "canteen" ? "hz-canteen-event-card rounded-3xl border border-border bg-card p-5" : "rounded-3xl border border-border bg-card p-5"}>
+          {mode === "canteen" ? <div className="hz-faculty-event-overview">
+            <div className="hz-faculty-event-photo"><img src={eventImage} alt={`${event.name} event food`} loading="lazy" /></div>
+            <div className="hz-faculty-event-details">
+              <div className="hz-faculty-event-topline"><div><p className="text-xs font-black tracking-[0.15em] text-primary">{formatFacultyEventSerial(event.serial_number)}</p><span className={`mt-2 inline-flex rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] ${eventStatusClass(event.status)}`}>{eventStatusLabel(event.status)}</span></div><span className="hz-faculty-event-token-badge"><Ticket className="h-4 w-4" />{issued}/{event.approved_capacity} tokens issued</span></div>
+              <h3 data-no-translate className="display hz-faculty-event-name">{event.name}</h3>
+              <p data-no-translate className="hz-faculty-event-canteen">{canteenName}</p>
+              <p className="hz-faculty-event-code">Event Code: <span data-no-translate>{event.event_code}</span></p>
+              {event.description && <p data-no-translate className="hz-faculty-event-description">{event.description}</p>}
+              <div className="hz-faculty-event-meta"><span><CalendarDays aria-hidden="true" />{event.event_date ? new Date(`${event.event_date}T00:00:00`).toLocaleDateString() : "Date not set"}</span><span><UsersRound aria-hidden="true" />{event.initial_capacity} Participants</span><span><MapPin aria-hidden="true" />Venue: <b data-no-translate>{event.venue || "Not set"}</b></span></div>
+            </div>
+          </div> : <>
+            {eventLogoUrls[event.id] && <EventLogoImage src={eventLogoUrls[event.id]} alt={`${event.name} event logo`} className="mb-4" />}
+            <p className="mb-2 text-xs font-black tracking-[0.2em] text-primary">{formatFacultyEventSerial(event.serial_number)}</p>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div><span className={`inline-flex rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] ${eventStatusClass(event.status)}`}>{eventStatusLabel(event.status)}</span><p data-no-translate className="mt-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">{canteenName}</p><h3 data-no-translate className="display mt-1 text-xl">{event.name}</h3><p className="mt-1 text-xs text-muted-foreground">Event Code: <span data-no-translate className="font-mono font-bold tracking-widest text-foreground">{event.event_code}</span></p></div>
+              <span className="rounded-full border border-border px-3 py-1 text-xs font-semibold">{issued}/{event.approved_capacity} tokens issued</span>
+            </div>
+            {event.description && <p data-no-translate className="mt-3 text-sm text-muted-foreground">{event.description}</p>}
+            <div className="mt-3 grid gap-2 rounded-2xl bg-ink-soft p-3 text-xs sm:grid-cols-3"><p><CalendarDays className="mr-1 inline h-3.5 w-3.5 text-primary" />{event.event_date ? new Date(`${event.event_date}T00:00:00`).toLocaleDateString() : "Date not set"}</p><p><strong>Venue:</strong> <span data-no-translate>{event.venue || "Not set"}</span></p><p><strong>Expected participants:</strong> {event.initial_capacity}</p></div>
+          </>}
           {mode === "canteen" && event.food_request_message && <div className="mt-3 rounded-2xl border border-primary/50 bg-primary/10 p-4 shadow-[0_0_24px_hsl(var(--primary)/0.06)]"><p className="text-[10px] font-bold uppercase tracking-widest text-primary">Faculty instructions</p><p data-no-translate className="mt-1 whitespace-pre-wrap text-base font-medium text-foreground">{event.food_request_message}</p></div>}
           {mode === "canteen" && event.faculty_note && <div className="mt-2 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-3"><p className="text-[10px] font-bold uppercase tracking-widest text-amber-700">Faculty response</p><p data-no-translate className="mt-1 whitespace-pre-wrap text-sm text-foreground">{event.faculty_note}</p></div>}
           {mode === "faculty" && event.faculty_note && <p className="mt-3 rounded-xl bg-ink-soft p-3 text-xs text-muted-foreground">Your note to canteen: <span data-no-translate>{event.faculty_note}</span></p>}
@@ -444,18 +460,37 @@ export function EventCapacityPanel({ mode, canteenId, canteenName, userId }: { m
             <MenuQuantityPicker items={menuItems} loading={menuLoading} quantities={editFoodSelection[event.id] ?? event.food_requirements} onChange={(value) => setEditFoodSelection((current) => ({ ...current, [event.id]: value }))} label="Requested food items" />
             <button disabled={busy} className="rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50">Save event details</button>
           </form>}
-          <div className="mt-4 grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
-            <Metric label="Expected participants" value={event.initial_capacity} />
-            <Metric label="Approved capacity" value={event.approved_capacity} />
-            <Metric label="Tokens issued" value={issued} />
-            <Metric label="Tokens remaining" value={Math.max(0, event.approved_capacity - issued)} />
-            <Metric label="Tokens collected" value={collected} />
-            <Metric label="Cancelled tokens" value={cancelled} />
-            <Metric label="Canteen allocation" value={`${issued} / ${event.approved_capacity}`} />
-            <Metric label="Estimated budget" value={`₹${event.estimated_budget || 0}`} />
-            <Metric label="Final expenditure" value={`₹${finalExpenditure}`} />
-          </div>
-          <div className="mt-3"><FoodQuantitySummary quantities={event.food_requirements} title="Faculty food request" /></div>
+          {mode === "canteen" && <section className="hz-faculty-event-food-budget" aria-label="Faculty food request and estimated budget">
+            <div className="hz-faculty-event-food-title"><Utensils aria-hidden="true" /><strong>Faculty Food Request</strong></div>
+            <ul className="hz-faculty-event-food-list">{Object.entries(event.food_requirements).filter(([, quantity]) => quantity > 0).map(([food, quantity]) => <li key={food}><span data-no-translate>{food}</span><b>× {quantity}</b></li>)}</ul>
+            <div className="hz-faculty-event-budget"><Coins aria-hidden="true" /><span>Estimated Budget</span><strong>{formatINR(event.estimated_budget || 0)}</strong></div>
+          </section>}
+          {mode === "canteen" ? <section className="hz-faculty-event-statistics" aria-label="Event statistics">
+            <h4><Layers3 aria-hidden="true" />Event Statistics</h4>
+            <div className="hz-faculty-event-stat-grid">
+              <EventStat icon={UsersRound} label="Expected Participants" value={event.initial_capacity} />
+              <EventStat icon={Layers3} label="Approved Capacity" value={event.approved_capacity} />
+              <EventStat icon={Ticket} label="Tokens Issued" value={issued} />
+              <EventStat icon={Ticket} label="Tokens Remaining" value={Math.max(0, event.approved_capacity - issued)} />
+              <EventStat icon={Coins} label="Tokens Collected" value={collected} />
+              <EventStat icon={CircleX} label="Cancelled Tokens" value={cancelled} />
+              <EventStat icon={Store} label="Canteen Allocation" value={`${issued} / ${event.approved_capacity}`} />
+              <EventStat icon={Wallet} label="Final Expenditure" value={formatINR(finalExpenditure)} />
+            </div>
+          </section> : <>
+            <div className="mt-4 grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
+              <Metric label="Expected participants" value={event.initial_capacity} />
+              <Metric label="Approved capacity" value={event.approved_capacity} />
+              <Metric label="Tokens issued" value={issued} />
+              <Metric label="Tokens remaining" value={Math.max(0, event.approved_capacity - issued)} />
+              <Metric label="Tokens collected" value={collected} />
+              <Metric label="Cancelled tokens" value={cancelled} />
+              <Metric label="Canteen allocation" value={`${issued} / ${event.approved_capacity}`} />
+              <Metric label="Estimated budget" value={formatINR(event.estimated_budget || 0)} />
+              <Metric label="Final expenditure" value={formatINR(finalExpenditure)} />
+            </div>
+            <div className="mt-3"><FoodQuantitySummary quantities={event.food_requirements} title="Faculty food request" /></div>
+          </>}
           {Object.keys(quotationQuantities).length > 0 && <div className="mt-2"><FoodQuantitySummary quantities={quotationQuantities} prices={quotationPrices} title="Canteen quotation and confirmed food" /></div>}
           {mode === "faculty" && event.status === "published" && Object.keys(quotationQuantities).length > 0 && <ActualFoodQuantitiesSummary requested={event.food_requirements} facultyMessage={event.food_request_message} planned={quotationQuantities} served={event.served_food_quantities ?? {}} updatedAt={event.served_food_updated_at} />}
           {event.canteen_note && <p className="mt-2 rounded-xl bg-ink-soft p-3 text-xs text-muted-foreground">Canteen response: {event.canteen_note}</p>}
@@ -472,7 +507,7 @@ export function EventCapacityPanel({ mode, canteenId, canteenName, userId }: { m
             </div>)}
           </section>}
 
-          {mode === "canteen" && event.status === "published" && <section className="mt-4 space-y-3 rounded-2xl border border-border p-4" aria-label={`Serving progress for ${event.name}`}>
+          {mode === "canteen" && event.status === "published" && <section className="mt-4 space-y-3 rounded-2xl border border-border p-4 hz-faculty-event-action-panel" aria-label={`Serving progress for ${event.name}`}>
             <h4 className="text-sm font-bold">Token verification and serving progress</h4>
             <p className="text-xs text-muted-foreground">{collected} of {issued} issued tokens served · {Math.max(0, event.approved_capacity - issued)} tokens remain available.</p>
             <div className="max-h-52 space-y-2 overflow-y-auto">{eventTokens.map((token) => <div key={token.id} className="flex items-center justify-between gap-3 rounded-xl bg-ink-soft p-3"><div><p className="font-mono text-sm font-bold tracking-widest">{token.token_number}</p><p className="text-[10px] text-muted-foreground">{token.status.toUpperCase()}</p></div>{token.status === "issued" && <button type="button" disabled={busy} onClick={() => markTokenCollected(token)} className="rounded-full bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50">Verify &amp; mark served</button>}</div>)}</div>
@@ -480,13 +515,13 @@ export function EventCapacityPanel({ mode, canteenId, canteenName, userId }: { m
             <button type="button" disabled={busy} onClick={() => saveServedQuantities(event)} className="rounded-full border border-primary/40 px-4 py-2 text-xs font-semibold text-primary disabled:opacity-50">Save served quantities</button>
           </section>}
 
-          {mode === "canteen" && event.status === "requested" && <div className="mt-4 space-y-3 rounded-2xl border border-primary/30 bg-primary/5 p-4">
+          {mode === "canteen" && event.status === "requested" && <div className="mt-4 space-y-3 rounded-2xl border border-primary/30 bg-primary/5 p-4 hz-faculty-event-action-panel">
             <h4 className="text-sm font-bold">Faculty event request</h4>
             <p className="text-xs text-muted-foreground">Accept or reject this request. Accepted events stay private until you confirm quantities and pricing and publish.</p>
             <textarea maxLength={500} placeholder="Note for faculty (optional)" aria-label={`Review note for ${event.name}`} value={notes[event.id] ?? ""} onChange={(formEvent) => setNotes({ ...notes, [event.id]: formEvent.currentTarget.value })} className="w-full rounded-xl border border-input bg-ink-soft px-3 py-2 text-sm" />
-            <div className="flex flex-wrap gap-2"><button type="button" disabled={busy} onClick={() => reviewEvent(event, true)} className="rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50">Accept event request</button><button type="button" disabled={busy} onClick={() => reviewEvent(event, false)} className="rounded-full border border-border px-4 py-2 text-xs font-semibold text-muted-foreground disabled:opacity-50">Reject request</button></div>
+            <div className="flex flex-wrap gap-2 hz-faculty-event-action-buttons"><button type="button" disabled={busy} onClick={() => reviewEvent(event, true)} className="rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50">Accept event request</button><button type="button" disabled={busy} onClick={() => reviewEvent(event, false)} className="rounded-full border border-border px-4 py-2 text-xs font-semibold text-muted-foreground disabled:opacity-50">Reject request</button></div>
           </div>}
-          {mode === "canteen" && ["accepted", "changes_requested"].includes(event.status) && <div className="mt-4 space-y-3 rounded-2xl border border-primary/30 bg-primary/5 p-4">
+          {mode === "canteen" && ["accepted", "changes_requested"].includes(event.status) && <div className="mt-4 space-y-3 rounded-2xl border border-primary/30 bg-primary/5 p-4 hz-faculty-event-action-panel">
             <h4 className="text-sm font-bold">Prepare event quotation</h4>
             {Object.keys(event.food_requirements).length > 0 ? <>
               <p className="text-xs text-muted-foreground">Select requested dishes or alternatives, confirm quantities, and enter event prices. Faculty must approve before publishing.</p>
@@ -507,7 +542,7 @@ export function EventCapacityPanel({ mode, canteenId, canteenName, userId }: { m
             <textarea maxLength={500} placeholder="Request a change (optional note)" aria-label={`Quotation response note for ${event.name}`} value={notes[event.id] ?? ""} onChange={(formEvent) => setNotes({ ...notes, [event.id]: formEvent.currentTarget.value })} className="w-full rounded-xl border border-input bg-ink-soft px-3 py-2 text-sm" rows={2} />
             <div className="flex flex-wrap gap-2"><button type="button" disabled={busy} onClick={() => respondToQuotation(event, false)} className="rounded-full border border-border px-4 py-2 text-xs font-semibold text-muted-foreground disabled:opacity-50">Request changes</button><button type="button" disabled={busy} onClick={() => respondToQuotation(event, true)} className="rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50">Approve quotation</button></div>
           </div>}
-          {mode === "canteen" && event.status === "approved" && <div className="mt-4 space-y-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-4">
+          {mode === "canteen" && event.status === "approved" && <div className="mt-4 space-y-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-4 hz-faculty-event-action-panel">
             <h4 className="text-sm font-bold">Faculty approved the quotation</h4><p className="text-xs text-muted-foreground">Confirm preparation and publish when the event is ready for participants.</p>
             <button type="button" disabled={busy} onClick={() => publishEvent(event)} className="rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50">Confirm and Publish</button>
           </div>}
@@ -546,6 +581,14 @@ export function EventCapacityPanel({ mode, canteenId, canteenName, userId }: { m
 
 function Metric({ label, value }: { label: string; value: string | number }) {
   return <div className="rounded-xl bg-ink-soft p-3"><p className="text-muted-foreground">{label}</p><p className="mt-1 font-bold text-foreground">{value}</p></div>;
+}
+
+function EventStat({ icon: Icon, label, value }: { icon: typeof UsersRound; label: string; value: string | number }) {
+  return <div className="hz-faculty-event-stat"><Icon aria-hidden="true" /><span>{label}</span><strong>{value}</strong></div>;
+}
+
+function formatINR(amount: number) {
+  return new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(amount);
 }
 
 function MenuQuantityPicker({ items, loading, quantities, onChange, label }: {
