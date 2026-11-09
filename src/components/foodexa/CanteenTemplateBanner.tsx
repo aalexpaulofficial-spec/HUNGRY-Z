@@ -33,6 +33,7 @@ export function CanteenTemplateBanner({
 
   return (
     <div
+      data-testid="canteen-template-banner"
       className={`relative overflow-hidden rounded-[2rem] border border-primary/30 ${onCropChange ? "cursor-grab touch-none active:cursor-grabbing" : ""}`}
       onPointerDown={(event) => {
         if (!onCropChange || !preview) return;

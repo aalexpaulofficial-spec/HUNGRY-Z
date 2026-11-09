@@ -10,7 +10,6 @@ import { LegalDialog } from "@/components/foodexa/LegalDialog";
 import { BackButton, useBackStep } from "@/lib/back-nav";
 import { supabase } from "@/integrations/supabase/client";
 import { foodImage } from "@/lib/foodexa-images";
-import { bannerCropStyle } from "@/lib/banner-crop";
 import { ORDER_LABELS, ORDER_STATUSES, canAcceptOrders, type MenuItem } from "@/lib/access";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { ScannerTab } from "@/components/foodexa/ScannerTab";
@@ -657,21 +656,14 @@ export function FoodCard({ item, onOpen, onAdd, wide }: { item: MenuItem; onOpen
   );
 }
 
-function HomeTab({ menu, canteen, template, onOpen, onAdd, goMenu }: { menu: MenuItem[]; canteen: Canteen; template: CanteenTemplate | null; onOpen: (i: MenuItem) => void; onAdd: (i: MenuItem) => void; goMenu: () => void }) {
-  if (!menu.length) return <div className="space-y-8 pt-2"><CanteenTemplateBanner imageUrl={template?.banner_image_url} heading={template?.heading} description={template?.description} canteenName={canteen.name} universityName={canteen.university_name} cropX={template?.banner_crop_x} cropY={template?.banner_crop_y} cropZoom={template?.banner_crop_zoom} onOrder={goMenu} /><Empty title="Your canteen is getting ready" text={`${canteen.name} hasn't published its menu yet. It will appear here live as soon as it does.`} /></div>;
+export function HomeTab({ menu, canteen, template, onOpen, onAdd, goMenu }: { menu: MenuItem[]; canteen: Canteen; template: CanteenTemplate | null; onOpen: (i: MenuItem) => void; onAdd: (i: MenuItem) => void; goMenu: () => void }) {
+  const templateBanner = <CanteenTemplateBanner imageUrl={template?.banner_image_url} heading={template?.heading} description={template?.description} canteenName={canteen.name} universityName={canteen.university_name} cropX={template?.banner_crop_x} cropY={template?.banner_crop_y} cropZoom={template?.banner_crop_zoom} onOrder={goMenu} />;
+  if (!menu.length) return <div className="space-y-8 pt-2">{templateBanner}<Empty title="Your canteen is getting ready" text={`${canteen.name} hasn't published its menu yet. It will appear here live as soon as it does.`} /></div>;
   const featured = menu.filter((m) => m.tag);
   const quick = menu.filter((m) => m.prep_minutes <= 8);
   return (
       <div className="hz-home-page space-y-8 pt-2">
-      <div className="hz-feature-hero relative overflow-hidden rounded-[2rem] border border-primary/30">
-        <img src={template?.banner_image_url || foodImage("food-indian")} alt="" className="block h-auto w-full object-contain" style={bannerCropStyle({ x: template?.banner_crop_x, y: template?.banner_crop_y, zoom: template?.banner_crop_zoom })} />
-        <div className="absolute bottom-5 left-5 right-5">
-          <p data-no-translate className="text-xs font-semibold uppercase tracking-widest text-primary-bright">{canteen.name} · {canteen.university_name}</p>
-          <p data-no-translate={template?.heading?.trim() ? "" : undefined} className="display mt-1 break-words text-2xl sm:break-normal sm:text-3xl">{template?.heading?.trim() || "Browse campus food."}</p>
-          {template?.description?.trim() && <p data-no-translate className="mt-2 max-w-xl text-sm text-foreground/90">{template.description.trim()}</p>}
-          <button onClick={goMenu} className="mt-3 rounded-full bg-primary px-5 py-2.5 text-xs font-semibold text-primary-foreground">Order now ↗</button>
-        </div>
-      </div>
+      {templateBanner}
       <section>
         <h2 className="mb-3 text-lg font-bold">{featured.length ? "Today's picks" : "On the menu"}</h2>
         <div className="-mx-5 flex gap-4 overflow-x-auto px-5 pb-2">
