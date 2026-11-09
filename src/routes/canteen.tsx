@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { flushSync } from "react-dom";
 import { z } from "zod";
-import { LogOut, Plus, Trash2, Pencil, Printer, Settings, Search, Minus, Pause, Play, ShoppingBag, X, Receipt, UtensilsCrossed, LayoutDashboard, CalendarDays, Image as ImageIcon, ChartNoAxesCombined, CircleHelp, Store, ArrowUpRight, Clock3 } from "lucide-react";
+import { LogOut, Plus, Trash2, Pencil, Printer, Settings, Search, Minus, Pause, Play, ShoppingBag, X, Receipt, UtensilsCrossed, LayoutDashboard, CalendarDays, Image as ImageIcon, ChartNoAxesCombined, CircleHelp, Store, ArrowUpRight, Clock3, ChevronLeft, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { CanteenTemplatePreview } from "@/components/foodexa/CanteenTemplatePreview";
 import { CanteenTemplateBanner } from "@/components/foodexa/CanteenTemplateBanner";
@@ -433,6 +433,7 @@ const NEXT: Record<string, string | undefined> = { placed: "preparing", preparin
 const BANNER_IMAGE_TYPES: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/avif": "avif" };
 export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { canteen: Canteen; onSignOut: () => void; language: "en" | "hi" | "kn"; onLanguageChange: (language: "en" | "hi" | "kn") => void }) {
   const [tab, setTab] = useSessionState<"overview" | "menu" | "orders" | "pos" | "template" | "analytics" | "events">(`hungry-canteen-dashboard-tab-v2-${canteen.id}`, "overview");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [pendingEventRequests, setPendingEventRequests] = useState(0);
   const [activeOrderCount, setActiveOrderCount] = useState(0);
   const [eventUpdateNotice, setEventUpdateNotice] = useState(false);
@@ -1027,11 +1028,11 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
 
   return (
     <div className="hz-canteen-app min-h-screen bg-background">
-      <div className="hz-canteen-layout mx-auto w-full max-w-[1760px]">
-        <aside className="hz-canteen-sidebar" aria-label="Canteen dashboard navigation">
-          <div className="hz-canteen-sidebar-brand"><img src="/HUNGRY%20Z%20Q%20LOGO.png" alt="HUNGRY Z" /><span>HUNGRY Z</span></div>
+      <div className={cn("hz-canteen-layout mx-auto w-full max-w-[1760px]", sidebarCollapsed && "is-sidebar-collapsed")}>
+        <aside id="hz-canteen-sidebar" className="hz-canteen-sidebar" aria-label="Canteen dashboard navigation">
+          <div className="hz-canteen-sidebar-brand"><img src="/HUNGRY%20Z%20Q%20LOGO.png" alt="HUNGRY Z" /><span>HUNGRY Z</span><button type="button" className="hz-canteen-sidebar-toggle" aria-controls="hz-canteen-sidebar" aria-expanded={!sidebarCollapsed} aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"} title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"} onClick={() => setSidebarCollapsed((collapsed) => !collapsed)}>{sidebarCollapsed ? <ChevronRight aria-hidden="true" /> : <ChevronLeft aria-hidden="true" />}</button></div>
           <nav className="hz-canteen-sidebar-nav" aria-label="Canteen dashboard sections">
-            {sidebarSections.map((item) => { const { key, label, icon: Icon } = item; const count = "count" in item ? item.count : 0; return <button key={key} type="button" aria-current={tab === key ? "page" : undefined} onClick={() => selectSection(key)} className={cn("hz-canteen-side-link", tab === key && "is-active")}><Icon aria-hidden="true" /><span>{label}</span>{count > 0 && <span className="hz-canteen-side-count">{count}</span>}</button>; })}
+            {sidebarSections.map((item) => { const { key, label, icon: Icon } = item; const count = "count" in item ? item.count : 0; return <button key={key} type="button" title={sidebarCollapsed ? label : undefined} aria-current={tab === key ? "page" : undefined} onClick={() => selectSection(key)} className={cn("hz-canteen-side-link", tab === key && "is-active")}><Icon aria-hidden="true" /><span>{label}</span>{count > 0 && <span className="hz-canteen-side-count">{count}</span>}</button>; })}
           </nav>
           <div className="hz-canteen-sidebar-footer">
             <button type="button" onClick={() => { setTab("orders"); setPrinterSettingsOpen(true); setPrinterSettingsMsg(""); }} className="hz-canteen-side-link"><Settings aria-hidden="true" /><span>Settings</span></button>
