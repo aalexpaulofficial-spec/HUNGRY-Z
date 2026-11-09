@@ -464,6 +464,7 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
   const [orderMsg, setOrderMsg] = useState("");
   const [orderStatusFilter, setOrderStatusFilter] = useState<"all" | "placed" | "preparing" | "ready" | "completed" | "cancelled">("all");
   const [orderSearch, setOrderSearch] = useState("");
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const orderSearchInputRef = useRef<HTMLInputElement>(null);
   const [orderKeyboardOpen, setOrderKeyboardOpen] = useState(false);
   const [orderKeyboardSymbols, setOrderKeyboardSymbols] = useState(false);
@@ -491,6 +492,7 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
       .some((value) => value.toLocaleLowerCase().includes(query));
     return statusMatches && searchMatches;
   });
+  const selectedOrder = selectedOrderId === "" ? null : filteredOrders.find((order) => order.id === selectedOrderId) ?? (selectedOrderId === null ? filteredOrders[0] ?? null : null);
   const [printing, setPrinting] = useState(false);
   const printLock = useRef(false);
   const [ownerFeedbackOpen, setOwnerFeedbackOpen] = useState(false);
@@ -1143,71 +1145,75 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
           <div className="hz-orders-page mt-6">
             <section className="hz-orders-banner" aria-labelledby="online-orders-title">
               <div className="hz-orders-banner-icon"><LockKeyhole aria-hidden="true" /></div>
-              <div className="hz-orders-banner-copy">
-                <h2 id="online-orders-title">Online Orders</h2>
-                <p>Customers must enter this canteen's seven-character HUNGRY Z Canteen Code to access its menu and place orders.</p>
-              </div>
-              <button type="button" onClick={() => { void navigator.clipboard.writeText(canteen.code).then(() => { setCanteenCodeCopied(true); window.setTimeout(() => setCanteenCodeCopied(false), 1800); }).catch(() => setCanteenCodeCopied(false)); }} className="hz-orders-code" aria-label="Copy HUNGRY Z Canteen Code"><span data-no-translate>{canteen.code}</span><Copy aria-hidden="true" />{canteenCodeCopied && <span className="hz-orders-copied">COPIED</span>}</button>
+              <div className="hz-orders-banner-copy"><h2 id="online-orders-title">Online Orders</h2><p>Manage incoming orders, track preparation, and mark them ready for pickup.</p></div>
+              <div className="hz-orders-live"><span /> Live Orders <strong>{activeOrderCount.toLocaleString("en-IN")}</strong></div>
             </section>
+            <div className="hz-orders-summary" aria-label="Order totals by status">
+              {([
+                ["Total Orders", orderStatusCounts.all, ShoppingBag],
+                ["To Prepare", orderStatusCounts.placed, Clock3],
+                ["Preparing", orderStatusCounts.preparing, UtensilsCrossed],
+                ["Ready for Pickup", orderStatusCounts.ready, Receipt],
+                ["Completed", orderStatusCounts.completed, CalendarDays],
+                ["Cancelled", orderStatusCounts.cancelled, X],
+              ] as const).map(([label, value, Icon]) => <article key={label}><span><Icon aria-hidden="true" /></span><div><strong>{value.toLocaleString("en-IN")}</strong><small>{label}</small></div></article>)}
+            </div>
             <div className="hz-orders-toolbar">
               <div className="hz-orders-filters" role="group" aria-label="Filter online orders">
                 {(["all", "placed", "preparing", "ready", "completed", "cancelled"] as const).map((filter) => {
-                  const labels = { all: "All Orders", placed: "Placed", preparing: "Preparing", ready: "Ready", completed: "Completed", cancelled: "Cancelled" };
-                  return <button key={filter} type="button" aria-pressed={orderStatusFilter === filter} onClick={() => setOrderStatusFilter(filter)} className={cn("hz-orders-filter", orderStatusFilter === filter && "is-active")}>{labels[filter]} <span>{orderStatusCounts[filter]}</span></button>;
+                  const labels = { all: "All Orders", placed: "To Prepare", preparing: "Preparing", ready: "Ready", completed: "Completed", cancelled: "Cancelled" };
+                  return <button key={filter} type="button" aria-pressed={orderStatusFilter === filter} onClick={() => { setOrderStatusFilter(filter); setSelectedOrderId(null); }} className={cn("hz-orders-filter", orderStatusFilter === filter && "is-active")}>{labels[filter]} <span>{orderStatusCounts[filter]}</span></button>;
                 })}
               </div>
-              <div className="hz-orders-search"><button type="button" className={cn("hz-orders-search-trigger", orderKeyboardOpen && "is-open")} aria-label={orderKeyboardOpen ? "Hide on-screen search keyboard" : "Show on-screen search keyboard"} aria-expanded={orderKeyboardOpen} aria-controls="online-orders-keyboard" onClick={() => setOrderKeyboardOpen((open) => !open)}><Search aria-hidden="true" /></button><input ref={orderSearchInputRef} type="search" inputMode="search" aria-label="Search by order ID or customer" value={orderSearch} onFocus={() => setOrderKeyboardOpen(true)} onChange={(event) => setOrderSearch(event.currentTarget.value)} placeholder="Search by Order ID, Customer..." /><button type="button" aria-label="Clear order search" onClick={() => { setOrderSearch(""); orderSearchInputRef.current?.focus(); }} disabled={!orderSearch}><X aria-hidden="true" /></button></div>
+              <div className="hz-orders-search"><button type="button" className={cn("hz-orders-search-trigger", orderKeyboardOpen && "is-open")} aria-label={orderKeyboardOpen ? "Hide on-screen search keyboard" : "Show on-screen search keyboard"} aria-expanded={orderKeyboardOpen} aria-controls="online-orders-keyboard" onClick={() => setOrderKeyboardOpen((open) => !open)}><Search aria-hidden="true" /></button><input ref={orderSearchInputRef} type="search" inputMode="search" aria-label="Search by order ID or customer" value={orderSearch} onFocus={() => setOrderKeyboardOpen(true)} onChange={(event) => { setOrderSearch(event.currentTarget.value); setSelectedOrderId(null); }} placeholder="Search Order ID, Customer..." /><button type="button" aria-label="Clear order search" onClick={() => { setOrderSearch(""); setSelectedOrderId(null); orderSearchInputRef.current?.focus(); }} disabled={!orderSearch}><X aria-hidden="true" /></button></div>
             </div>
             {orderKeyboardOpen && <div id="online-orders-keyboard" className="hz-pos-keyboard hz-orders-keyboard" role="group" aria-label="On-screen order search keyboard">
               <div className="hz-pos-keyboard-rows">
-                <div className="hz-pos-key-row">{(orderKeyboardSymbols ? "!@#$%^&*()" : "1234567890").split("").map((key) => <button key={key} type="button" onClick={() => setOrderSearch((value) => value + key)} className="hz-pos-key">{key}</button>)}</div>
-                <div className="hz-pos-key-row">{"QWERTYUIOP".split("").map((key) => <button key={key} type="button" onClick={() => setOrderSearch((value) => value + (orderKeyboardShifted ? key.toLowerCase() : key))} className="hz-pos-key">{orderKeyboardShifted ? key.toLowerCase() : key}</button>)}</div>
-                <div className="hz-pos-key-row hz-pos-key-row-home">{"ASDFGHJKL".split("").map((key) => <button key={key} type="button" onClick={() => setOrderSearch((value) => value + (orderKeyboardShifted ? key.toLowerCase() : key))} className="hz-pos-key">{orderKeyboardShifted ? key.toLowerCase() : key}</button>)}</div>
+                <div className="hz-pos-key-row">{(orderKeyboardSymbols ? "!@#$%^&*()" : "1234567890").split("").map((key) => <button key={key} type="button" onClick={() => { setOrderSearch((value) => value + key); setSelectedOrderId(null); }} className="hz-pos-key">{key}</button>)}</div>
+                <div className="hz-pos-key-row">{"QWERTYUIOP".split("").map((key) => <button key={key} type="button" onClick={() => { setOrderSearch((value) => value + (orderKeyboardShifted ? key.toLowerCase() : key)); setSelectedOrderId(null); }} className="hz-pos-key">{orderKeyboardShifted ? key.toLowerCase() : key}</button>)}</div>
+                <div className="hz-pos-key-row hz-pos-key-row-home">{"ASDFGHJKL".split("").map((key) => <button key={key} type="button" onClick={() => { setOrderSearch((value) => value + (orderKeyboardShifted ? key.toLowerCase() : key)); setSelectedOrderId(null); }} className="hz-pos-key">{orderKeyboardShifted ? key.toLowerCase() : key}</button>)}</div>
                 <div className="hz-pos-key-row">
                   <button type="button" aria-label="Shift letter case" aria-pressed={orderKeyboardShifted} onClick={() => setOrderKeyboardShifted((shifted) => !shifted)} className="hz-pos-key hz-pos-key-action">⇧</button>
-                  {"ZXCVBNM".split("").map((key) => <button key={key} type="button" onClick={() => setOrderSearch((value) => value + (orderKeyboardShifted ? key.toLowerCase() : key))} className="hz-pos-key">{orderKeyboardShifted ? key.toLowerCase() : key}</button>)}
-                  <button type="button" aria-label="Backspace" onClick={() => setOrderSearch((value) => Array.from(value).slice(0, -1).join(""))} className="hz-pos-key hz-pos-key-action">⌫</button>
+                  {"ZXCVBNM".split("").map((key) => <button key={key} type="button" onClick={() => { setOrderSearch((value) => value + (orderKeyboardShifted ? key.toLowerCase() : key)); setSelectedOrderId(null); }} className="hz-pos-key">{orderKeyboardShifted ? key.toLowerCase() : key}</button>)}
+                  <button type="button" aria-label="Backspace" onClick={() => { setOrderSearch((value) => Array.from(value).slice(0, -1).join("")); setSelectedOrderId(null); }} className="hz-pos-key hz-pos-key-action">⌫</button>
                 </div>
                 <div className="hz-pos-key-row hz-pos-key-row-bottom">
                   <button type="button" onClick={() => setOrderKeyboardSymbols((symbols) => !symbols)} className="hz-pos-key hz-pos-key-action">{orderKeyboardSymbols ? "ABC" : "123"}</button>
-                  <button type="button" onClick={() => setOrderSearch((value) => value + " ")} className="hz-pos-key hz-pos-key-space">Space</button>
+                  <button type="button" onClick={() => { setOrderSearch((value) => value + " "); setSelectedOrderId(null); }} className="hz-pos-key hz-pos-key-space">Space</button>
                   <button type="button" aria-label="Hide keypad" onClick={() => setOrderKeyboardOpen(false)} className="hz-pos-key hz-pos-key-cancel"><X aria-hidden="true" /> Hide Keypad</button>
                 </div>
               </div>
             </div>}
             {orderMsg && <p className="hz-orders-message" role="status">{orderMsg}</p>}
             {!orders.length ? <div className="hz-canteen-empty hz-orders-empty"><ShoppingBag aria-hidden="true" /><p>No online orders yet.</p><span>New customer orders will appear here.</span></div> : !filteredOrders.length ? <div className="hz-canteen-empty hz-orders-empty"><Search aria-hidden="true" /><p>No matching orders.</p><span>Try another status or search term.</span></div> : (
-              <div className="hz-orders-list">
-                {filteredOrders.map((o) => (
-                  <article key={o.id} className="hz-online-order-card">
-                    <aside className="hz-online-order-identity">
-                      <div className="hz-online-order-avatar"><ShoppingBag aria-hidden="true" /></div>
-                      <span className="hz-online-order-id-label">ORDER ID</span>
-                      <strong className="hz-online-order-id">{o.order_number}</strong>
-                      <span className="hz-online-order-type">{o.order_type === "parcel" ? "PARCEL" : "DINE-IN"}</span>
-                      <OrderStatusBadge status={o.status} className="hz-online-order-status max-w-none text-left text-[10px] tracking-widest" />
-                    </aside>
-                    <div className="hz-online-order-main">
-                      <div className="hz-online-order-meta">
-                        <div><UserRound aria-hidden="true" /><span>Customer<strong>{o.customer_name}</strong></span></div>
-                        <div><CalendarDays aria-hidden="true" /><span>Order Time<strong>{new Date(o.created_at).toLocaleString()}</strong></span></div>
-                        <div><Receipt aria-hidden="true" /><span>Pickup Code<strong className="font-mono tracking-wider">{o.pickup_code}</strong></span></div>
-                        <div><CreditCard aria-hidden="true" /><span>Payment<strong>{orderPaymentMethodLabel(o.payment_method)} · {orderPaymentStatusLabel(o.payment_status)}{o.payment_method === "counter" && o.payment_status !== "paid" ? ` · ₹${o.total} due` : ""}</strong></span></div>
-                      </div>
-                      <div className="hz-online-order-items">
-                        <h3><UtensilsCrossed aria-hidden="true" /> Food Items</h3>
-                        {o.lines.map((line, index) => <div key={`${line.name}-${index}`} className="hz-online-order-line"><span data-no-translate><b>{line.qty} ×</b> {line.name}</span><span>₹{line.price} each <strong>₹{line.price * line.qty}</strong></span></div>)}
-                      </div>
-                      <div className="hz-online-order-total"><span><Receipt aria-hidden="true" /> Total Amount</span><strong>₹{o.total.toLocaleString("en-IN")}</strong></div>
-                      {o.completion_workflow === "printed" && <p className="hz-online-order-notice">{o.food_received_confirmed_at ? "Customer confirmed that food was received." : "Printed bill confirmed; waiting for customer to confirm food receipt."}</p>}
-                    </div>
-                    <div className="hz-online-order-actions">
-                      {o.status !== "cancelled" && o.completion_workflow !== "manual" && (o.bill_print_confirmed_at ? <><button type="button" disabled className="hz-online-order-action is-confirmed">BILL PRINTED ✓</button><button type="button" disabled={printing || busyOrder === o.id} onClick={() => { if (window.confirm(`Authorized reprint for ${o.order_number}? This will not create another print record or customer notification.`)) void startReceiptPrint({ kind: "order", order: o }); }} className="hz-online-order-action"><Printer aria-hidden="true" /> REPRINT</button></> : <button type="button" disabled={printing || busyOrder === o.id} onClick={() => void startReceiptPrint({ kind: "order", order: o })} className="hz-online-order-action is-primary"><Printer aria-hidden="true" /> PRINT BILL</button>)}
-                      {NEXT[o.status] && o.completion_workflow !== "printed" && <button disabled={busyOrder === o.id} onClick={() => setStatus(o, NEXT[o.status] as "preparing" | "ready" | "collected")} className="hz-online-order-action is-primary">{o.status === "ready" && o.payment_method === "counter" ? "Mark paid & collected" : `Mark ${ORDER_LABELS[NEXT[o.status]!]}`}</button>}
-                      {o.status === "placed" && <button disabled={busyOrder === o.id} onClick={() => setStatus(o, "cancelled")} className="hz-online-order-action">Cancel</button>}
-                    </div>
-                  </article>
-                ))}
+              <div className={cn("hz-orders-workspace", selectedOrder && "has-selection")}>
+                <section className="hz-orders-table-panel" aria-label="Online order list">
+                  <div className="hz-orders-table-scroll"><table className="hz-orders-table"><thead><tr><th aria-label="Select order"></th><th>Order ID</th><th>Customer</th><th>Items</th><th>Amount</th><th>Status</th><th>Time</th></tr></thead><tbody>
+                    {filteredOrders.map((order) => <tr key={order.id} aria-selected={selectedOrder?.id === order.id} onClick={() => setSelectedOrderId(order.id)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setSelectedOrderId(order.id); } }} tabIndex={0}>
+                      <td><input type="checkbox" aria-label={`Show details for order ${order.order_number}`} checked={selectedOrder?.id === order.id} onClick={(event) => event.stopPropagation()} onChange={() => setSelectedOrderId(order.id)} /></td>
+                      <td><strong>{order.order_number}</strong></td>
+                      <td><span className="hz-orders-table-customer"><UserRound aria-hidden="true" />{order.customer_name}</span></td>
+                      <td><span className="hz-orders-table-items" data-no-translate>{order.lines.slice(0, 2).map((line) => `${line.name} ×${line.qty}`).join(", ")}{order.lines.length > 2 ? ` +${order.lines.length - 2}` : ""}</span></td>
+                      <td><strong>₹{order.total.toLocaleString("en-IN")}</strong></td>
+                      <td><OrderStatusBadge status={order.status} className="hz-orders-table-status max-w-none text-left text-[9px] tracking-normal" /></td>
+                      <td><time dateTime={order.created_at}>{new Date(order.created_at).toLocaleTimeString(language === "hi" ? "hi-IN" : language === "kn" ? "kn-IN" : "en-IN", { hour: "numeric", minute: "2-digit" })}</time></td>
+                    </tr>)}
+                  </tbody></table></div>
+                  <footer className="hz-orders-table-footer"><span>Showing <strong>{filteredOrders.length}</strong> {filteredOrders.length === 1 ? "order" : "orders"}</span><span>Order list updates automatically</span></footer>
+                </section>
+                {selectedOrder && <aside className="hz-order-details" aria-labelledby="order-details-title">
+                  <header><h2 id="order-details-title">Order Details</h2><button type="button" aria-label="Close order details" onClick={() => setSelectedOrderId("")}><X aria-hidden="true" /></button></header>
+                  <div className="hz-order-details-id"><strong>{selectedOrder.order_number}</strong><OrderStatusBadge status={selectedOrder.status} className="max-w-none text-left text-[9px] tracking-normal" /></div>
+                  <div className="hz-order-details-meta"><p><UserRound aria-hidden="true" /><span>Customer<strong>{selectedOrder.customer_name}</strong></span></p><p><ShoppingBag aria-hidden="true" /><span>Order type<strong>{selectedOrder.order_type === "parcel" ? "Parcel" : "Dine-in"}</strong></span></p><p><CalendarDays aria-hidden="true" /><span>Order time<strong>{new Date(selectedOrder.created_at).toLocaleString()}</strong></span></p><p><Receipt aria-hidden="true" /><span>Pickup code<strong>{selectedOrder.pickup_code || "—"}</strong></span></p><p><CreditCard aria-hidden="true" /><span>Payment<strong>{orderPaymentMethodLabel(selectedOrder.payment_method)} · {orderPaymentStatusLabel(selectedOrder.payment_status)}{selectedOrder.payment_method === "counter" && selectedOrder.payment_status !== "paid" ? ` · ₹${selectedOrder.total} due` : ""}</strong></span></p></div>
+                  <section className="hz-order-details-food"><h3><UtensilsCrossed aria-hidden="true" /> Food Items ({selectedOrder.lines.length})</h3>{selectedOrder.lines.map((line, index) => <div key={`${line.name}-${index}`}><span>{line.name} ×{line.qty}</span><small>₹{line.price} each <strong>₹{(line.price * line.qty).toLocaleString("en-IN")}</strong></small></div>)}</section>
+                  <div className="hz-order-details-total"><span>Total Amount</span><strong>₹{selectedOrder.total.toLocaleString("en-IN")}</strong></div>
+                  {selectedOrder.completion_workflow === "printed" && <p className="hz-order-details-notice">{selectedOrder.food_received_confirmed_at ? "Customer confirmed that food was received." : "Bill printed. Waiting for customer to confirm food receipt."}</p>}
+                  <div className="hz-order-details-actions">
+                    {selectedOrder.status !== "cancelled" && selectedOrder.completion_workflow !== "manual" && (selectedOrder.bill_print_confirmed_at ? <><button type="button" disabled className="hz-order-detail-action is-primary"><Printer aria-hidden="true" /> BILL PRINTED</button><button type="button" disabled={printing || busyOrder === selectedOrder.id} onClick={() => { if (window.confirm(`Authorized reprint for ${selectedOrder.order_number}? This will not create another print record or customer notification.`)) void startReceiptPrint({ kind: "order", order: selectedOrder }); }} className="hz-order-detail-action"><Printer aria-hidden="true" /> Reprint Bill</button></> : <button type="button" disabled={printing || busyOrder === selectedOrder.id} onClick={() => void startReceiptPrint({ kind: "order", order: selectedOrder })} className="hz-order-detail-action is-primary"><Printer aria-hidden="true" /> Print Bill</button>)}
+                    {NEXT[selectedOrder.status] && selectedOrder.completion_workflow !== "printed" && <button type="button" disabled={busyOrder === selectedOrder.id} onClick={() => setStatus(selectedOrder, NEXT[selectedOrder.status] as "preparing" | "ready" | "collected")} className="hz-order-detail-action">{selectedOrder.status === "placed" ? "Start Preparing" : selectedOrder.status === "ready" && selectedOrder.payment_method === "counter" ? "Mark Paid & Collected" : `Mark ${ORDER_LABELS[NEXT[selectedOrder.status]!]}`}</button>}
+                    {selectedOrder.status === "placed" && <button type="button" disabled={busyOrder === selectedOrder.id} onClick={() => setStatus(selectedOrder, "cancelled")} className="hz-order-detail-action is-danger"><X aria-hidden="true" /> Cancel Order</button>}
+                  </div>
+                </aside>}
               </div>
             )}
           </div>) : tab === "settings" ? (
