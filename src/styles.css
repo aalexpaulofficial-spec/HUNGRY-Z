@@ -878,6 +878,11 @@ html[data-theme="light"] .hz-canteen-nav { background: color-mix(in oklab, white
 .hz-canteen-brand-copy h1 { font-size: 1.8rem; line-height: 1.05; }
 .hz-canteen-brand-copy button { min-height: 2.25rem; margin-top: .45rem; border-radius: 999px; padding: .4rem .75rem; font-size: .76rem; letter-spacing: .08em; }
 .hz-canteen-brand-copy > p:last-child { margin-top: .4rem; font-size: .8rem; }
+.hz-canteen-brand-copy button.hz-canteen-code-button { min-height: 2.5rem; margin-top: .45rem; gap: .55rem; border-radius: .9rem; padding: .45rem .7rem; font-family: inherit; font-size: .76rem; font-weight: 600; letter-spacing: normal; line-height: 1.1; }
+.hz-canteen-code-button > span:first-child { font-size: .64rem; font-weight: 750; letter-spacing: .075em; line-height: 1.1; }
+.hz-canteen-code-button > span:nth-child(2) { color: var(--muted-foreground); font-weight: 500; }
+.hz-canteen-code-button > span:nth-child(3) { font-family: inherit; font-size: .9rem; font-weight: 750; letter-spacing: .035em; line-height: 1.1; }
+.hz-canteen-code-button > span:last-child { display: inline-flex; min-height: 1.65rem; align-items: center; justify-content: center; border-radius: .55rem; background: var(--primary); padding: 0 .55rem; color: var(--primary-foreground); font-size: .58rem; font-weight: 800; letter-spacing: .045em; line-height: 1; }
 .hz-canteen-actions { align-self: center; }
 .hz-canteen-overview-banner { aspect-ratio: 5.04 / 1; overflow: hidden; border: 1px solid var(--border); border-radius: 1.8rem; background: var(--card); box-shadow: var(--hz-shadow-card); }
 .hz-canteen-overview-banner > div { width: 100%; height: 100%; border: 0; border-radius: inherit; }
