@@ -1087,7 +1087,7 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
           saving={availabilitySaving}
           onSave={updateAvailability}
         /></div>}
-        {tab === "orders" && <div className="mt-4 flex justify-end"><button type="button" onClick={() => { setPrinterSettingsOpen((open) => !open); setPrinterSettingsMsg(""); }} aria-expanded={printerSettingsOpen} className="inline-flex min-h-10 items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-xs font-semibold text-muted-foreground transition hover:border-primary/50 hover:text-foreground"><Settings className="h-3.5 w-3.5" /> Printer Settings</button></div>}
+        {tab === "orders" && <div className="hz-printer-settings-toggle-row"><button type="button" onClick={() => { setPrinterSettingsOpen((open) => !open); setPrinterSettingsMsg(""); }} aria-expanded={printerSettingsOpen} aria-controls="printer-settings-panel" className={cn("hz-printer-settings-toggle", printerSettingsOpen && "is-open")}><Settings aria-hidden="true" /> Printer Settings <span>{printerSettingsOpen ? "Hide" : "Configure"}</span></button></div>}
 
         {tab === "overview" && <section className="hz-canteen-overview" aria-label="Dashboard overview">
           <div className="hz-canteen-metric-grid">
@@ -1113,24 +1113,24 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
 
         {orderMsg && tab === "orders" && <p className="mt-4 rounded-2xl border border-primary/40 bg-primary/10 p-3 text-sm">{orderMsg}</p>}
         {tab === "orders" && printerSettingsOpen && (
-          <section className="glass-red mt-4 grid gap-4 rounded-3xl p-5" aria-labelledby="printer-settings-title">
-            <div>
-              <h2 id="printer-settings-title" className="display text-lg">Printer Settings</h2>
-              <p className="mt-1 max-w-3xl text-xs leading-relaxed text-muted-foreground">Choose your installed Epson printer in the browser print dialog. Automatic uses the paper size selected by that printer driver; browser pages cannot read printer capabilities directly. If the driver does not provide the expected width, select 58mm or 80mm and match the driver paper setting. Windows Epson drivers and supported ESC/POS printers use the standard print interface.</p>
+          <section id="printer-settings-panel" className="hz-printer-settings mt-3" aria-labelledby="printer-settings-title">
+            <div className="hz-printer-settings-heading">
+              <span className="hz-printer-settings-icon"><Printer aria-hidden="true" /></span>
+              <div><p className="hz-printer-settings-eyebrow">RECEIPT SETUP</p><h2 id="printer-settings-title" className="display">Printer Settings</h2><p>Choose your installed Epson printer in the browser print dialog. Automatic uses the paper size selected by that printer driver; browser pages cannot read printer capabilities directly. If the driver does not provide the expected width, select 58mm or 80mm and match the driver paper setting. Windows Epson drivers and supported ESC/POS printers use the standard print interface.</p></div>
             </div>
-            <fieldset className="flex flex-wrap items-center gap-3">
-              <legend className="mb-2 text-xs font-semibold text-foreground">Receipt paper width</legend>
+            <fieldset className="hz-printer-widths">
+              <legend>Receipt paper width</legend>
               {(["auto", "58", "80"] as const).map((width) => (
-                <label key={width} className={cn("inline-flex cursor-pointer items-center gap-2 rounded-full border px-4 py-2 text-xs font-semibold", printerPaperWidth === width ? "border-primary bg-primary/10 text-foreground" : "border-border text-muted-foreground")}>
+                <label key={width} className={cn("hz-printer-width-option", printerPaperWidth === width && "is-selected")}>
                   <input type="radio" name="receipt-paper-width" value={width} checked={printerPaperWidth === width} onChange={() => { setPrinterPaperWidth(width); setPrinterSettingsMsg(""); }} />
-                  {width === "auto" ? "Printer default (Auto)" : `${width}mm`}
+                  <span><strong>{width === "auto" ? "Printer default" : `${width} mm`}</strong><small>{width === "auto" ? "Use the paper size set in your printer driver" : `For ${width} mm receipt rolls`}</small></span>
                 </label>
               ))}
             </fieldset>
-            <div className="flex flex-wrap items-center gap-2">
-              <button type="button" onClick={savePrinterPreferences} className="rounded-full border border-border px-4 py-2.5 text-xs font-semibold text-muted-foreground transition hover:border-primary/50 hover:text-foreground">Save Printer Preferences</button>
-              <button type="button" disabled={printing} onClick={() => startReceiptPrint({ kind: "test", counterName: canteen.name, createdAt: new Date().toISOString() })} className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2.5 text-xs font-semibold text-primary-foreground disabled:opacity-50"><Printer className="h-3.5 w-3.5" /> Print Test Receipt</button>
-              {printerSettingsMsg && <p className="text-xs text-muted-foreground" role="status">{printerSettingsMsg}</p>}
+            <div className="hz-printer-settings-actions">
+              <button type="button" onClick={savePrinterPreferences} className="hz-printer-save">Save Printer Preferences</button>
+              <button type="button" disabled={printing} onClick={() => startReceiptPrint({ kind: "test", counterName: canteen.name, createdAt: new Date().toISOString() })} className="hz-printer-test"><Printer aria-hidden="true" /> Print Test Receipt</button>
+              {printerSettingsMsg && <p role="status">{printerSettingsMsg}</p>}
             </div>
           </section>
         )}
