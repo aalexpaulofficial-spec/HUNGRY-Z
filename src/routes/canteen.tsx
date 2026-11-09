@@ -1194,7 +1194,7 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
           </section>
         ) : tab === "events" ? (
           <div className="mt-6"><EventCapacityPanel mode="canteen" canteenId={canteen.id} canteenName={canteen.name} /></div>
-        ) : (
+        ) : tab === "menu" ? (
           <div className="mt-6">
             <button onClick={() => { setFoodImageFile(null); setFoodImagePreview(null); setEditing({ veg: true, available: true }); }} className="flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-xs font-semibold text-primary-foreground"><Plus className="h-4 w-4" /> Add item</button>
             {editing && (
@@ -1252,7 +1252,7 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
               ))}
             </div>
           </div>
-        )}
+        ) : null}
         <section className="mt-4 rounded-3xl border border-border bg-card p-4 sm:p-5" aria-label="Canteen owner support and legal information">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div><h2 className="display text-base">Owner Help &amp; Legal</h2><p className="mt-1 text-[11px] text-muted-foreground">For order, payment and canteen operations support.</p></div>
