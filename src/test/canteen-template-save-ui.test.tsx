@@ -167,6 +167,11 @@ describe("canteen template save flow", () => {
     fireEvent.click(screen.getByRole("button", { name: "PHYSICAL KEYBOARD" }));
     expect(search).not.toHaveAttribute("readonly");
     expect(screen.queryByRole("group", { name: "On-screen search keyboard" })).not.toBeInTheDocument();
+    fireEvent.change(search, { target: { value: "lime" } });
+    expect(search).toHaveValue("lime");
+    expect(screen.getByRole("button", { name: "Add Lime Soda, ₹30" })).toBeInTheDocument();
+    fireEvent.change(search, { target: { value: "tea" } });
+    expect(screen.queryByRole("button", { name: "Add Lime Soda, ₹30" })).not.toBeInTheDocument();
   });
 
   it("shows complete held-order cards without a nested scroller and resumes the saved bill", () => {
