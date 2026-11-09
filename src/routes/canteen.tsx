@@ -436,6 +436,8 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
   const [eventUpdateNotice, setEventUpdateNotice] = useState(false);
   const [menu, setMenu] = useState<MenuItem[]>(() => readOfflineMenu(canteen.id));
   const [orders, setOrders] = useState<Order[]>([]);
+  const [todayOnlineSales, setTodayOnlineSales] = useState<{ created_at: string; total: number; status: string; payment_status: string }[] | null>(null);
+  const [todayOnlineSalesError, setTodayOnlineSalesError] = useState(false);
   const [posState, setPOSState] = useState(() => readOfflinePOS(canteen.id));
   const offlineSyncLock = useRef(false);
   const [analyticsMode, setAnalyticsMode] = useSessionState<"online" | "offline">(`hungry-canteen-analytics-mode-${canteen.id}`, "online");
@@ -473,16 +475,23 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
   const move = useServerFn(ownerUpdateOrderStatus);
   const recordConfirmedPrint = useServerFn(ownerRecordConfirmedBillPrint);
   const saveAvailability = useServerFn(saveCanteenAvailability);
-  const onlineCollectedRevenue = orders.filter((order) => order.payment_status === "paid" && order.status !== "cancelled").reduce((sum, order) => sum + order.total, 0);
-  const offlineCollectedRevenue = posState.completed.filter((sale) => sale.paymentStatus === "paid").reduce((sum, sale) => sum + sale.total, 0);
-  const onlineOrderActivity = Array.from({ length: 7 }, (_, index) => {
-    const day = new Date();
-    day.setHours(0, 0, 0, 0);
-    day.setDate(day.getDate() - (6 - index));
-    const count = orders.filter((order) => new Date(order.created_at).toDateString() === day.toDateString()).length;
-    return { day, count };
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const tomorrowStart = new Date(todayStart);
+  tomorrowStart.setDate(tomorrowStart.getDate() + 1);
+  const todayOfflineBills = posState.completed.filter((sale) => new Date(sale.createdAt) >= todayStart && new Date(sale.createdAt) < tomorrowStart);
+  const todayOfflineRevenue = todayOfflineBills.filter((sale) => sale.paymentStatus === "paid").reduce((sum, sale) => sum + sale.total, 0);
+  const todayOnlineCollected = todayOnlineSales?.filter((order) => order.payment_status === "paid" && order.status !== "cancelled").reduce((sum, order) => sum + Number(order.total || 0), 0) ?? null;
+  const onlineSalesBuckets = Array.from({ length: 8 }, (_, index) => {
+    const hour = index * 3;
+    const start = new Date(todayStart);
+    start.setHours(hour);
+    const end = new Date(start);
+    end.setHours(hour + 3);
+    const revenue = todayOnlineSales?.filter((order) => order.payment_status === "paid" && order.status !== "cancelled" && new Date(order.created_at) >= start && new Date(order.created_at) < end).reduce((sum, order) => sum + Number(order.total || 0), 0) ?? null;
+    return { hour, start, revenue };
   });
-  const maxOnlineOrderActivity = Math.max(1, ...onlineOrderActivity.map(({ count }) => count));
+  const maxOnlineSales = Math.max(1, ...onlineSalesBuckets.map(({ revenue }) => revenue ?? 0));
   const sidebarSections = [
     { key: "overview", label: "Dashboard", icon: LayoutDashboard },
     { key: "menu", label: `MENU (${menu.length})`, icon: UtensilsCrossed },
@@ -847,6 +856,43 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
     };
   }, [canteen.id, refreshActiveOrderCount]);
 
+  useEffect(() => {
+    if (tab !== "overview") return;
+    let active = true;
+    setTodayOnlineSales(null);
+    setTodayOnlineSalesError(false);
+    const loadTodaySales = async () => {
+      const start = new Date();
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(start);
+      end.setDate(end.getDate() + 1);
+      const rows: { created_at: string; total: number; status: string; payment_status: string }[] = [];
+      try {
+        for (let offset = 0; ; offset += 1000) {
+          const { data, error } = await supabase.from("orders")
+            .select("created_at,total,status,payment_status")
+            .eq("canteen_id", canteen.id)
+            .gte("created_at", start.toISOString())
+            .lt("created_at", end.toISOString())
+            .order("created_at", { ascending: true })
+            .range(offset, offset + 999);
+          if (error) throw error;
+          const page = data ?? [];
+          rows.push(...page as typeof rows);
+          if (page.length < 1000) break;
+        }
+        if (active) setTodayOnlineSales(rows);
+      } catch {
+        if (active) { setTodayOnlineSales(null); setTodayOnlineSalesError(true); }
+      }
+    };
+    void loadTodaySales();
+    const channel = supabase.channel(`canteen-overview-sales-${canteen.id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "orders", filter: `canteen_id=eq.${canteen.id}` }, () => { void loadTodaySales(); })
+      .subscribe();
+    return () => { active = false; void supabase.removeChannel(channel); };
+  }, [canteen.id, tab]);
+
   async function updateAvailability(settings: AvailabilitySettings) {
     setAvailabilitySaving(true);
     try {
@@ -1011,34 +1057,33 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
         </header>
         {canteen.visibility === "maintenance" && <p className="mt-4 rounded-2xl border border-primary/40 bg-primary/10 p-3 text-sm text-primary-bright">Your canteen is in maintenance mode — customers can't place orders.</p>}
         {tab === "overview" && <section className="hz-canteen-overview-banner"><CanteenTemplateBanner imageUrl={template.banner_image_url} heading={template.heading} description={template.description} canteenName={canteen.name} universityName={canteen.university_name} cropX={template.banner_crop_x} cropY={template.banner_crop_y} cropZoom={template.banner_crop_zoom} /></section>}
-        <div id="canteen-availability"><CanteenAvailabilityPanel
+        {tab === "overview" && <div id="canteen-availability"><CanteenAvailabilityPanel
           isActive={availability.is_active}
           visibility={availability.visibility}
           settings={{ availability_mode: availability.availability_mode, operating_hours: availability.operating_hours }}
           saving={availabilitySaving}
           onSave={updateAvailability}
-        /></div>
+        /></div>}
         {tab === "orders" && <div className="mt-4 flex justify-end"><button type="button" onClick={() => { setPrinterSettingsOpen((open) => !open); setPrinterSettingsMsg(""); }} aria-expanded={printerSettingsOpen} className="inline-flex min-h-10 items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-xs font-semibold text-muted-foreground transition hover:border-primary/50 hover:text-foreground"><Settings className="h-3.5 w-3.5" /> Printer Settings</button></div>}
 
         {tab === "overview" && <section className="hz-canteen-overview" aria-label="Dashboard overview">
           <div className="hz-canteen-metric-grid">
-            <button type="button" onClick={() => selectSection("orders")} className="hz-canteen-metric hz-metric-online"><span className="hz-canteen-metric-icon"><ShoppingBag aria-hidden="true" /></span><span><small>ONLINE ACTIVE ORDERS</small><strong>{activeOrderCount.toLocaleString()}</strong></span><ArrowUpRight aria-hidden="true" className="hz-canteen-metric-arrow" /></button>
-            <button type="button" onClick={() => selectSection("pos")} className="hz-canteen-metric hz-metric-offline"><span className="hz-canteen-metric-icon"><Receipt aria-hidden="true" /></span><span><small>OFFLINE POS BILLS</small><strong>{posState.completed.length.toLocaleString()}</strong></span><ArrowUpRight aria-hidden="true" className="hz-canteen-metric-arrow" /></button>
-            <button type="button" onClick={() => { setAnalyticsMode("online"); selectSection("analytics"); }} className="hz-canteen-metric hz-metric-online"><span className="hz-canteen-metric-icon"><ChartNoAxesCombined aria-hidden="true" /></span><span><small>ONLINE COLLECTED REVENUE (LOADED ORDERS)</small><strong>{"\u20b9"}{onlineCollectedRevenue.toLocaleString("en-IN")}</strong></span><ArrowUpRight aria-hidden="true" className="hz-canteen-metric-arrow" /></button>
-            <button type="button" onClick={() => { setAnalyticsMode("offline"); selectSection("analytics"); }} className="hz-canteen-metric hz-metric-offline"><span className="hz-canteen-metric-icon"><Store aria-hidden="true" /></span><span><small>OFFLINE COLLECTED REVENUE</small><strong>{"\u20b9"}{offlineCollectedRevenue.toLocaleString("en-IN")}</strong></span><ArrowUpRight aria-hidden="true" className="hz-canteen-metric-arrow" /></button>
+            <button type="button" onClick={() => selectSection("orders")} className="hz-canteen-metric hz-metric-online"><span className="hz-canteen-metric-icon"><ShoppingBag aria-hidden="true" /></span><span><small>ONLINE ACTIVE ORDERS</small><strong>{activeOrderCount.toLocaleString(language === "hi" ? "hi-IN" : language === "kn" ? "kn-IN" : "en-IN")}</strong></span><ArrowUpRight aria-hidden="true" className="hz-canteen-metric-arrow" /></button>
+            <button type="button" onClick={() => selectSection("pos")} className="hz-canteen-metric hz-metric-offline"><span className="hz-canteen-metric-icon"><Receipt aria-hidden="true" /></span><span><small>OFFLINE POS BILLS - TODAY</small><strong>{todayOfflineBills.length.toLocaleString(language === "hi" ? "hi-IN" : language === "kn" ? "kn-IN" : "en-IN")}</strong></span><ArrowUpRight aria-hidden="true" className="hz-canteen-metric-arrow" /></button>
+            <button type="button" onClick={() => { setAnalyticsMode("online"); selectSection("analytics"); }} className="hz-canteen-metric hz-metric-sales"><span className="hz-canteen-metric-icon"><ChartNoAxesCombined aria-hidden="true" /></span><span><small>ONLINE REVENUE - TODAY</small><strong>{todayOnlineCollected === null ? "?" : `${"\u20b9"}${todayOnlineCollected.toLocaleString("en-IN")}`}</strong></span><ArrowUpRight aria-hidden="true" className="hz-canteen-metric-arrow" /></button>
+            <button type="button" onClick={() => { setAnalyticsMode("offline"); selectSection("analytics"); }} className="hz-canteen-metric hz-metric-offline-sales"><span className="hz-canteen-metric-icon"><Store aria-hidden="true" /></span><span><small>OFFLINE REVENUE - TODAY</small><strong>{`\u20b9${todayOfflineRevenue.toLocaleString("en-IN")}`}</strong></span><ArrowUpRight aria-hidden="true" className="hz-canteen-metric-arrow" /></button>
           </div>
           <div className="hz-canteen-overview-panels">
-            <section className="hz-canteen-overview-panel" aria-labelledby="recent-online-heading">
-              <div className="hz-canteen-panel-heading"><div><p className="hz-canteen-eyebrow">ONLINE</p><h2 id="recent-online-heading">Recent Online Orders</h2></div><button type="button" onClick={() => selectSection("orders")} className="hz-canteen-text-action">View all <ArrowUpRight aria-hidden="true" /></button></div>
-              {!orders.length ? <div className="hz-canteen-empty"><ShoppingBag aria-hidden="true" /><p>No online orders yet.</p><span>New customer orders will appear here.</span></div> : <div className="hz-canteen-recent-orders">{orders.slice(0, 4).map((order) => <button key={order.id} type="button" onClick={() => selectSection("orders")} className="hz-canteen-recent-order"><span className="hz-canteen-recent-id">{order.order_number}</span><span className="hz-canteen-recent-items" data-no-translate>{order.lines.slice(0, 2).map((line) => `${line.qty} \u00d7 ${line.name}`).join(", ")}{order.lines.length > 2 ? ` +${order.lines.length - 2}` : ""}</span><strong>{"\u20b9"}{order.total.toLocaleString("en-IN")}</strong><span className={cn("hz-canteen-order-status", `is-${order.status}`)}>{ORDER_LABELS[order.status] ?? order.status}</span></button>)}</div>}
+            <section className="hz-canteen-overview-panel hz-canteen-sales-panel" aria-labelledby="online-sales-heading">
+              <div className="hz-canteen-panel-heading"><div><p className="hz-canteen-eyebrow">ONLINE SALES</p><h2 id="online-sales-heading">Today's Sales</h2></div><div className="hz-canteen-chart-total"><strong>{todayOnlineCollected === null ? "?" : `\u20b9${todayOnlineCollected.toLocaleString("en-IN")}`}</strong><span>ONLINE - TODAY</span></div></div>
+              {todayOnlineSales === null ? <p className="hz-canteen-chart-state">{todayOnlineSalesError ? "Could not load online sales." : "Online sales are loading."}</p> : <div className="hz-canteen-sales-chart" role="img" aria-label="Online collected sales by time today">
+                <div className="hz-canteen-chart-axis"><span>{`\u20b9${maxOnlineSales.toLocaleString("en-IN")}`}</span><span>{`\u20b9${Math.round(maxOnlineSales * .5).toLocaleString("en-IN")}`}</span><span>{`\u20b9${Math.round(maxOnlineSales * .25).toLocaleString("en-IN")}`}</span><span>0</span></div>
+                {onlineSalesBuckets.map(({ hour, start, revenue }) => <div key={hour} className="hz-canteen-sales-column"><div className="hz-canteen-sales-track"><i style={{ height: `${Math.max(revenue ? revenue / maxOnlineSales * 100 : 2, 2)}%` }} /></div><small>{start.toLocaleTimeString(language === "hi" ? "hi-IN" : language === "kn" ? "kn-IN" : "en-IN", { hour: "numeric", hour12: true }).replace(" ", "")}</small></div>)}
+              </div>}
             </section>
-            <section className="hz-canteen-overview-panel" aria-labelledby="online-activity-heading">
-              <div className="hz-canteen-panel-heading"><div><p className="hz-canteen-eyebrow">ONLINE</p><h2 id="online-activity-heading">Online Orders · Last 7 Days</h2></div><Clock3 aria-hidden="true" className="text-primary" /></div>
-              <p className="hz-canteen-chart-note">Daily orders from the latest 100 loaded online orders.</p>
-              <div className="hz-canteen-sales-chart" role="img" aria-label="Online order counts by day over the last seven days">
-                {onlineOrderActivity.map(({ day, count }) => <div key={day.toISOString()} className="hz-canteen-sales-column"><span>{count}</span><div className="hz-canteen-sales-track"><i style={{ height: `${Math.max(count ? 8 : 3, count / maxOnlineOrderActivity * 100)}%` }} /></div><small>{day.toLocaleDateString(language === "hi" ? "hi-IN" : language === "kn" ? "kn-IN" : "en-IN", { weekday: "short" })}</small></div>)}
-              </div>
-              <div className="hz-canteen-code-row"><Store aria-hidden="true" /><div><span>SHARE CANTEEN CODE</span><strong>{canteen.code}</strong></div><button type="button" onClick={() => { void navigator.clipboard.writeText(canteen.code).then(() => { setCanteenCodeCopied(true); window.setTimeout(() => setCanteenCodeCopied(false), 1800); }).catch(() => setCanteenCodeCopied(false)); }}>{canteenCodeCopied ? "COPIED" : "COPY"}</button></div>
+            <section className="hz-canteen-overview-panel hz-canteen-orders-panel" aria-labelledby="recent-online-heading">
+              <div className="hz-canteen-panel-heading"><div><p className="hz-canteen-eyebrow">ONLINE</p><h2 id="recent-online-heading">Recent Online Orders</h2></div><button type="button" onClick={() => selectSection("orders")} className="hz-canteen-text-action">View all <ArrowUpRight aria-hidden="true" /></button></div>
+              {!orders.length ? <div className="hz-canteen-empty"><ShoppingBag aria-hidden="true" /><p>No online orders yet.</p><span>New customer orders will appear here.</span></div> : <div className="hz-canteen-recent-orders">{orders.slice(0, 4).map((order) => <button key={order.id} type="button" onClick={() => selectSection("orders")} className="hz-canteen-recent-order"><span className="hz-canteen-recent-id">{order.order_number}</span><span className="hz-canteen-recent-items" data-no-translate>{order.lines.slice(0, 2).map((line) => `${line.qty} \u00d7 ${line.name}`).join(", ")}{order.lines.length > 2 ? ` +${order.lines.length - 2}` : ""}</span><strong>{`\u20b9${order.total.toLocaleString("en-IN")}`}</strong><span className={cn("hz-canteen-order-status", `is-${order.status}`)}>{ORDER_LABELS[order.status] ?? order.status}</span><time dateTime={order.created_at}>{new Date(order.created_at).toLocaleTimeString(language === "hi" ? "hi-IN" : language === "kn" ? "kn-IN" : "en-IN", { hour: "numeric", minute: "2-digit" })}</time></button>)}</div>}
             </section>
           </div>
         </section>}

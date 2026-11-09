@@ -238,6 +238,12 @@ Object.assign(dictionaries.kn, {
   "Online Orders · Last 7 Days": "ಆನ್‌ಲೈನ್ ಆರ್ಡರ್‌ಗಳು · ಕಳೆದ 7 ದಿನಗಳು", "Daily orders from the latest 100 loaded online orders.": "ಇತ್ತೀಚೆಗೆ ಲೋಡ್ ಮಾಡಿದ 100 ಆನ್‌ಲೈನ್ ಆರ್ಡರ್‌ಗಳ ದೈನಂದಿನ ಸಂಖ್ಯೆ.", "Online order counts by day over the last seven days": "ಕಳೆದ ಏಳು ದಿನಗಳ ದಿನವಾರು ಆನ್‌ಲೈನ್ ಆರ್ಡರ್‌ಗಳು", "SHARE CANTEEN CODE": "ಕ್ಯಾಂಟೀನ್ ಕೋಡ್ ಹಂಚಿಕೊಳ್ಳಿ", "Canteen status": "ಕ್ಯಾಂಟೀನ್ ಸ್ಥಿತಿ", "Service at a glance": "ಸೇವೆಯ ಸಂಕ್ಷಿಪ್ತ ನೋಟ", "Accepting orders": "ಆರ್ಡರ್‌ಗಳನ್ನು ಸ್ವೀಕರಿಸಲಾಗುತ್ತಿದೆ", "Orders paused": "ಆರ್ಡರ್‌ಗಳನ್ನು ವಿರಾಮಗೊಳಿಸಲಾಗಿದೆ", "Maintenance mode": "ನಿರ್ವಹಣೆ ಮೋಡ್", "Following weekly operating hours": "ವಾರದ ಕಾರ್ಯಾಚರಣಾ ಸಮಯದಂತೆ", "Canteen marked closed": "ಕ್ಯಾಂಟೀನ್ ಮುಚ್ಚಲಾಗಿದೆ", "Open until changed": "ಬದಲಾಯಿಸುವವರೆಗೆ ತೆರೆಯಲಾಗಿದೆ", "Manage": "ನಿರ್ವಹಿಸಿ", "held": "ತಡೆಹಿಡಿದಿವೆ", "pending sync": "ಸಿಂಕ್ ಬಾಕಿಯಿದೆ", "Open POS": "POS ತೆರೆಯಿರಿ", "Share canteen code": "ಕ್ಯಾಂಟೀನ್ ಕೋಡ್ ಹಂಚಿಕೊಳ್ಳಿ", "Copy": "ನಕಲಿಸಿ", "Copied": "ನಕಲಿಸಲಾಗಿದೆ",
   "ONLINE ACTIVE ORDERS": "ಸಕ್ರಿಯ ಆನ್‌ಲೈನ್ ಆರ್ಡರ್‌ಗಳು", "OFFLINE POS BILLS": "ಆಫ್‌ಲೈನ್ POS ಬಿಲ್‌ಗಳು", "ONLINE COLLECTED REVENUE (LOADED ORDERS)": "ಆನ್‌ಲೈನ್ ಸ್ವೀಕೃತ ಆದಾಯ (ಲೋಡ್ ಮಾಡಿದ ಆರ್ಡರ್‌ಗಳು)", "OFFLINE COLLECTED REVENUE": "ಆಫ್‌ಲೈನ್ ಸ್ವೀಕೃತ ಆದಾಯ", "ONLINE": "ಆನ್‌ಲೈನ್",
 });
+Object.assign(dictionaries.hi, {
+  "OFFLINE POS BILLS - TODAY": "आज के ऑफलाइन POS बिल", "ONLINE REVENUE - TODAY": "आज का ऑनलाइन राजस्व", "OFFLINE REVENUE - TODAY": "आज का ऑफलाइन राजस्व", "ONLINE SALES": "ऑनलाइन बिक्री", "Today's Sales": "आज की बिक्री", "ONLINE - TODAY": "ऑनलाइन - आज", "Online collected sales by time today": "आज समय के अनुसार ऑनलाइन प्राप्त बिक्री", "Online sales are loading.": "ऑनलाइन बिक्री लोड हो रही है।", "Could not load online sales.": "ऑनलाइन बिक्री लोड नहीं हो सकी।",
+});
+Object.assign(dictionaries.kn, {
+  "OFFLINE POS BILLS - TODAY": "ಇಂದಿನ ಆಫ್‌ಲೈನ್ POS ಬಿಲ್‌ಗಳು", "ONLINE REVENUE - TODAY": "ಇಂದಿನ ಆನ್‌ಲೈನ್ ಆದಾಯ", "OFFLINE REVENUE - TODAY": "ಇಂದಿನ ಆಫ್‌ಲೈನ್ ಆದಾಯ", "ONLINE SALES": "ಆನ್‌ಲೈನ್ ಮಾರಾಟ", "Today's Sales": "ಇಂದಿನ ಮಾರಾಟ", "ONLINE - TODAY": "ಆನ್‌ಲೈನ್ - ಇಂದು", "Online collected sales by time today": "ಇಂದು ಸಮಯಾನುಸಾರ ಆನ್‌ಲೈನ್ ಸ್ವೀಕೃತ ಮಾರಾಟ", "Online sales are loading.": "ಆನ್‌ಲೈನ್ ಮಾರಾಟ ಲೋಡ್ ಆಗುತ್ತಿದೆ.", "Could not load online sales.": "ಆನ್‌ಲೈನ್ ಮಾರಾಟವನ್ನು ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ.",
+});
 
 const eventDashboardTranslations: Record<Exclude<DashboardLanguage, "en">, Record<string, string>> = {
   hi: {

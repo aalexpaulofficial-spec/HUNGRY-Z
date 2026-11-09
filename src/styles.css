@@ -774,26 +774,32 @@ html[data-theme="light"] .hz-canteen-nav { background: color-mix(in oklab, white
 .hz-canteen-metric:hover { transform: translateY(-2px); box-shadow: var(--hz-shadow-card); }
 .hz-metric-online { --metric-accent: var(--primary); }
 .hz-metric-offline { --metric-accent: #6b7280; }
+.hz-metric-sales { --metric-accent: #0a84ff; }
+.hz-metric-offline-sales { --metric-accent: #7447d8; }
 .hz-canteen-metric-icon { display: grid; width: 2.65rem; height: 2.65rem; flex: 0 0 auto; place-items: center; border-radius: 50%; background: color-mix(in oklab, var(--metric-accent) 11%, transparent); color: var(--metric-accent); }
 .hz-canteen-metric-icon svg { width: 1.2rem; height: 1.2rem; }
 .hz-canteen-metric > span:nth-child(2) { display: grid; min-width: 0; gap: .3rem; }
 .hz-canteen-metric small { color: var(--muted-foreground); font-size: .59rem; font-weight: 750; letter-spacing: .055em; line-height: 1.35; }
 .hz-canteen-metric strong { overflow: hidden; font-size: clamp(1.2rem, 1.8vw, 1.65rem); font-weight: 800; letter-spacing: -.04em; text-overflow: ellipsis; }
 .hz-canteen-metric-arrow { width: 1rem; height: 1rem; flex: 0 0 auto; margin-left: auto; color: var(--metric-accent); }
-.hz-canteen-overview-panels { display: grid; grid-template-columns: minmax(0, 1.12fr) minmax(300px, .88fr); gap: 1rem; }
+.hz-canteen-overview-panels { display: grid; grid-template-columns: minmax(0, .98fr) minmax(0, 1.02fr); gap: 1rem; align-items: stretch; }
 .hz-canteen-overview-panel { min-width: 0; border: 1px solid var(--border); border-radius: 1.6rem; background: var(--card); padding: 1.15rem; box-shadow: var(--hz-shadow-card); }
 .hz-canteen-panel-heading { display: flex; align-items: center; justify-content: space-between; gap: .75rem; margin-bottom: .75rem; }
 .hz-canteen-panel-heading h2 { margin: .15rem 0 0; font-size: 1.08rem; font-weight: 760; letter-spacing: -.025em; }
+.hz-canteen-chart-total { display: grid; gap: .15rem; text-align: right; }
+.hz-canteen-chart-total strong { font-size: 1.3rem; font-weight: 820; letter-spacing: -.045em; }
+.hz-canteen-chart-total span { color: var(--muted-foreground); font-size: .57rem; font-weight: 750; letter-spacing: .09em; }
 .hz-canteen-eyebrow { margin: 0; color: var(--primary); font-size: .62rem; font-weight: 800; letter-spacing: .12em; }
 .hz-canteen-text-action { display: inline-flex; min-height: 2.5rem; flex: 0 0 auto; align-items: center; justify-content: center; gap: .25rem; border-radius: .8rem; padding: .45rem .65rem; color: var(--primary); font-size: .72rem; font-weight: 700; }
 .hz-canteen-text-action:hover { background: color-mix(in oklab, var(--primary) 7%, transparent); }
 .hz-canteen-text-action svg { width: .9rem; height: .9rem; }
 .hz-canteen-recent-orders { display: grid; }
-.hz-canteen-recent-order { display: grid; grid-template-columns: minmax(5.5rem, .8fr) minmax(0, 1.7fr) auto auto; align-items: center; gap: .75rem; min-height: 3.4rem; border-top: 1px solid var(--border); padding: .55rem .25rem; color: var(--foreground); text-align: left; }
+.hz-canteen-recent-order { display: grid; grid-template-columns: minmax(5.4rem, .8fr) minmax(0, 1.65fr) auto auto auto; align-items: center; gap: .55rem; min-height: 3.4rem; border-top: 1px solid var(--border); padding: .55rem .25rem; color: var(--foreground); text-align: left; }
 .hz-canteen-recent-order:hover { background: color-mix(in oklab, var(--primary) 3%, transparent); }
 .hz-canteen-recent-id { overflow: hidden; font-family: ui-monospace, monospace; font-size: .7rem; font-weight: 750; text-overflow: ellipsis; }
 .hz-canteen-recent-items { overflow: hidden; color: var(--muted-foreground); font-size: .7rem; text-overflow: ellipsis; white-space: nowrap; }
 .hz-canteen-recent-order > strong { font-size: .78rem; white-space: nowrap; }
+.hz-canteen-recent-order time { color: var(--muted-foreground); font-size: .63rem; white-space: nowrap; }
 .hz-canteen-order-status { border-radius: 999px; background: color-mix(in oklab, var(--primary) 9%, transparent); padding: .3rem .5rem; color: var(--primary); font-size: .61rem; font-weight: 700; text-transform: capitalize; white-space: nowrap; }
 .hz-canteen-order-status.is-collected { background: #16a34a18; color: #15803d; }
 .hz-canteen-order-status.is-cancelled { background: #ef444418; color: #dc2626; }
@@ -801,13 +807,13 @@ html[data-theme="light"] .hz-canteen-nav { background: color-mix(in oklab, white
 .hz-canteen-empty svg { width: 1.4rem; height: 1.4rem; color: var(--primary); }
 .hz-canteen-empty p { margin: 0; color: var(--foreground); font-size: .88rem; font-weight: 700; }
 .hz-canteen-empty span { font-size: .72rem; }
-.hz-canteen-chart-note { margin: -.2rem 0 .75rem; color: var(--muted-foreground); font-size: .67rem; }
-.hz-canteen-sales-chart { display: grid; height: 10.75rem; grid-template-columns: repeat(7, minmax(0, 1fr)); align-items: end; gap: .55rem; border-bottom: 1px solid var(--border); padding: .35rem .2rem 0; }
-.hz-canteen-sales-column { display: grid; height: 100%; grid-template-rows: 1rem minmax(0, 1fr) 1.25rem; justify-items: center; gap: .2rem; }
-.hz-canteen-sales-column > span { color: var(--muted-foreground); font-size: .58rem; font-variant-numeric: tabular-nums; }
+.hz-canteen-chart-state { display: grid; min-height: 13rem; place-items: center; color: var(--muted-foreground); font-size: .8rem; }
+.hz-canteen-sales-chart { display: grid; height: 13.5rem; grid-template-columns: 3.15rem repeat(8, minmax(0, 1fr)); align-items: stretch; gap: .4rem; border-bottom: 1px solid var(--border); padding: .35rem .2rem 0; }
+.hz-canteen-chart-axis { display: flex; flex-direction: column; justify-content: space-between; padding: 0 0 1.25rem; color: var(--muted-foreground); font-size: .57rem; font-variant-numeric: tabular-nums; text-align: right; }
+.hz-canteen-sales-column { display: grid; height: 100%; grid-template-rows: minmax(0, 1fr) 1.25rem; justify-items: center; gap: .3rem; }
 .hz-canteen-sales-track { display: flex; width: min(100%, 2rem); height: 100%; align-items: end; overflow: hidden; border-radius: .45rem .45rem 0 0; background: color-mix(in oklab, var(--primary) 5%, transparent); }
 .hz-canteen-sales-track i { display: block; width: 100%; min-height: 3px; border-radius: .45rem .45rem 0 0; background: linear-gradient(180deg, color-mix(in oklab, var(--primary) 76%, white), var(--primary)); transition: height .25s ease; }
-.hz-canteen-sales-column > small { color: var(--muted-foreground); font-size: .57rem; text-transform: uppercase; }
+.hz-canteen-sales-column > small { color: var(--muted-foreground); font-size: .55rem; text-transform: uppercase; white-space: nowrap; }
 .hz-canteen-status-row { display: flex; align-items: center; gap: .7rem; border-top: 1px solid var(--border); padding: .8rem .1rem; }
 .hz-canteen-status-dot { width: .58rem; height: .58rem; flex: 0 0 auto; border-radius: 50%; background: #16a34a; box-shadow: 0 0 0 4px #16a34a1a; }
 .hz-canteen-status-dot.is-closed { background: #ef4444; box-shadow: 0 0 0 4px #ef44441a; }
@@ -857,10 +863,14 @@ html[data-theme="light"] .hz-canteen-sidebar { background: #fff; }
   .hz-canteen-metric-arrow { display: none; }
   .hz-canteen-overview-panels { grid-template-columns: minmax(0, 1fr); gap: .7rem; }
   .hz-canteen-overview-panel { border-radius: 1.2rem; padding: .9rem; }
-  .hz-canteen-recent-order { grid-template-columns: minmax(4.5rem, .75fr) minmax(0, 1fr) auto; gap: .45rem; }
+  .hz-canteen-sales-chart { grid-template-columns: 2.4rem repeat(8, minmax(0, 1fr)); gap: .18rem; }
+  .hz-canteen-chart-axis { font-size: .5rem; }
+  .hz-canteen-sales-column > small { font-size: .46rem; }
+  .hz-canteen-recent-order { grid-template-columns: minmax(4.6rem, .8fr) minmax(0, 1fr) auto; gap: .4rem; }
   .hz-canteen-recent-items { grid-column: 1 / 3; grid-row: 2; }
   .hz-canteen-recent-order > strong { grid-column: 3; grid-row: 1; }
   .hz-canteen-order-status { grid-column: 3; grid-row: 2; justify-self: end; }
+  .hz-canteen-recent-order time { grid-column: 1 / 2; grid-row: 3; }
 }
 
 /* HUNGRY SCANNER + student plans — Apple-style surfaces; adapt to White and HUNGRY themes via tokens. */
