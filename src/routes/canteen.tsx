@@ -291,6 +291,9 @@ function OfflinePOSTab({
 }) {
   // Online stock/availability controls online ordering only. Counter staff can bill any saved menu item.
   const [searchMode, setSearchMode] = useState<"physical" | "onscreen">("physical");
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+  const searchAreaRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const items = menu;
   const categories = ["All", ...Array.from(new Set(items.map((item) => item.category)))];
   const filtered = items.filter((item) =>
@@ -299,6 +302,25 @@ function OfflinePOSTab({
   );
   const itemCount = current.reduce((sum, line) => sum + line.qty, 0);
   const subtotal = current.reduce((sum, line) => sum + line.price * line.qty, 0);
+
+  useEffect(() => {
+    if (searchMode !== "onscreen" || !isKeyboardOpen) return;
+    const closeIfOutside = (event: PointerEvent | FocusEvent) => {
+      if (!searchAreaRef.current?.contains(event.target as Node)) setIsKeyboardOpen(false);
+    };
+    const closeIfSearchScrolledAway = () => {
+      const bounds = searchInputRef.current?.getBoundingClientRect();
+      if (!bounds || bounds.bottom <= 0 || bounds.top >= window.innerHeight) setIsKeyboardOpen(false);
+    };
+    document.addEventListener("pointerdown", closeIfOutside);
+    document.addEventListener("focusin", closeIfOutside);
+    window.addEventListener("scroll", closeIfSearchScrolledAway, true);
+    return () => {
+      document.removeEventListener("pointerdown", closeIfOutside);
+      document.removeEventListener("focusin", closeIfOutside);
+      window.removeEventListener("scroll", closeIfSearchScrolledAway, true);
+    };
+  }, [isKeyboardOpen, searchMode]);
 
   return (
     <section className="hz-pos mt-5" aria-labelledby="offline-pos-title">
@@ -309,16 +331,17 @@ function OfflinePOSTab({
 
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.55fr)_minmax(19rem,.9fr)]">
         <div className="min-w-0 rounded-3xl border border-border bg-card p-4 shadow-[var(--shadow-device)] sm:p-5">
-          <div className="grid grid-cols-2 gap-2" role="group" aria-label="POS keyboard input mode">
-            <button type="button" aria-pressed={searchMode === "physical"} onClick={() => setSearchMode("physical")} className={cn("min-h-12 rounded-xl border px-2 text-[10px] font-black tracking-wide transition sm:px-3 sm:text-xs", searchMode === "physical" ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary/40")}>PHYSICAL KEYBOARD</button>
+          <div ref={searchAreaRef}>
+            <div className="grid grid-cols-2 gap-2" role="group" aria-label="POS keyboard input mode">
+            <button type="button" aria-pressed={searchMode === "physical"} onClick={() => { setSearchMode("physical"); setIsKeyboardOpen(false); }} className={cn("min-h-12 rounded-xl border px-2 text-[10px] font-black tracking-wide transition sm:px-3 sm:text-xs", searchMode === "physical" ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary/40")}>PHYSICAL KEYBOARD</button>
             <button type="button" aria-pressed={searchMode === "onscreen"} onClick={() => setSearchMode("onscreen")} className={cn("min-h-12 rounded-xl border px-2 text-[10px] font-black tracking-wide transition sm:px-3 sm:text-xs", searchMode === "onscreen" ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary/40")}>ON-SCREEN KEYBOARD</button>
           </div>
           <label className="relative mt-3 block">
             <Search aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <input aria-label="Search POS menu" type="search" inputMode={searchMode === "onscreen" ? "none" : "search"} readOnly={searchMode === "onscreen"} value={search} onChange={(event) => onSearch(event.currentTarget.value)} placeholder="Search dishes by name or category" className="hz-pos-search w-full rounded-2xl border border-input bg-ink-soft py-3 pl-11 pr-12 text-sm text-foreground outline-none focus:border-primary" />
+            <input ref={searchInputRef} aria-label="Search POS menu" type="search" inputMode={searchMode === "onscreen" ? "none" : "search"} readOnly={searchMode === "onscreen"} onFocus={() => { if (searchMode === "onscreen") setIsKeyboardOpen(true); }} value={search} onChange={(event) => onSearch(event.currentTarget.value)} placeholder="Search dishes by name or category" className="hz-pos-search w-full rounded-2xl border border-input bg-ink-soft py-3 pl-11 pr-12 text-sm text-foreground outline-none focus:border-primary" />
             {search && <button type="button" aria-label="Clear search" onClick={() => onSearch("")} className="absolute right-2 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-full text-muted-foreground hover:bg-muted"><X className="h-4 w-4" /></button>}
           </label>
-          {searchMode === "onscreen" && <div role="group" className="mt-3 rounded-2xl border border-border bg-ink-soft p-2.5 sm:p-3" aria-label="On-screen search keyboard">
+          {searchMode === "onscreen" && isKeyboardOpen && <div role="group" className="mt-3 rounded-2xl border border-border bg-ink-soft p-2.5 sm:p-3" aria-label="On-screen search keyboard">
             <div className="grid gap-1.5 sm:gap-2">
               {["1234567890", "QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"].map((row, rowIndex) => <div key={rowIndex} className="grid grid-cols-5 gap-1.5 sm:grid-cols-10 sm:gap-2">
                 {[...row].map((key) => <button key={key} type="button" onClick={() => onSearch(`${search}${key}`)} className="min-h-12 touch-manipulation select-none rounded-xl border border-border bg-card text-sm font-bold text-foreground shadow-sm transition active:scale-95 active:border-primary active:bg-primary/10 sm:min-h-14 sm:text-base">{key}</button>)}
@@ -330,11 +353,12 @@ function OfflinePOSTab({
               </div>
             </div>
           </div>}
+          </div>
           <div className="hz-pos-categories mt-4 flex gap-2 overflow-x-auto pb-1" aria-label="Food categories">
-            {categories.map((name) => <button key={name} type="button" onClick={() => onCategory(name)} aria-pressed={category === name} className={cn("min-h-10 shrink-0 rounded-full border px-4 text-xs font-bold transition", category === name ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background text-muted-foreground hover:border-primary/50 hover:text-foreground")}>{name}</button>)}
+            {categories.map((name) => <button key={name} type="button" onClick={() => { setIsKeyboardOpen(false); onCategory(name); }} aria-pressed={category === name} className={cn("min-h-10 shrink-0 rounded-full border px-4 text-xs font-bold transition", category === name ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background text-muted-foreground hover:border-primary/50 hover:text-foreground")}>{name}</button>)}
           </div>
           {filtered.length ? <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-            {filtered.map((item) => <button key={item.id} type="button" onClick={() => onAdd(item)} aria-label={`Add ${item.name}, ₹${item.price}`} className="hz-pos-item flex min-h-32 touch-manipulation flex-col justify-between rounded-2xl border border-border bg-background p-4 text-left transition hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-lg active:scale-[.98] sm:p-5">
+            {filtered.map((item) => <button key={item.id} type="button" onClick={() => { setIsKeyboardOpen(false); onAdd(item); }} aria-label={`Add ${item.name}, ₹${item.price}`} className="hz-pos-item flex min-h-32 touch-manipulation flex-col justify-between rounded-2xl border border-border bg-background p-4 text-left transition hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-lg active:scale-[.98] sm:p-5">
               <span data-no-translate className="line-clamp-2 block text-sm font-bold leading-snug">{item.name}</span>
               <span className="mt-3 block text-base font-black text-primary">₹{item.price}</span>
             </button>)}
@@ -343,7 +367,7 @@ function OfflinePOSTab({
 
         <aside className="hz-pos-bill rounded-3xl border border-border bg-card p-4 shadow-[var(--shadow-device)] sm:p-5" aria-label="Current counter bill">
           <div className="flex items-start justify-between gap-3"><div><p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">Current bill</p><h3 className="display mt-1 text-xl">Selected items</h3></div><Receipt className="mt-1 h-5 w-5 text-primary" /></div>
-          <div className="mt-4 max-h-[22rem] space-y-2 overflow-y-auto pr-1">
+          <div className="mt-4 space-y-2 pr-1">
             {current.map((line) => <div key={line.id} className="flex items-center gap-3 rounded-2xl border border-border bg-background p-3">
               <div className="min-w-0 flex-1"><p data-no-translate className="truncate text-xs font-bold">{line.name}</p><p className="mt-1 text-[11px] text-muted-foreground">₹{line.price} × {line.qty} <span className="font-bold text-foreground">= ₹{line.price * line.qty}</span></p></div>
               <div className="flex shrink-0 items-center gap-1"><button type="button" aria-label={`Decrease ${line.name}`} onClick={() => onQuantity(line.id, -1)} className="grid h-9 w-9 place-items-center rounded-xl border border-border hover:border-primary/50"><Minus className="h-3.5 w-3.5" /></button><span className="w-6 text-center text-xs font-black tabular-nums">{line.qty}</span><button type="button" aria-label={`Increase ${line.name}`} onClick={() => onQuantity(line.id, 1)} className="grid h-9 w-9 place-items-center rounded-xl border border-border hover:border-primary/50"><Plus className="h-3.5 w-3.5" /></button></div>
@@ -360,17 +384,27 @@ function OfflinePOSTab({
           <button type="button" onClick={onPrint} disabled={!current.length || printing} className="mt-2 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-black text-primary-foreground shadow-[var(--shadow-cinema)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-45"><Printer className="h-4 w-4" /> {printing ? "Preparing bill…" : "Print Bill"}</button>
           <p className="mt-3 text-[10px] leading-relaxed text-muted-foreground">OFFLINE POS bills are saved on this device after print confirmation. Payment status is a manual counter record; it does not alter online orders or payment records.</p>
           {pendingSyncCount > 0 && <p role="status" className="mt-3 rounded-xl border border-amber-500/25 bg-amber-500/10 p-3 text-xs text-foreground">{pendingSyncCount} OFFLINE POS transaction{pendingSyncCount === 1 ? "" : "s"} waiting to sync to Supabase.</p>}
-          <div className="mt-5 border-t border-border pt-4">
-            <div className="mb-3 flex items-center justify-between"><h4 className="text-sm font-bold">Held orders</h4><span className="rounded-full bg-muted px-2 py-1 text-[10px] font-bold">{held.length}</span></div>
-            {held.length ? <div className="max-h-80 space-y-3 overflow-y-auto">{held.map((order) => {
+          <section className="mt-6 border-t border-border pt-5" aria-labelledby="held-orders-title">
+            <div className="mb-4 flex items-center justify-between gap-3"><div><h4 id="held-orders-title" className="text-sm font-bold">Held orders</h4><p className="mt-1 text-xs text-muted-foreground">Saved bills stay on this device until resumed.</p></div><span className="grid h-9 min-w-9 place-items-center rounded-full bg-muted px-2 text-xs font-bold tabular-nums">{held.length}</span></div>
+            {held.length ? <div className="space-y-3">{held.map((order) => {
               const heldTotal = order.lines.reduce((sum, line) => sum + line.qty * line.price, 0);
-              return <article key={order.id} className="rounded-2xl border border-primary/25 bg-primary/5 p-3">
-                <div className="flex items-start justify-between gap-2"><div><p className="font-mono text-xs font-bold">Order ID · {order.id}</p><p className="mt-1 text-[10px] text-muted-foreground">{new Date(order.createdAt).toLocaleString()}</p></div><button type="button" onClick={() => onResume(order)} disabled={!!current.length} className="inline-flex min-h-9 shrink-0 items-center gap-1 rounded-lg bg-primary px-3 text-[10px] font-bold text-primary-foreground disabled:opacity-40"><Play className="h-3 w-3" /> RESUME</button></div>
-                <ul className="my-3 space-y-1 border-y border-border/70 py-2">{order.lines.map((line) => <li key={line.id} className="flex justify-between gap-3 text-xs"><span className="truncate">{line.qty} × {line.name}</span><span className="shrink-0 tabular-nums">₹{line.qty * line.price}</span></li>)}</ul>
-                <p className="flex justify-between text-sm font-bold"><span>Total</span><span>₹{heldTotal}</span></p><p className="mt-1 text-[10px] text-muted-foreground">{(order.paymentMethod ?? "cash").toUpperCase()} · {(order.paymentStatus ?? "unpaid").toUpperCase()}</p>
+              return <article key={order.id} className="rounded-2xl border border-border bg-background p-4 sm:p-5">
+                <header className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0"><p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Order ID</p><p className="mt-1 break-all font-mono text-sm font-bold">{order.id}</p><time dateTime={order.createdAt} className="mt-1 block text-xs text-muted-foreground">{new Date(order.createdAt).toLocaleString()}</time></div>
+                  <button type="button" onClick={() => onResume(order)} disabled={!!current.length} className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-xs font-black tracking-wide text-primary-foreground disabled:cursor-not-allowed disabled:opacity-40"><Play className="h-4 w-4" /> RESUME</button>
+                </header>
+                <ul className="my-4 divide-y divide-border border-y border-border">
+                  {order.lines.map((line) => <li key={line.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 py-2.5 text-sm"><span className="min-w-0 break-words"><strong className="mr-2 tabular-nums">{line.qty} ×</strong>{line.name}</span><span className="shrink-0 tabular-nums text-muted-foreground">₹{line.qty * line.price}</span></li>)}
+                </ul>
+                <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  <div><dt className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Total</dt><dd className="mt-1 text-base font-black tabular-nums text-foreground">₹{heldTotal}</dd></div>
+                  <div><dt className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Payment method</dt><dd className="mt-1 text-xs font-bold">{(order.paymentMethod ?? "cash").toUpperCase()}</dd></div>
+                  <div><dt className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Payment status</dt><dd className="mt-1 text-xs font-bold">{(order.paymentStatus ?? "unpaid").toUpperCase()}</dd></div>
+                  <div><dt className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Items</dt><dd className="mt-1 text-xs font-bold tabular-nums">{order.lines.reduce((sum, line) => sum + line.qty, 0)}</dd></div>
+                </dl>
               </article>;
             })}</div> : <p className="text-[11px] text-muted-foreground">No held bills on this device.</p>}
-          </div>
+          </section>
         </aside>
       </div>
     </section>

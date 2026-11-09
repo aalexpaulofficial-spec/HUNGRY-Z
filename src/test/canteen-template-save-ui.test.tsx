@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ComponentProps } from "react";
 
@@ -65,6 +65,7 @@ import { Dashboard } from "@/routes/canteen";
 
 afterEach(cleanup);
 beforeEach(() => {
+  localStorage.clear();
   mocks.storedTemplate = null;
   mocks.savedPayload = null;
   mocks.uploadedPath = "";
@@ -119,7 +120,8 @@ describe("canteen template save flow", () => {
     expect(container.querySelector(".cursor-grab img")).toHaveStyle({ transform: "translate(40%, -40%) scale(1.8)" });
   });
 
-  it("switches between physical and touch search keyboards and updates the POS search instantly", async () => {
+  it("opens the touch keyboard on search focus and closes it outside search, on scroll, mode change, or item selection", async () => {
+    localStorage.setItem("hungry:offline-menu:canteen-1", JSON.stringify([{ id: "item-1", name: "Lime Soda", price: 30, image: null, category: "Drinks", description: "Fresh lime", stock: 0, available: false }]));
     render(<Dashboard canteen={{ id: "canteen-1", code: "ABC1234", name: "Main Canteen", university_name: "Campus", visibility: "public", is_active: true, availability_mode: "schedule", timezone: "Asia/Kolkata", operating_hours: { mon: { open: "00:00", close: "24:00" }, tue: { open: "00:00", close: "24:00" }, wed: { open: "00:00", close: "24:00" }, thu: { open: "00:00", close: "24:00" }, fri: { open: "00:00", close: "24:00" }, sat: { open: "00:00", close: "24:00" }, sun: { open: "00:00", close: "24:00" } } }} language="en" onLanguageChange={() => undefined} onSignOut={() => undefined} />);
     fireEvent.click(screen.getByRole("button", { name: /OFFLINE POS/ }));
 
@@ -128,6 +130,8 @@ describe("canteen template save flow", () => {
     expect(screen.queryByRole("group", { name: "On-screen search keyboard" })).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "ON-SCREEN KEYBOARD" }));
+    expect(screen.queryByRole("group", { name: "On-screen search keyboard" })).not.toBeInTheDocument();
+    fireEvent.focus(search);
     expect(search).toHaveAttribute("readonly");
     expect(screen.getByRole("group", { name: "On-screen search keyboard" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "A" }));
@@ -137,9 +141,56 @@ describe("canteen template save flow", () => {
     expect(search).toHaveValue("A");
     fireEvent.click(screen.getByRole("button", { name: "CLEAR" }));
     expect(search).toHaveValue("");
+    fireEvent.click(screen.getByRole("button", { name: "A" }));
 
+    fireEvent.pointerDown(screen.getByRole("heading", { name: "Offline POS" }));
+    expect(screen.queryByRole("group", { name: "On-screen search keyboard" })).not.toBeInTheDocument();
+    expect(search).toHaveValue("A");
+    fireEvent.focus(search);
+    expect(screen.getByRole("group", { name: "On-screen search keyboard" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "CLEAR" }));
+    expect(search).toHaveValue("");
+
+    const searchBounds = { top: -60, bottom: -20, left: 0, right: 300, width: 300, height: 40, x: 0, y: -60, toJSON: () => ({}) };
+    vi.spyOn(search, "getBoundingClientRect").mockReturnValue(searchBounds as DOMRect);
+    act(() => { window.dispatchEvent(new Event("scroll")); });
+    expect(screen.queryByRole("group", { name: "On-screen search keyboard" })).not.toBeInTheDocument();
+    vi.restoreAllMocks();
+
+    fireEvent.focus(search);
+    fireEvent.click(screen.getByRole("button", { name: "Add Lime Soda, ₹30" }));
+    expect(screen.queryByRole("group", { name: "On-screen search keyboard" })).not.toBeInTheDocument();
+    expect(screen.getByRole("complementary", { name: "Current counter bill" })).toHaveTextContent("Lime Soda");
+
+    fireEvent.focus(search);
+    expect(screen.getByRole("group", { name: "On-screen search keyboard" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "PHYSICAL KEYBOARD" }));
     expect(search).not.toHaveAttribute("readonly");
     expect(screen.queryByRole("group", { name: "On-screen search keyboard" })).not.toBeInTheDocument();
+  });
+
+  it("shows complete held-order cards without a nested scroller and resumes the saved bill", () => {
+    localStorage.setItem("hungry:offline-pos:canteen-1", JSON.stringify({
+      current: [],
+      held: [{ id: "H-12345678", createdAt: "2026-11-09T10:00:00.000Z", paymentMethod: "upi", paymentStatus: "paid", lines: [{ id: "item-1", name: "Lime Soda", price: 30, image: null, category: "Drinks", stock: 0, qty: 2 }] }],
+      completed: [], paymentMethod: "cash", paymentStatus: "unpaid",
+    }));
+    render(<Dashboard canteen={{ id: "canteen-1", code: "ABC1234", name: "Main Canteen", university_name: "Campus", visibility: "public", is_active: true, availability_mode: "schedule", timezone: "Asia/Kolkata", operating_hours: { mon: { open: "00:00", close: "24:00" }, tue: { open: "00:00", close: "24:00" }, wed: { open: "00:00", close: "24:00" }, thu: { open: "00:00", close: "24:00" }, fri: { open: "00:00", close: "24:00" }, sat: { open: "00:00", close: "24:00" }, sun: { open: "00:00", close: "24:00" } } }} language="en" onLanguageChange={() => undefined} onSignOut={() => undefined} />);
+    fireEvent.click(screen.getByRole("button", { name: /OFFLINE POS/ }));
+
+    const heldSection = screen.getByRole("region", { name: "Held orders" });
+    expect(heldSection).toHaveTextContent("H-12345678");
+    expect(heldSection).toHaveTextContent("Lime Soda");
+    expect(heldSection).toHaveTextContent("2 ×");
+    expect(heldSection).toHaveTextContent(new Date("2026-11-09T10:00:00.000Z").toLocaleString());
+    expect(heldSection).toHaveTextContent("₹60");
+    expect(heldSection).toHaveTextContent("UPI");
+    expect(heldSection).toHaveTextContent("PAID");
+    expect(heldSection.querySelector(".overflow-y-auto")).toBeNull();
+    fireEvent.click(within(heldSection).getByRole("button", { name: "RESUME" }));
+    const currentBill = screen.getByRole("complementary", { name: "Current counter bill" });
+    expect(currentBill).toHaveTextContent("Lime Soda");
+    expect(currentBill).toHaveTextContent("₹30 × 2 = ₹60");
+    expect(screen.getByText("No held bills on this device.")).toBeInTheDocument();
   });
 });
