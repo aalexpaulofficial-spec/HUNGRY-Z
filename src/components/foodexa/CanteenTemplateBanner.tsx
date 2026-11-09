@@ -39,7 +39,7 @@ export function CanteenTemplateBanner({
       className={`relative overflow-hidden rounded-[2rem] border border-primary/30 ${layout === "dashboard" ? "hz-template-banner-dashboard" : ""} ${preview ? "hz-template-banner-preview" : ""} ${onCropChange ? "cursor-grab touch-none active:cursor-grabbing" : ""}`}
       onPointerDown={(event) => {
         if (!onCropChange || !preview) return;
-        const bounds = event.currentTarget.getBoundingClientRect();
+        const bounds = event.currentTarget.querySelector("img")?.getBoundingClientRect() ?? event.currentTarget.getBoundingClientRect();
         drag.current = { pointerId: event.pointerId, startX: event.clientX, startY: event.clientY, cropX, cropY, width: bounds.width, height: bounds.height };
         try {
           event.currentTarget.setPointerCapture(event.pointerId);
@@ -63,7 +63,7 @@ export function CanteenTemplateBanner({
       onPointerCancel={() => { drag.current = null; }}
       onLostPointerCapture={() => { drag.current = null; }}
     >
-      <img src={imageUrl || foodImage("food-indian")} alt="" className={`block h-auto w-full object-contain ${layout === "dashboard" ? "hz-template-dashboard-image" : ""}`} style={layout === "dashboard" ? undefined : bannerCropStyle({ x: cropX, y: cropY, zoom: cropZoom })} />
+      <img src={imageUrl || foodImage("food-indian")} alt="" className={`block h-auto w-full object-contain ${layout === "dashboard" ? "hz-template-dashboard-image" : ""}`} style={bannerCropStyle({ x: cropX, y: cropY, zoom: cropZoom })} />
       <div className={layout === "dashboard" ? "hz-template-dashboard-copy" : "absolute bottom-5 left-5 right-5"}>
         <p data-no-translate className="text-xs font-semibold uppercase tracking-widest text-primary-bright">{canteenName} · {universityName}</p>
         <h2 data-no-translate={heading?.trim() ? "" : undefined} className="display mt-1 text-3xl">{heading?.trim() || "Browse campus food."}</h2>

@@ -42,6 +42,7 @@ export function CanteenTemplatePreview({ imageUrl, heading, description, canteen
           cropX={safeCrop.x}
           cropY={safeCrop.y}
           cropZoom={safeCrop.zoom}
+          layout="dashboard"
           onCropChange={onCropChange}
           preview
         />
