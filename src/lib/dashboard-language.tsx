@@ -491,6 +491,8 @@ Object.assign(eventDashboardTranslations.kn, {
 
 export function translateDashboardText(input: string, language: DashboardLanguage): string {
   if (language === "en") return input;
+  if (input === "Space") return language === "hi" ? "\u0938\u094d\u092a\u0947\u0938" : "\u0938\u094d\u092a\u0947\u0938\u094d";
+  if (input === "Shift case") return language === "hi" ? "\u0915\u0947\u0938 \u092c\u0926\u0932\u0947\u0902" : "\u0915\u0947\u0938 \u092c\u0926\u0932\u093f";
   const matchWhitespace = input.match(/^(\s*)([\s\S]*?)(\s*)$/)!;
   const [, leading, core, trailing] = matchWhitespace;
   if (leading || trailing) return `${leading}${translateDashboardText(core!, language)}${trailing}`;

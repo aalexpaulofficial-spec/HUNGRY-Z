@@ -366,6 +366,23 @@ html[data-theme="light"] .hungry-install-page svg path[stroke="rgba(255,255,255,
 .hz-canteen-nav > button { flex: 0 0 auto; min-height: 2.65rem; }
 .hz-pos { min-width: 0; }
 .hz-pos-search { min-height: 2.9rem; }
+.hz-pos-search-wrap { margin: 0 .4rem; }
+.hz-pos-search { min-height: 3.25rem; border: 2px solid var(--primary); border-radius: 999px; background: var(--card); box-shadow: 0 4px 12px color-mix(in oklab, var(--primary) 10%, transparent); }
+.hz-pos-search-wrap .hz-pos-search::-webkit-search-cancel-button { display: none; }
+.hz-pos-clear { position: absolute; top: 50%; right: .45rem; }
+.hz-pos-keyboard { border-color: color-mix(in oklab, var(--border) 75%, transparent); background: color-mix(in oklab, var(--muted) 55%, var(--card)); box-shadow: 0 10px 24px rgb(35 24 18 / 7%); }
+.hz-pos-keyboard-rows { display: grid; gap: .5rem; }
+.hz-pos-key-row { display: flex; justify-content: center; gap: .45rem; }
+.hz-pos-key { display: grid; min-width: 0; min-height: 2.75rem; flex: 1 1 0; touch-action: manipulation; user-select: none; place-items: center; border: 1px solid var(--border); border-radius: .85rem; background: var(--card); color: var(--foreground); font-size: .95rem; font-weight: 750; box-shadow: 0 2px 4px rgb(35 24 18 / 7%); transition: transform .12s, border-color .12s, background .12s; }
+.hz-pos-key:hover { border-color: color-mix(in oklab, var(--primary) 35%, var(--border)); }
+.hz-pos-key:active { transform: scale(.96); border-color: var(--primary); background: color-mix(in oklab, var(--primary) 9%, var(--card)); }
+.hz-pos-key-action { flex-grow: 1.35; background: color-mix(in oklab, var(--muted) 55%, var(--card)); }
+.hz-pos-key-row-home { padding-inline: 4%; }
+.hz-pos-key-row-bottom .hz-pos-key:first-child { flex: 1 1 1.35; }
+.hz-pos-key-row-bottom .hz-pos-key-space { flex: 1 1 4.4; font-size: .9rem; }
+.hz-pos-key-cancel { display: flex; flex: 1 1 2.15; gap: .5rem; border-color: var(--primary); background: var(--primary); color: var(--primary-foreground); }
+.hz-pos-key-cancel:hover, .hz-pos-key-cancel:active { border-color: color-mix(in oklab, var(--primary) 82%, black); background: color-mix(in oklab, var(--primary) 88%, black); color: var(--primary-foreground); }
+.hz-pos-key-cancel svg { width: 1.1rem; height: 1.1rem; }
 .hz-pos-categories { scrollbar-width: thin; }
 .hz-pos-item { min-width: 0; }
 .hz-pos-bill { min-width: 0; }
@@ -397,6 +414,12 @@ html[data-theme="light"] .hz-canteen-nav { background: color-mix(in oklab, white
   .hz-canteen-nav { margin-right: -1rem; border-radius: 1.2rem 0 0 1.2rem; }
   .hz-pos-bill { padding: 1rem; }
   .hz-pos-item { min-height: 8.5rem; }
+  .hz-pos-key-row { flex-wrap: wrap; }
+  .hz-pos-key { min-height: 2.65rem; flex: 1 0 calc(20% - .45rem); }
+  .hz-pos-key-row-bottom { flex-wrap: nowrap; }
+  .hz-pos-key-row-bottom .hz-pos-key:first-child { flex: 1 1 1.25; }
+  .hz-pos-key-row-bottom .hz-pos-key-space { flex: 1 1 2.5; }
+  .hz-pos-key-row-bottom .hz-pos-key-cancel { flex: 1 1 1.8; }
 }
 @media (min-width: 1024px) {
   .hz-pos-bill { position: sticky; top: 1.25rem; }

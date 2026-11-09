@@ -120,37 +120,40 @@ describe("canteen template save flow", () => {
     expect(container.querySelector(".cursor-grab img")).toHaveStyle({ transform: "translate(40%, -40%) scale(1.8)" });
   });
 
-  it("opens the touch keyboard on search focus and closes it outside search, on scroll, mode change, or item selection", async () => {
+  it("uses one editable search field for physical and on-screen input and closes the keypad on cancel", async () => {
     localStorage.setItem("hungry:offline-menu:canteen-1", JSON.stringify([{ id: "item-1", name: "Lime Soda", price: 30, image: null, category: "Drinks", description: "Fresh lime", stock: 0, available: false }]));
     render(<Dashboard canteen={{ id: "canteen-1", code: "ABC1234", name: "Main Canteen", university_name: "Campus", visibility: "public", is_active: true, availability_mode: "schedule", timezone: "Asia/Kolkata", operating_hours: { mon: { open: "00:00", close: "24:00" }, tue: { open: "00:00", close: "24:00" }, wed: { open: "00:00", close: "24:00" }, thu: { open: "00:00", close: "24:00" }, fri: { open: "00:00", close: "24:00" }, sat: { open: "00:00", close: "24:00" }, sun: { open: "00:00", close: "24:00" } } }} language="en" onLanguageChange={() => undefined} onSignOut={() => undefined} />);
     fireEvent.click(screen.getByRole("button", { name: /OFFLINE POS/ }));
 
     const search = screen.getByRole("searchbox", { name: "Search POS menu" });
     expect(search).not.toHaveAttribute("readonly");
-    expect(screen.queryByRole("group", { name: "On-screen search keyboard" })).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: "ON-SCREEN KEYBOARD" }));
-    expect(screen.queryByRole("group", { name: "On-screen search keyboard" })).not.toBeInTheDocument();
-    fireEvent.focus(search);
-    expect(search).toHaveAttribute("readonly");
     expect(screen.getByRole("group", { name: "On-screen search keyboard" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "A" }));
     fireEvent.click(screen.getByRole("button", { name: "2" }));
     expect(search).toHaveValue("A2");
     fireEvent.click(screen.getByRole("button", { name: "Backspace" }));
     expect(search).toHaveValue("A");
-    fireEvent.click(screen.getByRole("button", { name: "SPACE" }));
+    fireEvent.click(screen.getByRole("button", { name: "Space" }));
     expect(search).toHaveValue("A ");
-    fireEvent.click(screen.getByRole("button", { name: "CLEAR" }));
+    fireEvent.click(screen.getByRole("button", { name: "123" }));
+    fireEvent.click(screen.getByRole("button", { name: "!" }));
+    expect(search).toHaveValue("A !");
+    fireEvent.click(screen.getByRole("button", { name: "ABC" }));
+    fireEvent.click(screen.getByRole("button", { name: "Clear search" }));
     expect(search).toHaveValue("");
     fireEvent.click(screen.getByRole("button", { name: "A" }));
+
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(screen.queryByRole("group", { name: "On-screen search keyboard" })).not.toBeInTheDocument();
+    fireEvent.focus(search);
+    expect(screen.getByRole("group", { name: "On-screen search keyboard" })).toBeInTheDocument();
 
     fireEvent.pointerDown(screen.getByRole("heading", { name: "Offline POS" }));
     expect(screen.queryByRole("group", { name: "On-screen search keyboard" })).not.toBeInTheDocument();
     expect(search).toHaveValue("A");
     fireEvent.focus(search);
     expect(screen.getByRole("group", { name: "On-screen search keyboard" })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "CLEAR" }));
+    fireEvent.click(screen.getByRole("button", { name: "Clear search" }));
     expect(search).toHaveValue("");
 
     const searchBounds = { top: -60, bottom: -20, left: 0, right: 300, width: 300, height: 40, x: 0, y: -60, toJSON: () => ({}) };
@@ -162,13 +165,13 @@ describe("canteen template save flow", () => {
     fireEvent.focus(search);
     fireEvent.click(screen.getByRole("button", { name: "Add Lime Soda, ₹30" }));
     expect(screen.queryByRole("group", { name: "On-screen search keyboard" })).not.toBeInTheDocument();
-    expect(screen.getByRole("complementary", { name: "Current counter bill" })).toHaveTextContent("Lime Soda");
+    const currentBill = screen.getByRole("complementary", { name: "Current counter bill" });
+    expect(currentBill).toHaveTextContent("Lime Soda");
+    fireEvent.click(within(currentBill).getByRole("button", { name: "Increase Lime Soda" }));
+    expect(currentBill).toHaveTextContent("2");
+    expect(currentBill).toHaveTextContent(/60/);
 
-    fireEvent.focus(search);
-    expect(screen.getByRole("group", { name: "On-screen search keyboard" })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "PHYSICAL KEYBOARD" }));
     expect(search).not.toHaveAttribute("readonly");
-    expect(screen.queryByRole("group", { name: "On-screen search keyboard" })).not.toBeInTheDocument();
     fireEvent.change(search, { target: { value: "lime" } });
     expect(search).toHaveValue("lime");
     expect(screen.getByRole("button", { name: "Add Lime Soda, ₹30" })).toBeInTheDocument();

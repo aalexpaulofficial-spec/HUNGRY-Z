@@ -291,8 +291,9 @@ function OfflinePOSTab({
   onHold: () => void; onResume: (order: HeldPOSOrder) => void; onClear: () => void; onPrint: () => void; onPaymentMethod: (value: OfflinePaymentMethod) => void; onPaymentStatus: (value: "paid" | "unpaid") => void;
 }) {
   // Online stock/availability controls online ordering only. Counter staff can bill any saved menu item.
-  const [searchMode, setSearchMode] = useState<"physical" | "onscreen">("physical");
-  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(true);
+  const [isShifted, setIsShifted] = useState(false);
+  const [isSymbols, setIsSymbols] = useState(false);
   const searchAreaRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const items = menu;
@@ -305,7 +306,7 @@ function OfflinePOSTab({
   const subtotal = current.reduce((sum, line) => sum + line.price * line.qty, 0);
 
   useEffect(() => {
-    if (searchMode !== "onscreen" || !isKeyboardOpen) return;
+    if (!isKeyboardOpen) return;
     const closeIfOutside = (event: PointerEvent | FocusEvent) => {
       if (!searchAreaRef.current?.contains(event.target as Node)) setIsKeyboardOpen(false);
     };
@@ -321,7 +322,7 @@ function OfflinePOSTab({
       document.removeEventListener("focusin", closeIfOutside);
       window.removeEventListener("scroll", closeIfSearchScrolledAway, true);
     };
-  }, [isKeyboardOpen, searchMode]);
+  }, [isKeyboardOpen]);
 
   return (
     <section className="hz-pos mt-5" aria-labelledby="offline-pos-title">
@@ -333,27 +334,28 @@ function OfflinePOSTab({
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.55fr)_minmax(19rem,.9fr)]">
         <div className="min-w-0 rounded-3xl border border-border bg-card p-4 shadow-[var(--shadow-device)] sm:p-5">
           <div ref={searchAreaRef}>
-            <div className="grid grid-cols-2 gap-2" role="group" aria-label="POS keyboard input mode">
-            <button type="button" aria-pressed={searchMode === "physical"} onClick={() => { setSearchMode("physical"); setIsKeyboardOpen(false); }} className={cn("min-h-12 rounded-xl border px-2 text-[10px] font-black tracking-wide transition sm:px-3 sm:text-xs", searchMode === "physical" ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary/40")}>PHYSICAL KEYBOARD</button>
-            <button type="button" aria-pressed={searchMode === "onscreen"} onClick={() => setSearchMode("onscreen")} className={cn("min-h-12 rounded-xl border px-2 text-[10px] font-black tracking-wide transition sm:px-3 sm:text-xs", searchMode === "onscreen" ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary/40")}>ON-SCREEN KEYBOARD</button>
-          </div>
-          <label className="relative mt-3 block">
-            <Search aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <input ref={searchInputRef} aria-label="Search POS menu" type="search" inputMode={searchMode === "onscreen" ? "none" : "search"} readOnly={searchMode === "onscreen"} onFocus={() => { if (searchMode === "onscreen") setIsKeyboardOpen(true); }} value={search} onChange={(event) => onSearch(event.currentTarget.value)} placeholder="Search dishes by name or category" className="hz-pos-search w-full rounded-2xl border border-input bg-ink-soft py-3 pl-11 pr-12 text-sm text-foreground outline-none focus:border-primary" />
-            {search && <button type="button" aria-label="Clear search" onClick={() => onSearch("")} className="absolute right-2 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-full text-muted-foreground hover:bg-muted"><X className="h-4 w-4" /></button>}
-          </label>
-          {searchMode === "onscreen" && isKeyboardOpen && <div role="group" className="mt-3 rounded-2xl border border-border bg-ink-soft p-2.5 sm:p-3" aria-label="On-screen search keyboard">
-            <div className="grid gap-1.5 sm:gap-2">
-              {["1234567890", "QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"].map((row, rowIndex) => <div key={rowIndex} className="grid grid-cols-5 gap-1.5 sm:grid-cols-10 sm:gap-2">
-                {[...row].map((key) => <button key={key} type="button" onClick={() => onSearch(`${search}${key}`)} className="min-h-12 touch-manipulation select-none rounded-xl border border-border bg-card text-sm font-bold text-foreground shadow-sm transition active:scale-95 active:border-primary active:bg-primary/10 sm:min-h-14 sm:text-base">{key}</button>)}
-                {rowIndex === 3 && <button type="button" aria-label="Backspace" onClick={() => onSearch(Array.from(search).slice(0, -1).join(""))} className="col-span-2 min-h-12 touch-manipulation rounded-xl border border-border bg-card px-3 text-sm font-black text-foreground shadow-sm active:scale-95 active:border-primary active:bg-primary/10 sm:col-span-3 sm:min-h-14">⌫ BACKSPACE</button>}
-              </div>)}
-              <div className="grid grid-cols-5 gap-1.5 sm:grid-cols-10 sm:gap-2">
-                <button type="button" onClick={() => onSearch(`${search} `)} className="col-span-3 min-h-12 touch-manipulation rounded-xl border border-border bg-card text-xs font-bold text-foreground shadow-sm active:scale-95 active:border-primary active:bg-primary/10 sm:col-span-7 sm:min-h-14">SPACE</button>
-                <button type="button" onClick={() => onSearch("")} className="col-span-2 min-h-12 touch-manipulation rounded-xl border border-primary/40 bg-primary/10 text-xs font-black text-primary shadow-sm active:scale-95 sm:col-span-3 sm:min-h-14">CLEAR</button>
+            <label className="hz-pos-search-wrap relative block">
+              <Search aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <input ref={searchInputRef} aria-label="Search POS menu" type="search" inputMode="search" onFocus={() => setIsKeyboardOpen(true)} value={search} onChange={(event) => onSearch(event.currentTarget.value)} placeholder="Search dishes by name or category" className="hz-pos-search w-full rounded-2xl border border-input bg-ink-soft py-3 pl-11 pr-12 text-sm text-foreground outline-none focus:border-primary" />
+              <button type="button" aria-label="Clear search" onClick={() => { onSearch(""); searchInputRef.current?.focus(); }} className="hz-pos-clear grid h-9 w-9 -translate-y-1/2 place-items-center rounded-full text-primary hover:bg-primary/10"><X className="h-4 w-4" /></button>
+            </label>
+            {isKeyboardOpen && <div role="group" className="hz-pos-keyboard mt-3 rounded-3xl border border-border bg-ink-soft p-2.5 sm:p-3" aria-label="On-screen search keyboard">
+              <div className="hz-pos-keyboard-rows">
+                <div className="hz-pos-key-row">{(isSymbols ? "!@#$%^&*()" : "1234567890").split("").map((key) => <button key={key} type="button" onClick={() => onSearch(search + key)} className="hz-pos-key">{key}</button>)}</div>
+                <div className="hz-pos-key-row">{"QWERTYUIOP".split("").map((key) => <button key={key} type="button" onClick={() => onSearch(search + (isShifted ? key.toLowerCase() : key))} className="hz-pos-key">{isShifted ? key.toLowerCase() : key}</button>)}</div>
+                <div className="hz-pos-key-row hz-pos-key-row-home">{"ASDFGHJKL".split("").map((key) => <button key={key} type="button" onClick={() => onSearch(search + (isShifted ? key.toLowerCase() : key))} className="hz-pos-key">{isShifted ? key.toLowerCase() : key}</button>)}</div>
+                <div className="hz-pos-key-row">
+                  <button type="button" aria-label="Shift case" aria-pressed={isShifted} onClick={() => setIsShifted((shifted) => !shifted)} className="hz-pos-key hz-pos-key-action">&#8679;</button>
+                  {"ZXCVBNM".split("").map((key) => <button key={key} type="button" onClick={() => onSearch(search + (isShifted ? key.toLowerCase() : key))} className="hz-pos-key">{isShifted ? key.toLowerCase() : key}</button>)}
+                  <button type="button" aria-label="Backspace" onClick={() => onSearch(Array.from(search).slice(0, -1).join(""))} className="hz-pos-key hz-pos-key-action">&#9003;</button>
+                </div>
+                <div className="hz-pos-key-row hz-pos-key-row-bottom">
+                  <button type="button" onClick={() => setIsSymbols((symbols) => !symbols)} className="hz-pos-key hz-pos-key-action">{isSymbols ? "ABC" : "123"}</button>
+                  <button type="button" onClick={() => onSearch(search + " ")} className="hz-pos-key hz-pos-key-space">Space</button>
+                  <button type="button" onClick={() => setIsKeyboardOpen(false)} className="hz-pos-key hz-pos-key-cancel"><X aria-hidden="true" /> Cancel</button>
+                </div>
               </div>
-            </div>
-          </div>}
+            </div>}
           </div>
           <div className="hz-pos-categories mt-4 flex gap-2 overflow-x-auto pb-1" aria-label="Food categories">
             {categories.map((name) => <button key={name} type="button" onClick={() => { setIsKeyboardOpen(false); onCategory(name); }} aria-pressed={category === name} className={cn("min-h-10 shrink-0 rounded-full border px-4 text-xs font-bold transition", category === name ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background text-muted-foreground hover:border-primary/50 hover:text-foreground")}>{name}</button>)}
