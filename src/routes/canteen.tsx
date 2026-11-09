@@ -1141,7 +1141,7 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
                   <img src={foodImage(m.image)} alt="" className="h-14 w-14 rounded-xl object-cover" />
                   <div className="min-w-0 flex-1">
                     <p data-no-translate className="truncate text-sm font-semibold">{m.name}</p>
-                    <p className="text-xs text-muted-foreground"><span data-no-translate>{m.category}</span> · ₹{m.price} · {m.prep_minutes}m{m.stock != null && <> · {m.stock} <span>in stock</span></>}</p>
+                    <p className="text-xs text-muted-foreground"><span>{m.category}</span> · ₹{m.price} · {m.prep_minutes}m{m.stock != null && <> · {m.stock} <span>in stock</span></>}</p>
                   </div>
                   <button onClick={() => supabase.from("menu_items").update({ available: !m.available }).eq("id", m.id).then(() => {})} className={cn("rounded-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest", m.available ? "bg-chart-4/20 text-chart-4" : "bg-muted text-muted-foreground")}>{m.available ? "Available" : "Sold out"}</button>
                   <button aria-label="Edit" onClick={() => { setFoodImageFile(null); setFoodImagePreview(null); setEditing(m); }} className="grid h-8 w-8 place-items-center rounded-full border border-border"><Pencil className="h-3.5 w-3.5" /></button>
