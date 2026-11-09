@@ -5,6 +5,7 @@ import { QRCodeCanvas } from "qrcode.react";
 import { useServerFn } from "@tanstack/react-start";
 import { Home, UtensilsCrossed, Receipt, User, ScanLine, Plus, Minus, ShoppingBag, Clock, X, Check, LogOut, Repeat, MapPin, Store, Download, Ticket } from "lucide-react";
 import { CanteenTemplateBanner } from "@/components/foodexa/CanteenTemplateBanner";
+import { GlobalLoadingScreen } from "@/components/foodexa/GlobalLoadingScreen";
 import { FeedbackDialog } from "@/components/foodexa/FeedbackDialog";
 import { LegalDialog } from "@/components/foodexa/LegalDialog";
 import { BackButton, useBackStep } from "@/lib/back-nav";
@@ -370,7 +371,7 @@ function OrderingApp() {
     navigate({ to: "/auth", replace: true });
   }
 
-  if (profile === undefined) return <div className="grid min-h-screen place-items-center bg-background text-sm text-muted-foreground">Loading…</div>;
+  if (profile === undefined) return <GlobalLoadingScreen />;
   if (profile === null)
     return (
       <div className="grid min-h-screen place-items-center bg-background px-5">

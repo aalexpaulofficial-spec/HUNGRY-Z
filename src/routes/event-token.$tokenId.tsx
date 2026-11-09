@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { CalendarDays, LoaderCircle, MapPin, Ticket } from "lucide-react";
+import { CalendarDays, MapPin, Ticket } from "lucide-react";
+import { GlobalLoadingScreen } from "@/components/foodexa/GlobalLoadingScreen";
 import { EventLogoImage } from "@/components/foodexa/FacultyEventLogo";
 import { getPublicFacultyEventTokenDetails } from "@/lib/hungry.functions";
 import { formatFacultyEventSerial } from "@/lib/faculty-event-serial";
@@ -40,12 +41,13 @@ function PublicEventTokenPage() {
     return () => { active = false; };
   }, [getToken, tokenId]);
 
+  if (!token && !error) return <GlobalLoadingScreen />;
+
   return <main className="flex min-h-screen items-center justify-center bg-background px-4 py-10">
     <section className="w-full max-w-lg rounded-3xl border border-primary/25 bg-card p-5 shadow-[var(--shadow-cinema)] sm:p-8">
       <a href="/" className="flex items-center justify-center gap-2 text-xs font-bold tracking-[0.2em] text-muted-foreground">
         <img src="/HUNGRY%20Z%20Q%20LOGO.png" alt="" className="h-8 w-8 rounded-full object-contain" />HUNGRY Z
       </a>
-      {!token && !error && <p role="status" className="mt-10 flex items-center justify-center gap-2 text-sm text-muted-foreground"><LoaderCircle className="h-4 w-4 animate-spin" />Loading secure event token…</p>}
       {error && <div role="alert" className="mt-8 rounded-2xl border border-primary/30 bg-primary/5 p-5 text-center"><Ticket className="mx-auto h-8 w-8 text-primary" /><h1 className="mt-3 text-xl font-bold text-foreground">Token unavailable</h1><p className="mt-2 text-sm text-muted-foreground">{error}</p></div>}
       {token && <div className="mt-7 text-center">
         {token.event_logo_url && <EventLogoImage src={token.event_logo_url} alt={`${token.event_name} event logo`} className="max-h-48" />}

@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { BackButton, useBackStep } from "@/lib/back-nav";
+import { GlobalLoadingScreen } from "@/components/foodexa/GlobalLoadingScreen";
 import { useCallback, useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { ShieldCheck, LogOut, Check, X } from "lucide-react";
@@ -60,7 +61,7 @@ function AdminPage() {
       setGateError("The Supabase browser configuration is missing. Admin sign-in is unavailable until the backend is configured.");
     }
   }, [check]);
-  if (state === "loading") return <div className="grid min-h-screen place-items-center bg-background text-sm text-muted-foreground">Loading…</div>;
+  if (state === "loading") return <GlobalLoadingScreen />;
   if (state === "login") return <AdminLogin onDone={check} initialError={gateError} />;
   return <Dashboard onSignOut={async () => { clearSessionState("hungry-admin-dashboard-tab"); await supabase.auth.signOut(); setState("login"); }} />;
 }

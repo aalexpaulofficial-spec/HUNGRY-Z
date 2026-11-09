@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Camera, Check, ChevronDown, ImageUp, Loader2, Lock, ScanLine, Sparkles, SwitchCamera, Upload, X } from "lucide-react";
+import { GlobalLoadingScreen } from "@/components/foodexa/GlobalLoadingScreen";
 import { getScannerAccess, scanFood, updateFoodScan } from "@/lib/scanner.functions";
 import { STUDENT_SCANNER_PLANS } from "@/lib/scanner";
 import { cn } from "@/lib/utils";
@@ -118,7 +119,7 @@ export function ScannerTab({ userId }: { userId?: string }) {
     finally { setCorrectionBusy(null); }
   }
 
-  if (!access) return <div className="flex justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
+  if (!access) return <GlobalLoadingScreen />;
   if (!access.ok) return <div className="scanner-card p-6 text-center text-sm text-muted-foreground">{access.message}</div>;
   const livePlan = STUDENT_SCANNER_PLANS.find((plan) => plan.status === "live")!;
   return <div className="scanner-shell mx-auto flex w-full max-w-3xl flex-col gap-5 pb-6">

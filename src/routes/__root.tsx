@@ -7,6 +7,7 @@ import {
   useRouter,
   HeadContent,
   Scripts,
+  useRouterState,
   type ErrorComponentProps,
 } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
@@ -15,6 +16,7 @@ import appCss from "../styles.css?url";
 import { BackProvider, BackButton } from "../lib/back-nav";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { isStandaloneApp, markAppInstalled } from "../lib/pwa-install";
+import { GlobalLoadingScreen } from "../components/foodexa/GlobalLoadingScreen";
 
 function NotFoundComponent() {
   return (
@@ -134,6 +136,8 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const { pathname, searchStr } = useLocation();
+  const routerLoading = useRouterState({ select: (state) => state.isLoading });
+  const [showRouteLoader, setShowRouteLoader] = useState(false);
   const appFromUrl = new URLSearchParams(searchStr).get("hungry_app");
   const hasAppLaunchMarker = appFromUrl === "student" || appFromUrl === "canteen";
   const [standaloneApp, setStandaloneApp] = useState(hasAppLaunchMarker);
@@ -155,12 +159,22 @@ function RootComponent() {
     }
   }, [appFromUrl, hasAppLaunchMarker]);
 
+  useEffect(() => {
+    if (!routerLoading) {
+      setShowRouteLoader(false);
+      return;
+    }
+    const timer = window.setTimeout(() => setShowRouteLoader(true), 140);
+    return () => window.clearTimeout(timer);
+  }, [routerLoading]);
+
   return (
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <BackProvider disabled={standaloneApp && pathname !== "/privacy" && pathname !== "/terms"}>
         {pathname !== "/canteen" && <BackButton />}
         <Outlet />
+        <GlobalLoadingScreen overlay visible={showRouteLoader} />
       </BackProvider>
     </QueryClientProvider>
   );

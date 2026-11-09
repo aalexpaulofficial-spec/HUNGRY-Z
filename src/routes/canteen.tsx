@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { BackButton, useBackNavigationEnabled, useBackStep } from "@/lib/back-nav";
+import { GlobalLoadingScreen } from "@/components/foodexa/GlobalLoadingScreen";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { flushSync } from "react-dom";
@@ -142,10 +143,7 @@ function CanteenPage() {
     </div>
   );
   if (state === "loading") return (
-    <div className="grid min-h-screen place-content-center justify-items-center gap-5 bg-background px-4 text-sm text-muted-foreground">
-      <div role="status">Loading…</div>
-      <HeroInstallButton app="canteen" />
-    </div>
+    <GlobalLoadingScreen />
   );
   if (state === "ok" && canteen) return <Dashboard canteen={canteen} onSignOut={signOut} language={language} onLanguageChange={saveLanguage} />;
 
