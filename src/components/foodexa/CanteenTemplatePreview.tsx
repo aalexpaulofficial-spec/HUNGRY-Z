@@ -5,7 +5,6 @@ import { cn } from "@/lib/utils";
 
 type PreviewSize = "mobile" | "tablet" | "laptop";
 const PREVIEW_WIDTHS: Record<PreviewSize, number> = { mobile: 360, tablet: 640, laptop: 900 };
-const PREVIEW_ASPECT_RATIOS: Record<PreviewSize, string> = { mobile: "4 / 5", tablet: "3 / 2", laptop: "16 / 9" };
 
 type CanteenTemplatePreviewProps = {
   imageUrl?: string | null;
@@ -33,7 +32,7 @@ export function CanteenTemplatePreview({ imageUrl, heading, description, canteen
           ))}
         </div>
       </div>
-      <div className="mx-auto w-full transition-[max-width]" style={{ maxWidth: PREVIEW_WIDTHS[size], aspectRatio: PREVIEW_ASPECT_RATIOS[size] }} data-testid="banner-preview-frame">
+      <div className="hz-template-preview-frame mx-auto w-full transition-[max-width,aspect-ratio]" style={{ maxWidth: PREVIEW_WIDTHS[size] }} data-preview-size={size} data-testid="banner-preview-frame">
         <CanteenTemplateBanner
           imageUrl={imageUrl}
           heading={heading}
