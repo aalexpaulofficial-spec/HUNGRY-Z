@@ -24,8 +24,7 @@ type Preset = "today" | "yesterday" | "7days" | "30days" | "month" | "custom";
 type Grain = "daily" | "weekly" | "monthly";
 
 const PAGE_SIZE = 1000;
-const RED = "#ef233c";
-const OTHER_COLORS = ["#f97316", "#facc15", "#22c55e", "#38bdf8", "#a78bfa", "#f472b6", "#94a3b8"];
+const CHART_COLORS = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)", "var(--chart-5)"];
 const money = (value: number) => `₹${Math.round(value).toLocaleString("en-IN")}`;
 const dateInput = (date: Date) =>
   `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
@@ -235,10 +234,10 @@ function TrendChart({ data }: { data: { label: string; revenue: number; orders: 
             x2="680"
             y1={50 + tick * 48}
             y2={50 + tick * 48}
-            stroke="#333"
+            stroke="var(--border)"
             strokeDasharray="4 4"
           />
-          <text x="3" y={54 + tick * 48} fill="#999" fontSize="9">
+          <text x="3" y={54 + tick * 48} fill="var(--muted-foreground)" fontSize="9">
             {currencyTick((maxRevenue * (3 - tick)) / 3)}
           </text>
         </g>
@@ -253,33 +252,33 @@ function TrendChart({ data }: { data: { label: string; revenue: number; orders: 
               width={Math.max(3, Math.min(32, step * 0.6))}
               height={height}
               rx="3"
-              fill={RED}
+              fill="var(--chart-1)"
             >
               <title>
                 {row.label}: ₹{Math.round(row.revenue)} · {row.orders} orders
               </title>
             </rect>
-            <text x={x(index)} y="222" textAnchor="middle" fill="#999" fontSize="9">
+            <text x={x(index)} y="222" textAnchor="middle" fill="var(--muted-foreground)" fontSize="9">
               {data.length > 16 && index % Math.ceil(data.length / 12) !== 0 ? "" : row.label}
             </text>
           </g>
         );
       })}
-      <polyline points={line} fill="none" stroke="#facc15" strokeWidth="2.5" />
+      <polyline points={line} fill="none" stroke="var(--chart-3)" strokeWidth="2.5" />
       {data.map((row, index) => (
         <circle
           key={`dot-${row.label}`}
           cx={x(index)}
           cy={195 - (row.orders / maxOrders) * 145}
           r="3"
-          fill="#facc15"
+          fill="var(--chart-3)"
         >
           <title>
             {row.label}: {row.orders} orders
           </title>
         </circle>
       ))}
-      <text x="48" y="240" fill="#aaa" fontSize="9">
+      <text x="48" y="240" fill="var(--muted-foreground)" fontSize="9">
         ONLINE revenue (bars) · ONLINE orders (line)
       </text>
     </svg>
@@ -1054,7 +1053,7 @@ export function CanteenAnalytics({
                         style={{
                           width: `${Math.max(1, (row.revenue / (visible[0]?.revenue || 1)) * 100)}%`,
                           background:
-                            index === 0 ? RED : OTHER_COLORS[(index - 1) % OTHER_COLORS.length],
+                            CHART_COLORS[index % CHART_COLORS.length],
                         }}
                       />
                     </div>
@@ -1087,7 +1086,7 @@ export function CanteenAnalytics({
                   x2="690"
                   y1={30 + tick * 48}
                   y2={30 + tick * 48}
-                  stroke="#333"
+                  stroke="var(--border)"
                   strokeDasharray="4 4"
                 />
               ))}
@@ -1099,7 +1098,7 @@ export function CanteenAnalytics({
                   )
                   .join(" ")}
                 fill="none"
-                stroke={RED}
+                stroke="var(--chart-1)"
                 strokeWidth="3"
               />
               {hourRows.map((row, index) => (
@@ -1110,7 +1109,7 @@ export function CanteenAnalytics({
                       170 - (row.orders / Math.max(1, ...hourRows.map((item) => item.orders))) * 130
                     }
                     r="3.5"
-                    fill={RED}
+                    fill="var(--chart-1)"
                   >
                     <title>
                       {row.hour}: {row.orders} orders
@@ -1120,7 +1119,7 @@ export function CanteenAnalytics({
                     <text
                       x={42 + index * (640 / 23)}
                       y="200"
-                      fill="#999"
+                      fill="var(--muted-foreground)"
                       fontSize="9"
                       textAnchor="middle"
                     >
@@ -1142,7 +1141,7 @@ export function CanteenAnalytics({
               paymentRows.map((row) => {
                 const totalPayments = paymentRows.reduce((sum, item) => sum + item.value, 0);
                 const color =
-                  row.name === "Paid" ? "#22c55e" : row.name === "Pending" ? "#facc15" : RED;
+                  row.name === "Paid" ? "var(--chart-2)" : row.name === "Pending" ? "var(--chart-4)" : "var(--chart-5)";
                 return (
                   <div key={row.name}>
                     <div className="mb-1 flex justify-between text-xs">
