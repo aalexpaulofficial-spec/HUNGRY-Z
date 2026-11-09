@@ -508,7 +508,7 @@ export function EventCapacityPanel({ mode, canteenId, canteenName, userId }: { m
             <h4 className="text-sm font-bold">Token verification and serving progress</h4>
             <p className="text-xs text-muted-foreground">{collected} of {issued} issued tokens served · {Math.max(0, event.approved_capacity - issued)} tokens remain available.</p>
             <div className="max-h-52 space-y-2 overflow-y-auto">{eventTokens.map((token) => <div key={token.id} className="flex items-center justify-between gap-3 rounded-xl bg-ink-soft p-3"><div><p className="font-mono text-sm font-bold tracking-widest">{token.token_number}</p><p className="text-[10px] text-muted-foreground">{token.status.toUpperCase()}</p></div>{token.status === "issued" && <button type="button" disabled={busy} onClick={() => markTokenCollected(token)} className="rounded-full bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50">Verify &amp; mark served</button>}</div>)}</div>
-            <div className="rounded-xl border border-border p-3"><p className="mb-2 text-xs font-semibold">Actual food quantities served</p><MenuServedEditor planned={quotationQuantities} quantities={servedFoodSelection[event.id] ?? event.served_food_quantities ?? {}} onChange={(value) => setServedFoodSelection((current) => ({ ...current, [event.id]: value }))} /></div>
+            <div className="hz-event-served-panel"><h5>Actual food quantities served</h5><MenuServedEditor planned={quotationQuantities} quantities={servedFoodSelection[event.id] ?? event.served_food_quantities ?? {}} onChange={(value) => setServedFoodSelection((current) => ({ ...current, [event.id]: value }))} /></div>
             <button type="button" disabled={busy} onClick={() => saveServedQuantities(event)} className="rounded-full border border-primary/40 px-4 py-2 text-xs font-semibold text-primary disabled:opacity-50">Save served quantities</button>
           </section>}
 
@@ -705,9 +705,9 @@ function ManualQuotationEditor({ items, onChange }: { items: ManualQuotationItem
 }
 
 function MenuServedEditor({ planned, quantities, onChange }: { planned: Record<string, number>; quantities: Record<string, number>; onChange: (value: Record<string, number>) => void }) {
-  return <div className="space-y-2">{Object.entries(planned).map(([name, max]) => {
+  return <div className="hz-event-served-editor">{Object.entries(planned).map(([name, max]) => {
     const served = quantities[name] ?? 0;
-    return <label key={name} className="grid grid-cols-[minmax(0,1fr)_100px] items-center gap-2 text-xs"><span className="truncate">{name} · planned {max}</span><input type="number" min={0} max={999999} value={served} aria-label={`Served quantity for ${name}`} onChange={(event) => onChange({ ...quantities, [name]: Math.max(0, Math.min(999999, Number(event.currentTarget.value))) })} className="w-full rounded-lg border border-input bg-ink-soft px-2 py-2 text-sm" /></label>;
+    return <label key={name} className="hz-event-served-row"><span className="hz-event-served-food"><strong data-no-translate>{name}</strong><small>Planned <b>{max}</b></small></span><span className="hz-event-served-control"><small>Served</small><input type="number" min={0} max={999999} value={served} aria-label={`Served quantity for ${name}`} onChange={(event) => onChange({ ...quantities, [name]: Math.max(0, Math.min(999999, Number(event.currentTarget.value))) })} className="w-full rounded-lg border border-input bg-ink-soft px-2 py-2 text-sm" /></span></label>;
   })}</div>;
 }
 

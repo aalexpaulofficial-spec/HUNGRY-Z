@@ -524,6 +524,12 @@ Object.assign(eventDashboardTranslations.hi, {
 Object.assign(eventDashboardTranslations.kn, {
   "Optional: add custom food items to this quotation.": "\u0cb5\u0cc8\u0c95\u0cb2\u0ccd\u0caa\u0cbf\u0c95: \u0c88 \u0c89\u0cb2\u0ccd\u0cb2\u0cc7\u0c96\u0ca6\u0cb2\u0ccd\u0cb2\u0cbf \u0ca8\u0cbf\u0cb0\u0ccd\u0cae\u0cbf\u0ca4 \u0c86\u0cb9\u0cbe\u0cb0 \u0caa\u0ca6\u0cbe\u0cb0\u0ccd\u0ca5\u0c97\u0cb3\u0ca8\u0ccd\u0ca8\u0cc1 \u0cb8\u0cc7\u0cb0\u0cbf\u0cb8\u0cbf",
   "Manual items subtotal:": "\u0c95\u0cc8\u0caf\u0cbe\u0cb0\u0cc6 \u0cb8\u0cc7\u0cb0\u0cbf\u0cb8\u0cbf\u0ca6 \u0caa\u0ca6\u0cbe\u0cb0\u0ccd\u0ca5\u0c97\u0cb3 \u0c89\u0caa\u0cae\u0cca\u0ca4\u0ccd\u0ca4",
+  Planned: "\u0caf\u0ccb\u0c9c\u0cbf\u0ca4",
+  Served: "\u0cb5\u0cbf\u0ca4\u0cb0\u0cbf\u0cb8\u0cbf\u0ca6",
+});
+Object.assign(eventDashboardTranslations.hi, {
+  Planned: "\u0928\u093f\u092f\u094b\u091c\u093f\u0924",
+  Served: "\u092a\u0930\u094b\u0938\u0940 \u0917\u0908",
 });
 
 export function translateDashboardText(input: string, language: DashboardLanguage): string {
