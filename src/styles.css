@@ -396,6 +396,90 @@ html[data-theme="light"] .hz-canteen-app,
 html[data-theme="light"] .hz-auth-page {
   --hz-shadow-card: 0 12px 32px rgb(35 24 18 / 6%), 0 0 0 1px rgb(45 30 20 / 3%);
 }
+.hz-canteen-app {
+  --background: oklch(0.15 0.02 250);
+  --foreground: oklch(0.95 0.01 245);
+  --ink: oklch(0.12 0.018 250);
+  --ink-soft: oklch(0.19 0.02 250);
+  --card: oklch(0.21 0.018 250);
+  --card-foreground: oklch(0.95 0.01 245);
+  --popover: oklch(0.2 0.018 250);
+  --popover-foreground: oklch(0.95 0.01 245);
+  --primary: oklch(0.74 0.12 245);
+  --primary-foreground: oklch(0.2 0.025 250);
+  --primary-bright: oklch(0.8 0.11 242);
+  --primary-deep: oklch(0.59 0.13 248);
+  --secondary: oklch(0.25 0.02 250);
+  --secondary-foreground: oklch(0.93 0.01 245);
+  --muted: oklch(0.26 0.018 250);
+  --muted-foreground: oklch(0.75 0.015 245);
+  --accent: oklch(0.29 0.035 245);
+  --accent-foreground: oklch(0.95 0.01 245);
+  --border: oklch(0.42 0.02 250 / 72%);
+  --input: oklch(0.42 0.02 250 / 82%);
+  --ring: oklch(0.74 0.12 245);
+  --chart-1: oklch(0.74 0.12 245);
+  --chart-2: oklch(0.68 0.1 230);
+  --chart-3: oklch(0.62 0.08 258);
+  --chart-4: oklch(0.79 0.06 215);
+  --chart-5: oklch(0.54 0.07 245);
+  --sidebar: oklch(0.19 0.025 250);
+  --sidebar-foreground: oklch(0.94 0.01 245);
+  --sidebar-primary: oklch(0.74 0.12 245);
+  --sidebar-primary-foreground: oklch(0.2 0.025 250);
+  --sidebar-accent: oklch(0.29 0.035 245);
+  --sidebar-accent-foreground: oklch(0.95 0.01 245);
+  --sidebar-border: oklch(0.42 0.02 250 / 72%);
+  --sidebar-ring: oklch(0.74 0.12 245);
+  --gradient-crimson: linear-gradient(135deg, oklch(0.15 0.02 250), oklch(0.23 0.05 245) 55%, oklch(0.15 0.02 250));
+  --gradient-ember: radial-gradient(circle at 50% 50%, color-mix(in oklab, var(--primary-bright) 34%, transparent), color-mix(in oklab, var(--primary) 14%, transparent) 42%, transparent 72%);
+  --shadow-cinema: 0 24px 64px -32px color-mix(in oklab, var(--primary) 28%, transparent);
+  --shadow-device: 0 32px 70px -42px oklch(0 0 0 / 62%), 0 0 48px -30px color-mix(in oklab, var(--primary) 25%, transparent);
+  --hz-shadow-card: 0 14px 36px rgb(4 15 28 / 24%), 0 0 0 1px color-mix(in oklab, var(--border) 85%, transparent);
+  background-image: radial-gradient(ellipse at 50% -20%, color-mix(in oklab, var(--primary) 9%, transparent), transparent 55%), linear-gradient(145deg, oklch(0.16 0.022 250), oklch(0.14 0.018 250));
+}
+html[data-theme="light"] .hz-canteen-app {
+  --background: oklch(0.965 0.012 245);
+  --foreground: oklch(0.23 0.018 250);
+  --ink: oklch(0.94 0.012 245);
+  --ink-soft: oklch(0.955 0.012 245);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.23 0.018 250);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.23 0.018 250);
+  --primary: oklch(0.54 0.13 245);
+  --primary-foreground: oklch(0.99 0.003 245);
+  --primary-bright: oklch(0.6 0.13 242);
+  --primary-deep: oklch(0.44 0.13 248);
+  --secondary: oklch(0.93 0.014 245);
+  --secondary-foreground: oklch(0.25 0.02 250);
+  --muted: oklch(0.93 0.014 245);
+  --muted-foreground: oklch(0.46 0.02 250);
+  --accent: oklch(0.91 0.03 240);
+  --accent-foreground: oklch(0.25 0.045 245);
+  --border: oklch(0.86 0.018 245);
+  --input: oklch(0.82 0.02 245);
+  --ring: oklch(0.54 0.13 245);
+  --chart-1: oklch(0.57 0.13 245);
+  --chart-2: oklch(0.65 0.1 230);
+  --chart-3: oklch(0.48 0.1 258);
+  --chart-4: oklch(0.72 0.07 215);
+  --chart-5: oklch(0.4 0.07 245);
+  --sidebar: oklch(0.935 0.025 240);
+  --sidebar-foreground: oklch(0.23 0.018 250);
+  --sidebar-primary: oklch(0.54 0.13 245);
+  --sidebar-primary-foreground: oklch(0.99 0.003 245);
+  --sidebar-accent: oklch(0.89 0.04 240);
+  --sidebar-accent-foreground: oklch(0.25 0.045 245);
+  --sidebar-border: oklch(0.86 0.018 245);
+  --sidebar-ring: oklch(0.54 0.13 245);
+  --gradient-crimson: linear-gradient(135deg, oklch(0.985 0.006 245), oklch(0.95 0.025 240) 55%, oklch(0.985 0.006 245));
+  --gradient-ember: radial-gradient(circle at 50% 50%, color-mix(in oklab, var(--primary) 15%, transparent), color-mix(in oklab, var(--primary) 7%, transparent) 38%, transparent 72%);
+  --shadow-cinema: 0 20px 55px -32px color-mix(in oklab, var(--primary) 32%, transparent);
+  --shadow-device: 0 24px 58px -38px oklch(0.35 0.025 250 / 25%), 0 0 48px -32px color-mix(in oklab, var(--primary) 22%, transparent);
+  --hz-shadow-card: 0 10px 28px rgb(50 76 100 / 7%), 0 0 0 1px rgb(64 91 116 / 3%);
+  background-image: radial-gradient(ellipse at 8% 0%, oklch(0.93 0.035 235 / 76%), transparent 42%), linear-gradient(145deg, oklch(0.975 0.008 245), oklch(0.955 0.015 245));
+}
 html[data-theme="light"] .hz-bottom-nav { background: rgb(255 255 255 / 92%); }
 html[data-theme="light"] .hz-canteen-nav { background: color-mix(in oklab, white 92%, var(--primary) 8%); }
 
@@ -770,7 +854,7 @@ html[data-theme="light"] .hz-canteen-nav { background: color-mix(in oklab, white
 
 /* Canteen owner workspace: responsive navigation and an overview that uses live app data. */
 .hz-canteen-layout { display: grid; grid-template-columns: 248px minmax(0, 1fr); min-height: 100vh; }
-.hz-canteen-sidebar { position: sticky; top: 0; display: flex; height: 100vh; min-height: 600px; flex-direction: column; border-right: 1px solid var(--border); background: var(--card); padding: 1.2rem .9rem; }
+.hz-canteen-sidebar { position: sticky; top: 0; display: flex; height: 100vh; min-height: 600px; flex-direction: column; border-right: 1px solid var(--sidebar-border); background: var(--sidebar); padding: 1.2rem .9rem; }
 .hz-canteen-sidebar-brand { display: flex; align-items: center; gap: .55rem; min-height: 3.7rem; padding: 0 .45rem 1rem; color: var(--foreground); font-size: .72rem; font-weight: 800; letter-spacing: .13em; }
 .hz-canteen-sidebar-brand img { width: 2.45rem; height: 2.45rem; object-fit: contain; }
 .hz-canteen-sidebar-nav { display: grid; gap: .32rem; padding-top: .5rem; }
@@ -812,9 +896,9 @@ html[data-theme="light"] .hz-canteen-nav { background: color-mix(in oklab, white
 .hz-canteen-metric { display: flex; min-width: 0; min-height: 6rem; align-items: center; gap: .8rem; border: 1px solid color-mix(in oklab, var(--metric-accent, var(--primary)) 17%, var(--border)); border-radius: 1.35rem; background: color-mix(in oklab, var(--metric-accent, var(--primary)) 4%, var(--card)); padding: 1rem; color: var(--foreground); text-align: left; transition: transform .18s, box-shadow .18s; }
 .hz-canteen-metric:hover { transform: translateY(-2px); box-shadow: var(--hz-shadow-card); }
 .hz-metric-online { --metric-accent: var(--primary); }
-.hz-metric-offline { --metric-accent: #6b7280; }
+.hz-metric-offline { --metric-accent: oklch(0.61 0.045 245); }
 .hz-metric-sales { --metric-accent: #0a84ff; }
-.hz-metric-offline-sales { --metric-accent: #7447d8; }
+.hz-metric-offline-sales { --metric-accent: var(--primary-bright); }
 .hz-canteen-metric-icon { display: grid; width: 2.65rem; height: 2.65rem; flex: 0 0 auto; place-items: center; border-radius: 50%; background: color-mix(in oklab, var(--metric-accent) 11%, transparent); color: var(--metric-accent); }
 .hz-canteen-metric-icon svg { width: 1.2rem; height: 1.2rem; }
 .hz-canteen-metric > span:nth-child(2) { display: grid; min-width: 0; gap: .3rem; }
@@ -867,7 +951,7 @@ html[data-theme="light"] .hz-canteen-nav { background: color-mix(in oklab, white
 .hz-canteen-code-row div strong { overflow: hidden; color: var(--foreground); font-family: ui-monospace, monospace; font-size: .9rem; letter-spacing: .1em; text-overflow: ellipsis; }
 .hz-canteen-code-row button { border-radius: .65rem; padding: .5rem; font-size: .63rem; font-weight: 800; }
 .hz-canteen-code-row button:hover { background: color-mix(in oklab, var(--primary) 10%, transparent); }
-html[data-theme="light"] .hz-canteen-sidebar { background: #fff; }
+html[data-theme="light"] .hz-canteen-sidebar { background: var(--sidebar); }
 
 @media (max-width: 1100px) {
   .hz-canteen-layout { grid-template-columns: 204px minmax(0, 1fr); }
