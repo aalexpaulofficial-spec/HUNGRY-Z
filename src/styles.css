@@ -987,9 +987,10 @@ html[data-theme="light"] .hz-canteen-nav { background: color-mix(in oklab, white
 .hz-event-served-food small b { color: var(--foreground); font-weight: 700; }
 .hz-event-served-control { display: inline-flex; align-items: center; gap: .5rem; }
 .hz-event-served-control input { width: 5rem; min-height: 2.25rem; background: var(--card); text-align: center; }
-.hz-event-quotation-pending { display: flex; min-width: 0; align-items: center; gap: .65rem; margin-top: .65rem; border: 1px solid color-mix(in oklab, var(--primary) 24%, var(--border)); border-radius: .9rem; background: color-mix(in oklab, var(--primary) 6%, var(--card)); padding: .75rem .9rem; color: var(--foreground); }
+.hz-event-quotation-pending { display: flex; min-width: 0; align-items: center; gap: .75rem; margin-top: .65rem; border: 1px solid color-mix(in oklab, var(--primary) 34%, var(--border)); border-radius: .9rem; background: color-mix(in oklab, var(--primary) 8%, var(--card)); padding: .8rem .95rem; color: var(--foreground); }
 .hz-event-quotation-pending svg { width: 1.05rem; height: 1.05rem; flex: 0 0 auto; color: var(--primary); }
-.hz-event-quotation-pending p { margin: 0; font-size: .8rem; font-weight: 650; line-height: 1.45; }
+.hz-event-quotation-pending strong { display: block; margin-bottom: .16rem; font-size: .67rem; font-weight: 800; letter-spacing: .07em; }
+.hz-event-quotation-pending p { margin: 0; font-size: .8rem; font-weight: 550; line-height: 1.45; }
 .hz-canteen-panel-heading { display: flex; align-items: center; justify-content: space-between; gap: .75rem; margin-bottom: .75rem; }
 .hz-canteen-panel-heading h2 { margin: .15rem 0 0; font-size: 1.08rem; font-weight: 760; letter-spacing: -.025em; }
 .hz-canteen-chart-total { display: grid; gap: .15rem; text-align: right; }
