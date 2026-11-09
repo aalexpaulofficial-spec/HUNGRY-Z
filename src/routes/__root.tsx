@@ -159,7 +159,7 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <BackProvider disabled={standaloneApp && pathname !== "/privacy" && pathname !== "/terms"}>
-        <BackButton />
+        {pathname !== "/canteen" && <BackButton />}
         <Outlet />
       </BackProvider>
     </QueryClientProvider>
