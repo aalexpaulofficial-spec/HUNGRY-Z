@@ -352,7 +352,7 @@ function OfflinePOSTab({
                 <div className="hz-pos-key-row hz-pos-key-row-bottom">
                   <button type="button" onClick={() => setIsSymbols((symbols) => !symbols)} className="hz-pos-key hz-pos-key-action">{isSymbols ? "ABC" : "123"}</button>
                   <button type="button" onClick={() => onSearch(search + " ")} className="hz-pos-key hz-pos-key-space">Space</button>
-                  <button type="button" onClick={() => setIsKeyboardOpen(false)} className="hz-pos-key hz-pos-key-cancel"><X aria-hidden="true" /> Cancel</button>
+                  <button type="button" aria-label="Hide keypad" onClick={() => setIsKeyboardOpen(false)} className="hz-pos-key hz-pos-key-cancel"><X aria-hidden="true" /> Hide Keypad</button>
                 </div>
               </div>
             </div>}
@@ -1171,7 +1171,7 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
                 <div className="hz-pos-key-row hz-pos-key-row-bottom">
                   <button type="button" onClick={() => setOrderKeyboardSymbols((symbols) => !symbols)} className="hz-pos-key hz-pos-key-action">{orderKeyboardSymbols ? "ABC" : "123"}</button>
                   <button type="button" onClick={() => setOrderSearch((value) => value + " ")} className="hz-pos-key hz-pos-key-space">Space</button>
-                  <button type="button" onClick={() => setOrderKeyboardOpen(false)} className="hz-pos-key hz-pos-key-cancel"><X aria-hidden="true" /> Hide keypad</button>
+                  <button type="button" aria-label="Hide keypad" onClick={() => setOrderKeyboardOpen(false)} className="hz-pos-key hz-pos-key-cancel"><X aria-hidden="true" /> Hide Keypad</button>
                 </div>
               </div>
             </div>}
