@@ -1102,7 +1102,9 @@ html[data-theme="light"] .hz-canteen-sidebar { background: var(--sidebar); }
 .hz-orders-filter.is-active { border-color: #111; background: #111; color: #fff; }
 .hz-orders-filter.is-active > span { color: #d1d1d1; }
 .hz-orders-search { display: flex; min-width: min(100%, 15rem); min-height: 2.55rem; flex: 0 1 18rem; align-items: center; gap: .5rem; border: 1px solid color-mix(in oklab, var(--foreground) 12%, var(--border)); border-radius: 999px; background: var(--card); padding: 0 .75rem; color: var(--muted-foreground); }
-.hz-orders-search > svg { width: 1rem; height: 1rem; flex: 0 0 auto; color: var(--foreground); }
+.hz-orders-search-trigger { display: grid; width: 1.8rem; height: 1.8rem; flex: 0 0 auto; place-items: center; border-radius: 50%; color: var(--foreground); }
+.hz-orders-search-trigger:hover { background: var(--ink-soft); }
+.hz-orders-search-trigger svg { width: 1rem !important; height: 1rem !important; }
 .hz-orders-search input { width: 100%; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--foreground); font-size: .72rem; }
 .hz-orders-search input::placeholder { color: var(--muted-foreground); }
 .hz-orders-search button { display: grid; width: 1.55rem; height: 1.55rem; flex: 0 0 auto; place-items: center; border-radius: 50%; color: var(--foreground); }

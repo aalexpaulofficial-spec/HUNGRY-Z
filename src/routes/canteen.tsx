@@ -464,6 +464,7 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
   const [orderMsg, setOrderMsg] = useState("");
   const [orderStatusFilter, setOrderStatusFilter] = useState<"all" | "placed" | "preparing" | "ready" | "completed" | "cancelled">("all");
   const [orderSearch, setOrderSearch] = useState("");
+  const orderSearchInputRef = useRef<HTMLInputElement>(null);
   const [busyOrder, setBusyOrder] = useState<string | null>(null);
   const [printerSettingsOpen, setPrinterSettingsOpen] = useState(false);
   const [printerPaperWidth, setPrinterPaperWidth] = useState<ReceiptPaperWidth>(() => readPrinterPaperWidth(canteen.id));
@@ -1150,7 +1151,7 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
                   return <button key={filter} type="button" aria-pressed={orderStatusFilter === filter} onClick={() => setOrderStatusFilter(filter)} className={cn("hz-orders-filter", orderStatusFilter === filter && "is-active")}>{labels[filter]} <span>{orderStatusCounts[filter]}</span></button>;
                 })}
               </div>
-              <label className="hz-orders-search"><Search aria-hidden="true" /><span className="sr-only">Search by order ID or customer</span><input value={orderSearch} onChange={(event) => setOrderSearch(event.currentTarget.value)} placeholder="Search by Order ID, Customer..." /><button type="button" aria-label="Clear order search" onClick={() => setOrderSearch("")} disabled={!orderSearch}><X aria-hidden="true" /></button></label>
+              <div className="hz-orders-search"><button type="button" className="hz-orders-search-trigger" aria-label="Focus order search" onClick={() => orderSearchInputRef.current?.focus()}><Search aria-hidden="true" /></button><input ref={orderSearchInputRef} type="search" inputMode="search" aria-label="Search by order ID or customer" value={orderSearch} onChange={(event) => setOrderSearch(event.currentTarget.value)} placeholder="Search by Order ID, Customer..." /><button type="button" aria-label="Clear order search" onClick={() => { setOrderSearch(""); orderSearchInputRef.current?.focus(); }} disabled={!orderSearch}><X aria-hidden="true" /></button></div>
             </div>
             {orderMsg && <p className="hz-orders-message" role="status">{orderMsg}</p>}
             {!orders.length ? <div className="hz-canteen-empty hz-orders-empty"><ShoppingBag aria-hidden="true" /><p>No online orders yet.</p><span>New customer orders will appear here.</span></div> : !filteredOrders.length ? <div className="hz-canteen-empty hz-orders-empty"><Search aria-hidden="true" /><p>No matching orders.</p><span>Try another status or search term.</span></div> : (
