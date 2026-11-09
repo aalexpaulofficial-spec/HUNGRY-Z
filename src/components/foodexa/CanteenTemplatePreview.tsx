@@ -21,12 +21,12 @@ export function CanteenTemplatePreview({ imageUrl, heading, description, canteen
   const safeCrop = normalizeBannerCrop(crop);
 
   return (
-    <div>
-      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-        <p className="text-xs font-semibold text-foreground">Preview · drag image to reposition</p>
+    <div className="hz-template-preview-control">
+      <div className="hz-template-preview-toolbar">
+        <p><span>Preview</span><small>Drag the image to reposition</small></p>
         <div className="flex gap-1" aria-label="Banner preview size">
           {(["mobile", "tablet", "laptop"] as const).map((previewSize) => (
-            <button key={previewSize} type="button" onClick={() => setSize(previewSize)} aria-pressed={size === previewSize} className={cn("rounded-full border px-3 py-1 text-[10px] capitalize", size === previewSize ? "border-primary bg-primary/15 text-primary-bright" : "border-border text-muted-foreground")}>
+            <button key={previewSize} type="button" onClick={() => setSize(previewSize)} aria-pressed={size === previewSize} className={cn("hz-template-preview-size", size === previewSize && "is-active")}>
               {previewSize}
             </button>
           ))}
@@ -46,8 +46,8 @@ export function CanteenTemplatePreview({ imageUrl, heading, description, canteen
           preview
         />
       </div>
-      <label className="mt-3 block space-y-1.5 text-xs text-muted-foreground">
-        <span className="flex justify-between"><span>Zoom</span><span>{safeCrop.zoom.toFixed(2)}×</span></span>
+      <label className="hz-template-zoom-control">
+        <span><b>Image zoom</b><small>{safeCrop.zoom.toFixed(2)}×</small></span>
         <input type="range" min="1" max="3" step="0.05" value={safeCrop.zoom} onChange={(event) => onCropChange(normalizeBannerCrop({ ...safeCrop, zoom: Number(event.currentTarget.value) }))} aria-label="Banner image zoom" className="w-full accent-primary" />
       </label>
     </div>

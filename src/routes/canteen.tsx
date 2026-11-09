@@ -432,7 +432,7 @@ const uid = () => Math.random().toString(36).slice(2);
 const NEXT: Record<string, string | undefined> = { placed: "preparing", preparing: "ready", ready: "collected" };
 const BANNER_IMAGE_TYPES: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/avif": "avif" };
 export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { canteen: Canteen; onSignOut: () => void; language: "en" | "hi" | "kn"; onLanguageChange: (language: "en" | "hi" | "kn") => void }) {
-  const [tab, setTab] = useSessionState<"overview" | "menu" | "orders" | "pos" | "template" | "analytics" | "events">(`hungry-canteen-dashboard-tab-v2-${canteen.id}`, "overview");
+  const [tab, setTab] = useSessionState<"overview" | "menu" | "orders" | "pos" | "template" | "analytics" | "events" | "settings">(`hungry-canteen-dashboard-tab-v2-${canteen.id}`, "overview");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [pendingEventRequests, setPendingEventRequests] = useState(0);
   const [activeOrderCount, setActiveOrderCount] = useState(0);
@@ -465,6 +465,9 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
   const [orderStatusFilter, setOrderStatusFilter] = useState<"all" | "placed" | "preparing" | "ready" | "completed" | "cancelled">("all");
   const [orderSearch, setOrderSearch] = useState("");
   const orderSearchInputRef = useRef<HTMLInputElement>(null);
+  const [orderKeyboardOpen, setOrderKeyboardOpen] = useState(false);
+  const [orderKeyboardSymbols, setOrderKeyboardSymbols] = useState(false);
+  const [orderKeyboardShifted, setOrderKeyboardShifted] = useState(false);
   const [busyOrder, setBusyOrder] = useState<string | null>(null);
   const [printerSettingsOpen, setPrinterSettingsOpen] = useState(false);
   const [printerPaperWidth, setPrinterPaperWidth] = useState<ReceiptPaperWidth>(() => readPrinterPaperWidth(canteen.id));
@@ -525,10 +528,12 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
     { key: "analytics", label: "ANALYTICS", icon: ChartNoAxesCombined },
   ] as const;
 
-  function selectSection(key: typeof sidebarSections[number]["key"]) {
+  function selectSection(key: typeof sidebarSections[number]["key"] | "settings") {
     setTab(key);
+    if (key !== "orders") setOrderKeyboardOpen(false);
     if (key === "orders") void refreshActiveOrderCount();
     if (key === "events") { setEventUpdateNotice(false); void refreshPendingEventRequests(); }
+    if (key === "settings") { setPrinterSettingsOpen(true); setPrinterSettingsMsg(""); }
   }
 
   useEffect(() => {
@@ -1055,7 +1060,7 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
             {sidebarSections.map((item) => { const { key, label, icon: Icon } = item; const count = "count" in item ? item.count : 0; return <button key={key} type="button" title={sidebarCollapsed ? label : undefined} aria-current={tab === key ? "page" : undefined} onClick={() => selectSection(key)} className={cn("hz-canteen-side-link", tab === key && "is-active")}><Icon aria-hidden="true" /><span>{label}</span>{count > 0 && <span className="hz-canteen-side-count">{count}</span>}</button>; })}
           </nav>
           <div className="hz-canteen-sidebar-footer">
-            <button type="button" onClick={() => { setTab("orders"); setPrinterSettingsOpen(true); setPrinterSettingsMsg(""); }} className="hz-canteen-side-link"><Settings aria-hidden="true" /><span>Settings</span></button>
+            <button type="button" aria-current={tab === "settings" ? "page" : undefined} onClick={() => selectSection("settings")} className={cn("hz-canteen-side-link", tab === "settings" && "is-active")}><Settings aria-hidden="true" /><span>Settings</span></button>
             <button type="button" onClick={() => setOwnerFeedbackOpen(true)} className="hz-canteen-side-link"><CircleHelp aria-hidden="true" /><span>Help &amp; Support</span></button>
             <div className="hz-canteen-plan-card"><Store aria-hidden="true" /><div><strong data-no-translate>{canteen.name}</strong><span>Active canteen</span></div></div>
           </div>
@@ -1112,7 +1117,7 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
         </section>}
 
         {orderMsg && tab === "orders" && <p className="mt-4 rounded-2xl border border-primary/40 bg-primary/10 p-3 text-sm">{orderMsg}</p>}
-        {tab === "orders" && printerSettingsOpen && (
+        {(tab === "orders" || tab === "settings") && printerSettingsOpen && (
           <section id="printer-settings-panel" className="hz-printer-settings mt-3" aria-labelledby="printer-settings-title">
             <div className="hz-printer-settings-heading">
               <span className="hz-printer-settings-icon"><Printer aria-hidden="true" /></span>
@@ -1151,8 +1156,25 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
                   return <button key={filter} type="button" aria-pressed={orderStatusFilter === filter} onClick={() => setOrderStatusFilter(filter)} className={cn("hz-orders-filter", orderStatusFilter === filter && "is-active")}>{labels[filter]} <span>{orderStatusCounts[filter]}</span></button>;
                 })}
               </div>
-              <div className="hz-orders-search"><button type="button" className="hz-orders-search-trigger" aria-label="Focus order search" onClick={() => orderSearchInputRef.current?.focus()}><Search aria-hidden="true" /></button><input ref={orderSearchInputRef} type="search" inputMode="search" aria-label="Search by order ID or customer" value={orderSearch} onChange={(event) => setOrderSearch(event.currentTarget.value)} placeholder="Search by Order ID, Customer..." /><button type="button" aria-label="Clear order search" onClick={() => { setOrderSearch(""); orderSearchInputRef.current?.focus(); }} disabled={!orderSearch}><X aria-hidden="true" /></button></div>
+              <div className="hz-orders-search"><button type="button" className={cn("hz-orders-search-trigger", orderKeyboardOpen && "is-open")} aria-label={orderKeyboardOpen ? "Hide on-screen search keyboard" : "Show on-screen search keyboard"} aria-expanded={orderKeyboardOpen} aria-controls="online-orders-keyboard" onClick={() => setOrderKeyboardOpen((open) => !open)}><Search aria-hidden="true" /></button><input ref={orderSearchInputRef} type="search" inputMode="search" aria-label="Search by order ID or customer" value={orderSearch} onFocus={() => setOrderKeyboardOpen(true)} onChange={(event) => setOrderSearch(event.currentTarget.value)} placeholder="Search by Order ID, Customer..." /><button type="button" aria-label="Clear order search" onClick={() => { setOrderSearch(""); orderSearchInputRef.current?.focus(); }} disabled={!orderSearch}><X aria-hidden="true" /></button></div>
             </div>
+            {orderKeyboardOpen && <div id="online-orders-keyboard" className="hz-pos-keyboard hz-orders-keyboard" role="group" aria-label="On-screen order search keyboard">
+              <div className="hz-pos-keyboard-rows">
+                <div className="hz-pos-key-row">{(orderKeyboardSymbols ? "!@#$%^&*()" : "1234567890").split("").map((key) => <button key={key} type="button" onClick={() => setOrderSearch((value) => value + key)} className="hz-pos-key">{key}</button>)}</div>
+                <div className="hz-pos-key-row">{"QWERTYUIOP".split("").map((key) => <button key={key} type="button" onClick={() => setOrderSearch((value) => value + (orderKeyboardShifted ? key.toLowerCase() : key))} className="hz-pos-key">{orderKeyboardShifted ? key.toLowerCase() : key}</button>)}</div>
+                <div className="hz-pos-key-row hz-pos-key-row-home">{"ASDFGHJKL".split("").map((key) => <button key={key} type="button" onClick={() => setOrderSearch((value) => value + (orderKeyboardShifted ? key.toLowerCase() : key))} className="hz-pos-key">{orderKeyboardShifted ? key.toLowerCase() : key}</button>)}</div>
+                <div className="hz-pos-key-row">
+                  <button type="button" aria-label="Shift letter case" aria-pressed={orderKeyboardShifted} onClick={() => setOrderKeyboardShifted((shifted) => !shifted)} className="hz-pos-key hz-pos-key-action">⇧</button>
+                  {"ZXCVBNM".split("").map((key) => <button key={key} type="button" onClick={() => setOrderSearch((value) => value + (orderKeyboardShifted ? key.toLowerCase() : key))} className="hz-pos-key">{orderKeyboardShifted ? key.toLowerCase() : key}</button>)}
+                  <button type="button" aria-label="Backspace" onClick={() => setOrderSearch((value) => Array.from(value).slice(0, -1).join(""))} className="hz-pos-key hz-pos-key-action">⌫</button>
+                </div>
+                <div className="hz-pos-key-row hz-pos-key-row-bottom">
+                  <button type="button" onClick={() => setOrderKeyboardSymbols((symbols) => !symbols)} className="hz-pos-key hz-pos-key-action">{orderKeyboardSymbols ? "ABC" : "123"}</button>
+                  <button type="button" onClick={() => setOrderSearch((value) => value + " ")} className="hz-pos-key hz-pos-key-space">Space</button>
+                  <button type="button" onClick={() => setOrderKeyboardOpen(false)} className="hz-pos-key hz-pos-key-cancel"><X aria-hidden="true" /> Hide keypad</button>
+                </div>
+              </div>
+            </div>}
             {orderMsg && <p className="hz-orders-message" role="status">{orderMsg}</p>}
             {!orders.length ? <div className="hz-canteen-empty hz-orders-empty"><ShoppingBag aria-hidden="true" /><p>No online orders yet.</p><span>New customer orders will appear here.</span></div> : !filteredOrders.length ? <div className="hz-canteen-empty hz-orders-empty"><Search aria-hidden="true" /><p>No matching orders.</p><span>Try another status or search term.</span></div> : (
               <div className="hz-orders-list">
@@ -1188,37 +1210,50 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
                 ))}
               </div>
             )}
-          </div>) : tab === "template" ? (
-          <form onSubmit={saveTemplate} className="glass-red mt-6 grid gap-4 rounded-3xl p-5">
-            <div>
-              <h2 className="display text-xl">Student Home Banner</h2>
-              <p className="mt-1 text-sm text-muted-foreground">Customize the banner students see on this canteen's Home page.</p>
+          </div>) : tab === "settings" ? (
+          <section className="hz-owner-settings-page mt-6" aria-labelledby="owner-settings-title">
+            <header className="hz-owner-settings-header"><span><Settings aria-hidden="true" /></span><div><p>ACCOUNT &amp; OPERATIONS</p><h2 id="owner-settings-title" className="display">Canteen Settings</h2><small>Manage service hours, receipt printing, and your canteen details.</small></div></header>
+            <div className="hz-owner-settings-grid">
+              <CanteenAvailabilityPanel isActive={availability.is_active} visibility={availability.visibility} settings={{ availability_mode: availability.availability_mode, operating_hours: availability.operating_hours }} saving={availabilitySaving} onSave={updateAvailability} />
+              <section className="hz-owner-settings-profile" aria-label="Canteen profile">
+                <div className="hz-owner-settings-card-icon"><Store aria-hidden="true" /></div>
+                <div className="hz-owner-settings-profile-heading"><p>PROFILE</p><h3>{canteen.name}</h3><span>{canteen.university_name}</span></div>
+                <dl>
+                  <div><dt>Canteen code</dt><dd>{canteen.code}</dd></div>
+                  <div><dt>Listing visibility</dt><dd>{canteen.visibility}</dd></div>
+                  <div><dt>Account status</dt><dd>{canteen.is_active ? "Active" : "Inactive"}</dd></div>
+                </dl>
+                <button type="button" onClick={() => { void navigator.clipboard.writeText(canteen.code).then(() => { setCanteenCodeCopied(true); window.setTimeout(() => setCanteenCodeCopied(false), 1800); }).catch(() => setCanteenCodeCopied(false)); }}><Copy aria-hidden="true" /> {canteenCodeCopied ? "Copied" : "Copy canteen code"}</button>
+              </section>
             </div>
-            <label className="space-y-2">
-              <span className="block text-xs font-semibold text-foreground">Banner image (JPG, PNG, WebP, or AVIF; max 8 MB)</span>
-              <input
-                type="file"
-                name="templateImage"
-                accept="image/jpeg,image/png,image/webp,image/avif"
-                aria-label="Choose canteen banner image"
-                onChange={(event) => {
-                  setTemplateImage(event.currentTarget.files?.[0] ?? null);
-                  setBannerCrop(DEFAULT_BANNER_CROP);
-                }}
-                className={cn(field, "file:mr-3 file:rounded-full file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-primary-foreground")}
-              />
-            </label>
-            <input name="templateHeading" maxLength={120} value={templateHeading} onChange={(event) => setTemplateHeading(event.currentTarget.value)} placeholder="Heading (optional)" className={field} />
-            <textarea name="templateDescription" maxLength={500} value={templateDescription} onChange={(event) => setTemplateDescription(event.currentTarget.value)} placeholder="Description (optional)" rows={3} className={field} />
-            <CanteenTemplatePreview imageUrl={templatePreview ?? template.banner_image_url} heading={templateHeading} description={templateDescription} canteenName={canteen.name} universityName={canteen.university_name} crop={bannerCrop} onCropChange={setBannerCrop} />
+          </section>
+        ) : tab === "template" ? (
+          <form onSubmit={saveTemplate} className="hz-template-editor mt-6">
+            <header className="hz-template-editor-header"><span><ImageIcon aria-hidden="true" /></span><div><p>STUDENT STORE FRONT</p><h2 className="display">Student Home Banner</h2><small>Set the image and message students see when they open this canteen.</small></div></header>
+            <div className="hz-template-editor-layout">
+              <div className="hz-template-edit-fields">
+                <label className="hz-template-upload-field">
+                  <span><strong>Banner image</strong><small>JPG, PNG, WebP, or AVIF · Max 8 MB</small></span>
+                  <input type="file" name="templateImage" accept="image/jpeg,image/png,image/webp,image/avif" aria-label="Choose canteen banner image" onChange={(event) => { setTemplateImage(event.currentTarget.files?.[0] ?? null); setBannerCrop(DEFAULT_BANNER_CROP); }} className={cn(field, "file:mr-3 file:rounded-full file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-primary-foreground")} />
+                </label>
+                <label className="hz-template-copy-field"><span>Banner heading <small>Optional</small></span><input name="templateHeading" maxLength={120} value={templateHeading} onChange={(event) => setTemplateHeading(event.currentTarget.value)} placeholder="Browse campus food." className={field} /></label>
+                <label className="hz-template-copy-field"><span>Description <small>Optional</small></span><textarea name="templateDescription" maxLength={500} value={templateDescription} onChange={(event) => setTemplateDescription(event.currentTarget.value)} placeholder="Add a short message for students" rows={4} className={field} /></label>
+              </div>
+              <section className="hz-template-preview-card" aria-label="Student banner live preview"><header><div><p>LIVE PREVIEW</p><h3>Student dashboard banner</h3></div><span>Drag the image to reposition</span></header><CanteenTemplatePreview imageUrl={templatePreview ?? template.banner_image_url} heading={templateHeading} description={templateDescription} canteenName={canteen.name} universityName={canteen.university_name} crop={bannerCrop} onCropChange={setBannerCrop} /></section>
+            </div>
             {templateError && <p role="alert" className="text-sm text-primary-bright">{templateError}</p>}
-            <div className="flex gap-2">
-              <button disabled={savingTemplate} className="rounded-full bg-primary px-6 py-2.5 text-xs font-semibold text-primary-foreground disabled:opacity-60">{savingTemplate ? "Saving template…" : "Save template"}</button>
-              <button type="button" disabled={savingTemplate} onClick={() => { setTemplateImage(null); setTemplateError(""); setTab("menu"); }} className="rounded-full border border-border px-6 py-2.5 text-xs text-muted-foreground disabled:opacity-60">Cancel</button>
+            <div className="hz-template-editor-actions">
+              <p>Your existing banner will stay live until you save these changes.</p>
+              <div><button disabled={savingTemplate} className="rounded-full bg-primary px-6 py-2.5 text-xs font-semibold text-primary-foreground disabled:opacity-60">{savingTemplate ? "Saving template…" : "Save template"}</button><button type="button" disabled={savingTemplate} onClick={() => { setTemplateImage(null); setTemplateError(""); setTab("menu"); }} className="rounded-full border border-border px-6 py-2.5 text-xs text-muted-foreground disabled:opacity-60">Cancel</button></div>
             </div>
           </form>
         ) : tab === "analytics" ? (
           <section className="mt-5" aria-label="Select analytics mode">
+            <div className="hz-analytics-revenue" aria-label="Today's online, offline, and total revenue">
+              <article><span className="hz-analytics-revenue-icon"><ShoppingBag aria-hidden="true" /></span><div><p>ONLINE REVENUE · TODAY</p><strong>{todayOnlineCollected === null ? "Loading…" : `₹${todayOnlineCollected.toLocaleString("en-IN")}`}</strong><small>Paid online orders</small></div></article>
+              <article><span className="hz-analytics-revenue-icon"><Receipt aria-hidden="true" /></span><div><p>OFFLINE REVENUE · TODAY</p><strong>₹{todayOfflineRevenue.toLocaleString("en-IN")}</strong><small>Paid POS bills on this device</small></div></article>
+              <article className="is-total"><span className="hz-analytics-revenue-icon"><ChartNoAxesCombined aria-hidden="true" /></span><div><p>TOTAL REVENUE · TODAY</p><strong>{todayOnlineCollected === null ? "Loading…" : `₹${(todayOnlineCollected + todayOfflineRevenue).toLocaleString("en-IN")}`}</strong><small>Online plus offline collected sales</small></div></article>
+            </div>
             <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card p-3">
               <div><p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Separate reports</p><p className="mt-1 text-xs text-muted-foreground">Choose one sales channel to view its statistics and order history.</p></div>
               <div className="grid w-full grid-cols-2 gap-2 sm:w-auto">
