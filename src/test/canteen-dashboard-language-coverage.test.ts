@@ -47,18 +47,20 @@ describe("Canteen Dashboard language coverage", () => {
   });
 
   it("translates live counts, analytics mode labels, payment metrics and menu categories", () => {
-    const dynamicLabels = ["MENU (2)", "FACULTY EVENTS (3 REQUESTS)", "ONLINE ANALYTICS", "OFFLINE ANALYTICS", "ONLINE · Total orders", "ONLINE · Today's revenue", "OFFLINE · Bill count", "OFFLINE · Billed sales", "OFFLINE cash · paid", "0 bills · ₹0", "Breakfast"];
+    const dynamicLabels = ["MENU (2)", "FACULTY EVENTS (3 REQUESTS)", "ONLINE ANALYTICS", "OFFLINE ANALYTICS", "ONLINE · Total orders", "ONLINE · Today's revenue", "OFFLINE · Bill count", "OFFLINE · Billed sales", "OFFLINE cash · paid", "0 bills · ₹0", "Breakfast", "WADA", "MASALA DOSA"];
     for (const language of ["hi", "kn"] as const) {
       for (const label of dynamicLabels) {
         expect(translateDashboardText(label, language), `${language}: ${label}`).not.toBe(label);
       }
       const root = document.createElement("section");
-      root.innerHTML = "<span>MENU (2)</span><span>FACULTY EVENTS (3 REQUESTS)</span><span>OFFLINE · Bill count</span><span>OFFLINE cash · paid</span><span>Breakfast</span>";
+      root.innerHTML = "<span>MENU (2)</span><span>FACULTY EVENTS (3 REQUESTS)</span><span>OFFLINE · Bill count</span><span>OFFLINE cash · paid</span><span>Breakfast</span><span>WADA</span><span>MASALA DOSA</span>";
       const stop = localizeDashboard(root, language);
       expect(root.textContent).not.toContain("MENU");
       expect(root.textContent).not.toContain("FACULTY EVENTS");
       expect(root.textContent).not.toContain("OFFLINE");
       expect(root.textContent).not.toContain("Breakfast");
+      expect(root.textContent).not.toContain("WADA");
+      expect(root.textContent).not.toContain("MASALA DOSA");
       stop();
     }
   });
