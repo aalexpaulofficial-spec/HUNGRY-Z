@@ -764,10 +764,26 @@ html[data-theme="light"] .hz-canteen-nav { background: color-mix(in oklab, white
 .hz-canteen-plan-card span { color: var(--muted-foreground); font-size: .65rem; }
 .hz-canteen-main { min-width: 0; padding: 1.4rem clamp(1rem, 2.2vw, 2.25rem) 2rem; }
 .hz-canteen-content { display: grid; gap: 1rem; min-width: 0; }
-.hz-canteen-header { box-shadow: none; }
+.hz-canteen-header { grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 1rem; border: 0 !important; border-radius: 0 !important; background: transparent !important; box-shadow: none; padding: 0 !important; }
+.hz-canteen-brand { align-items: center; gap: .8rem; }
+.hz-canteen-brand > img { width: 4.25rem; height: 4.25rem; }
+.hz-canteen-brand-copy > p:first-child { margin-bottom: .2rem; font-size: .76rem; letter-spacing: .16em; }
+.hz-canteen-brand-copy h1 { font-size: 1.8rem; line-height: 1.05; }
+.hz-canteen-brand-copy button { min-height: 2.25rem; margin-top: .45rem; border-radius: 999px; padding: .4rem .75rem; font-size: .76rem; letter-spacing: .08em; }
+.hz-canteen-brand-copy > p:last-child { margin-top: .4rem; font-size: .8rem; }
+.hz-canteen-actions { align-self: center; }
 .hz-canteen-overview-banner { aspect-ratio: 5.04 / 1; max-height: 17.25rem; overflow: hidden; border: 1px solid var(--border); border-radius: 1.8rem; background: var(--card); box-shadow: var(--hz-shadow-card); }
 .hz-canteen-overview-banner > div { width: 100%; height: 100%; border: 0; border-radius: inherit; }
-.hz-canteen-overview-banner img { width: 100%; height: 100%; max-height: 100%; object-fit: cover; }
+.hz-canteen-overview-banner img { width: 100%; height: 100%; max-height: 100%; object-fit: contain; }
+.hz-canteen-overview-banner > .hz-template-banner-dashboard { display: grid; grid-template-columns: minmax(0, .39fr) minmax(0, .61fr); background: #050505; color: #fff; }
+.hz-template-banner-dashboard > img { display: none; }
+.hz-template-dashboard-image { grid-column: 2; grid-row: 1; min-width: 0; background: #050505; object-fit: contain !important; object-position: right center !important; transform: none !important; }
+.hz-template-dashboard-copy { position: relative !important; inset: auto !important; grid-column: 1; grid-row: 1; display: flex; min-width: 0; flex-direction: column; align-items: flex-start; justify-content: center; padding: 1.5rem clamp(1.4rem, 3.3vw, 3.4rem); color: #fff; }
+.hz-template-dashboard-copy > p:first-child { margin: 0; color: #f20d1c; font-size: .77rem; line-height: 1.3; letter-spacing: .1em; }
+.hz-template-dashboard-copy h2 { margin-top: .45rem; color: #fff; font-size: clamp(1.55rem, 2.5vw, 2.2rem); line-height: 1.08; letter-spacing: -.04em; }
+.hz-template-dashboard-copy > p:nth-of-type(2) { margin-top: .55rem; color: rgb(255 255 255 / 76%); font-size: .94rem; line-height: 1.35; }
+.hz-template-dashboard-copy button { min-height: 3rem; margin-top: 1.1rem; padding-inline: 1.4rem; font-size: .8rem; }
+#canteen-availability > section { margin-top: 0; }
 .hz-canteen-overview { display: grid; gap: 1rem; }
 .hz-canteen-metric-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .8rem; }
 .hz-canteen-metric { display: flex; min-width: 0; min-height: 6rem; align-items: center; gap: .8rem; border: 1px solid color-mix(in oklab, var(--metric-accent, var(--primary)) 17%, var(--border)); border-radius: 1.35rem; background: color-mix(in oklab, var(--metric-accent, var(--primary)) 4%, var(--card)); padding: 1rem; color: var(--foreground); text-align: left; transition: transform .18s, box-shadow .18s; }
@@ -843,12 +859,17 @@ html[data-theme="light"] .hz-canteen-sidebar { background: #fff; }
   .hz-canteen-side-link { min-height: 2.75rem; width: auto; flex: 0 0 auto; gap: .48rem; padding: .55rem .75rem; font-size: .68rem; white-space: nowrap; }
   .hz-canteen-side-link > svg { width: 1rem; height: 1rem; }
   .hz-canteen-main { padding: .8rem .8rem 1.5rem; }
+  .hz-canteen-header { grid-template-columns: minmax(0, 1fr); align-items: start; }
+  .hz-canteen-actions { justify-content: flex-start; }
   .hz-canteen-overview-banner { aspect-ratio: 3.75 / 1; min-height: 13rem; max-height: 16rem; }
+  .hz-canteen-overview-banner > .hz-template-banner-dashboard { grid-template-columns: minmax(0, .43fr) minmax(0, .57fr); }
+  .hz-template-dashboard-copy { padding: 1.2rem clamp(1rem, 4vw, 2rem); }
+  .hz-template-dashboard-copy button { min-height: 2.7rem; margin-top: .8rem; }
 }
 @media (max-width: 600px) {
   .hz-canteen-main { padding: .65rem .65rem 1rem; }
   .hz-canteen-content { gap: .75rem; }
-  .hz-canteen-header { border-radius: 1.35rem; padding: .85rem; }
+  .hz-canteen-header { border-radius: 0; padding: 0; }
   .hz-canteen-header .back-btn { display: none; }
   .hz-canteen-brand { gap: .65rem; }
   .hz-canteen-brand > img { width: 2.65rem; height: 2.65rem; }
@@ -856,8 +877,12 @@ html[data-theme="light"] .hz-canteen-sidebar { background: #fff; }
   .hz-canteen-actions { justify-content: flex-start; }
   .hz-canteen-overview-banner { border-radius: 1.25rem; }
   .hz-canteen-overview-banner { aspect-ratio: 2.45 / 1; min-height: 11rem; max-height: 14rem; }
-  .hz-canteen-overview-banner h2 { font-size: 1.55rem; line-height: 1.08; }
-  .hz-canteen-overview-banner p { font-size: .75rem; line-height: 1.25; }
+  .hz-canteen-overview-banner > .hz-template-banner-dashboard { grid-template-columns: minmax(0, .48fr) minmax(0, .52fr); }
+  .hz-template-dashboard-copy { padding: .8rem .9rem; }
+  .hz-template-dashboard-copy > p:first-child { font-size: .58rem; letter-spacing: .06em; }
+  .hz-template-dashboard-copy h2 { margin-top: .3rem; font-size: 1.25rem; line-height: 1.05; }
+  .hz-template-dashboard-copy > p:nth-of-type(2) { margin-top: .3rem; font-size: .67rem; line-height: 1.2; }
+  .hz-template-dashboard-copy button { min-height: 2.2rem; margin-top: .55rem; padding-inline: .9rem; font-size: .68rem; }
   .hz-canteen-metric-grid { gap: .55rem; }
   .hz-canteen-metric { min-height: 5rem; gap: .55rem; border-radius: 1rem; padding: .7rem; }
   .hz-canteen-metric-icon { width: 2.1rem; height: 2.1rem; }

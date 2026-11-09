@@ -1056,7 +1056,7 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
           </div>
         </header>
         {canteen.visibility === "maintenance" && <p className="mt-4 rounded-2xl border border-primary/40 bg-primary/10 p-3 text-sm text-primary-bright">Your canteen is in maintenance mode — customers can't place orders.</p>}
-        {tab === "overview" && <section className="hz-canteen-overview-banner"><CanteenTemplateBanner imageUrl={template.banner_image_url} heading={template.heading} description={template.description} canteenName={canteen.name} universityName={canteen.university_name} cropX={template.banner_crop_x} cropY={template.banner_crop_y} cropZoom={template.banner_crop_zoom} /></section>}
+        {tab === "overview" && <section className="hz-canteen-overview-banner"><CanteenTemplateBanner layout="dashboard" imageUrl={template.banner_image_url} heading={template.heading} description={template.description} canteenName={canteen.name} universityName={canteen.university_name} cropX={template.banner_crop_x} cropY={template.banner_crop_y} cropZoom={template.banner_crop_zoom} /></section>}
         {tab === "overview" && <div id="canteen-availability"><CanteenAvailabilityPanel
           isActive={availability.is_active}
           visibility={availability.visibility}

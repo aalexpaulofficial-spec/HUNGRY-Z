@@ -10,6 +10,7 @@ type CanteenTemplateBannerProps = {
   universityName: string;
   onOrder?: () => void;
   preview?: boolean;
+  layout?: "overlay" | "dashboard";
   cropX?: number;
   cropY?: number;
   cropZoom?: number;
@@ -24,6 +25,7 @@ export function CanteenTemplateBanner({
   universityName,
   onOrder,
   preview = false,
+  layout = "overlay",
   cropX = 50,
   cropY = 50,
   cropZoom = 1,
@@ -34,7 +36,7 @@ export function CanteenTemplateBanner({
   return (
     <div
       data-testid="canteen-template-banner"
-      className={`relative overflow-hidden rounded-[2rem] border border-primary/30 ${onCropChange ? "cursor-grab touch-none active:cursor-grabbing" : ""}`}
+      className={`relative overflow-hidden rounded-[2rem] border border-primary/30 ${layout === "dashboard" ? "hz-template-banner-dashboard" : ""} ${onCropChange ? "cursor-grab touch-none active:cursor-grabbing" : ""}`}
       onPointerDown={(event) => {
         if (!onCropChange || !preview) return;
         const bounds = event.currentTarget.getBoundingClientRect();
@@ -61,7 +63,7 @@ export function CanteenTemplateBanner({
       onPointerCancel={() => { drag.current = null; }}
       onLostPointerCapture={() => { drag.current = null; }}
     >
-      <img src={imageUrl || foodImage("food-indian")} alt="" className="block h-auto w-full object-contain" style={bannerCropStyle({ x: cropX, y: cropY, zoom: cropZoom })} />
+      <img src={imageUrl || foodImage("food-indian")} alt="" className={`block h-auto w-full object-contain ${layout === "dashboard" ? "hz-template-dashboard-image" : ""}`} style={layout === "dashboard" ? undefined : bannerCropStyle({ x: cropX, y: cropY, zoom: cropZoom })} />
       <div className="absolute bottom-5 left-5 right-5">
         <p data-no-translate className="text-xs font-semibold uppercase tracking-widest text-primary-bright">{canteenName} · {universityName}</p>
         <h2 data-no-translate={heading?.trim() ? "" : undefined} className="display mt-1 text-3xl">{heading?.trim() || "Browse campus food."}</h2>
