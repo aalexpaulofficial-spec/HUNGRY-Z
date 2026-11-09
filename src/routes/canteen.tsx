@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { flushSync } from "react-dom";
 import { z } from "zod";
-import { LogOut, Plus, Trash2, Pencil, Printer, Settings, Search, Minus, Pause, Play, ShoppingBag, X, Receipt, UtensilsCrossed, LayoutDashboard, CalendarDays, Image as ImageIcon, ChartNoAxesCombined, CircleHelp, Store, ArrowUpRight, Clock3, ChevronLeft, ChevronRight } from "lucide-react";
+import { LogOut, Plus, Trash2, Pencil, Printer, Settings, Search, Minus, Pause, Play, ShoppingBag, X, Receipt, UtensilsCrossed, LayoutDashboard, CalendarDays, Image as ImageIcon, ChartNoAxesCombined, CircleHelp, Store, ArrowUpRight, Clock3, ChevronLeft, ChevronRight, LockKeyhole, Copy, UserRound, CreditCard } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { CanteenTemplatePreview } from "@/components/foodexa/CanteenTemplatePreview";
 import { CanteenTemplateBanner } from "@/components/foodexa/CanteenTemplateBanner";
@@ -462,12 +462,31 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
   useBackStep(!!editing, () => setEditing(null));
   const [err, setErr] = useState("");
   const [orderMsg, setOrderMsg] = useState("");
+  const [orderStatusFilter, setOrderStatusFilter] = useState<"all" | "placed" | "preparing" | "ready" | "completed" | "cancelled">("all");
+  const [orderSearch, setOrderSearch] = useState("");
   const [busyOrder, setBusyOrder] = useState<string | null>(null);
   const [printerSettingsOpen, setPrinterSettingsOpen] = useState(false);
   const [printerPaperWidth, setPrinterPaperWidth] = useState<ReceiptPaperWidth>(() => readPrinterPaperWidth(canteen.id));
   const [printerSettingsMsg, setPrinterSettingsMsg] = useState("");
   const [canteenCodeCopied, setCanteenCodeCopied] = useState(false);
   const [printJob, setPrintJob] = useState<ReceiptPrintJob | null>(null);
+
+  const orderStatusCounts = {
+    all: orders.length,
+    placed: orders.filter((order) => order.status === "placed").length,
+    preparing: orders.filter((order) => order.status === "preparing").length,
+    ready: orders.filter((order) => order.status === "ready").length,
+    completed: orders.filter((order) => order.status === "collected").length,
+    cancelled: orders.filter((order) => order.status === "cancelled").length,
+  };
+  const filteredOrders = orders.filter((order) => {
+    const statusMatches = orderStatusFilter === "all"
+      || (orderStatusFilter === "completed" ? order.status === "collected" : order.status === orderStatusFilter);
+    const query = orderSearch.trim().toLocaleLowerCase();
+    const searchMatches = !query || [order.order_number, order.customer_name, order.pickup_code, order.payment_method, order.payment_status, ...order.lines.map((line) => line.name)]
+      .some((value) => value.toLocaleLowerCase().includes(query));
+    return statusMatches && searchMatches;
+  });
   const [printing, setPrinting] = useState(false);
   const printLock = useRef(false);
   const [ownerFeedbackOpen, setOwnerFeedbackOpen] = useState(false);
@@ -1115,48 +1134,60 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
           </section>
         )}
         {tab === "pos" ? <OfflinePOSTab canteenName={canteen.name} menu={menu} current={posState.current} held={posState.held} pendingSyncCount={posState.completed.filter((sale) => sale.syncStatus !== "synced").length} search={posSearch} category={posCategory} message={posMessage} printing={printing} paymentMethod={posState.paymentMethod} paymentStatus={posState.paymentStatus} onPaymentMethod={(paymentMethod) => setPOSState((current) => ({ ...current, paymentMethod }))} onPaymentStatus={(paymentStatus) => setPOSState((current) => ({ ...current, paymentStatus }))} onSearch={setPOSSearch} onCategory={setPOSCategory} onAdd={addPOSItem} onQuantity={setPOSQuantity} onHold={holdPOSOrder} onResume={resumePOSOrder} onClear={clearPOSOrder} onPrint={printPOSBill} /> : tab === "orders" ? (
-          <div className="mt-6 grid gap-3 sm:grid-cols-2">
-            <section className="rounded-3xl border border-primary/25 bg-primary/5 p-5 sm:col-span-2"><h2 className="display text-xl">ONLINE ORDERS</h2><p className="mt-2 text-sm text-muted-foreground">Customers must enter this canteen’s correct seven-character HUNGRY Z Canteen Code to access its menu and place orders here.</p><p className="mt-2 font-mono text-sm font-black tracking-[0.18em] text-primary">{canteen.code}</p></section>
-            {!orders.length && <p className="rounded-3xl border border-border bg-card p-8 text-center text-sm text-muted-foreground sm:col-span-2">No orders yet. New orders appear here instantly.</p>}
-            {orders.map((o) => (
-              <div key={o.id} className={cn("rounded-3xl border bg-card p-5", orderStatusBorderClass(o.status))}>
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className={`rounded-full border px-4 py-2 text-sm font-black tracking-wider ${o.order_type === "parcel" ? "border-amber-500/40 bg-amber-500/10 text-amber-600" : "border-sky-500/40 bg-sky-500/10 text-sky-600"}`}>{o.order_type === "parcel" ? "PARCEL" : "DINE-IN"}</span>
-                    <OrderStatusBadge status={o.status} className="max-w-none text-left text-[10px] tracking-widest" />
-                  </div>
-                  <div className="text-right"><p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Order ID</p><p className="font-mono text-sm font-bold text-foreground">{o.order_number}</p></div>
-                </div>
-                <div className="mt-4 grid gap-2 rounded-2xl bg-ink-soft p-3 text-sm sm:grid-cols-2">
-                  <p><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Customer </span><strong>{o.customer_name}</strong></p>
-                  <p><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Pickup code </span><strong className="font-mono text-base tracking-widest">{o.pickup_code}</strong></p>
-                  <p className="text-xs text-muted-foreground">{new Date(o.created_at).toLocaleString()}</p>
-                  <p className="text-xs font-semibold text-foreground">{orderPaymentMethodLabel(o.payment_method)} · {orderPaymentStatusLabel(o.payment_status)}{o.payment_method === "counter" && o.payment_status !== "paid" ? ` · ₹${o.total} due` : ""}</p>
-                </div>
-                <div className="mt-4 space-y-2 border-b border-border pb-4">
-                  <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Food items</p>
-                  {o.lines.map((line, index) => <div key={`${line.name}-${index}`} className="flex items-center justify-between gap-3 text-sm">
-                    <span data-no-translate className="font-semibold text-foreground">{line.qty} × {line.name}</span>
-                    <span className="shrink-0 text-muted-foreground">₹{line.price} each · <strong className="text-foreground">₹{line.price * line.qty}</strong></span>
-                  </div>)}
-                </div>
-                <div className="mt-3 flex items-end justify-between gap-3">
-                  <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Total amount</span>
-                  <strong className="text-2xl font-black tabular-nums text-foreground">₹{o.total}</strong>
-                </div>
-                {o.completion_workflow === "printed" && <p className="mt-4 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs font-semibold text-amber-700 dark:text-amber-300">{o.food_received_confirmed_at ? "Customer confirmed that food was received." : "Printed bill confirmed; waiting for customer to confirm food receipt."}</p>}
-                {o.status !== "cancelled" && o.completion_workflow !== "manual" && (o.bill_print_confirmed_at ? <div className="mt-4 flex gap-2"><button type="button" disabled className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-2xl border border-emerald-500/40 bg-emerald-500/10 px-4 py-3 text-sm font-black tracking-widest text-emerald-600 disabled:opacity-100">BILL PRINTED ✓</button><button type="button" disabled={printing || busyOrder === o.id} onClick={() => { if (window.confirm(`Authorized reprint for ${o.order_number}? This will not create another print record or customer notification.`)) void startReceiptPrint({ kind: "order", order: o }); }} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-border px-4 py-3 text-xs font-bold text-muted-foreground disabled:opacity-50"><Printer className="h-4 w-4" /> REPRINT</button></div> : <button type="button" disabled={printing || busyOrder === o.id} onClick={() => void startReceiptPrint({ kind: "order", order: o })} className="mt-4 flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-black tracking-widest text-primary-foreground transition hover:brightness-110 disabled:opacity-50"><Printer className="h-5 w-5" /> PRINT BILL</button>)}
-                {NEXT[o.status] && o.completion_workflow !== "printed" && (
-                  <div className="mt-3 flex gap-2">
-                    <button disabled={busyOrder === o.id} onClick={() => setStatus(o, NEXT[o.status] as "preparing" | "ready" | "collected")} className="rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50">{o.status === "ready" && o.payment_method === "counter" ? "Mark paid & collected" : `Mark ${ORDER_LABELS[NEXT[o.status]!]}`}</button>
-                    {o.status === "placed" && <button disabled={busyOrder === o.id} onClick={() => setStatus(o, "cancelled")} className="rounded-full border border-border px-4 py-2 text-xs text-muted-foreground disabled:opacity-50">Cancel</button>}
-                  </div>
-                )}
-                {o.status === "placed" && o.completion_workflow === "printed" && <button disabled={busyOrder === o.id} onClick={() => setStatus(o, "cancelled")} className="mt-3 rounded-full border border-border px-4 py-2 text-xs text-muted-foreground disabled:opacity-50">Cancel</button>}
+          <div className="hz-orders-page mt-6">
+            <section className="hz-orders-banner" aria-labelledby="online-orders-title">
+              <div className="hz-orders-banner-icon"><LockKeyhole aria-hidden="true" /></div>
+              <div className="hz-orders-banner-copy">
+                <h2 id="online-orders-title">Online Orders</h2>
+                <p>Customers must enter this canteen's seven-character HUNGRY Z Canteen Code to access its menu and place orders.</p>
               </div>
-            ))}
-          </div>
-        ) : tab === "template" ? (
+              <button type="button" onClick={() => { void navigator.clipboard.writeText(canteen.code).then(() => { setCanteenCodeCopied(true); window.setTimeout(() => setCanteenCodeCopied(false), 1800); }).catch(() => setCanteenCodeCopied(false)); }} className="hz-orders-code" aria-label="Copy HUNGRY Z Canteen Code"><span data-no-translate>{canteen.code}</span><Copy aria-hidden="true" />{canteenCodeCopied && <span className="hz-orders-copied">COPIED</span>}</button>
+            </section>
+            <div className="hz-orders-toolbar">
+              <div className="hz-orders-filters" role="group" aria-label="Filter online orders">
+                {(["all", "placed", "preparing", "ready", "completed", "cancelled"] as const).map((filter) => {
+                  const labels = { all: "All Orders", placed: "Placed", preparing: "Preparing", ready: "Ready", completed: "Completed", cancelled: "Cancelled" };
+                  return <button key={filter} type="button" aria-pressed={orderStatusFilter === filter} onClick={() => setOrderStatusFilter(filter)} className={cn("hz-orders-filter", orderStatusFilter === filter && "is-active")}>{labels[filter]} <span>{orderStatusCounts[filter]}</span></button>;
+                })}
+              </div>
+              <label className="hz-orders-search"><Search aria-hidden="true" /><span className="sr-only">Search by order ID or customer</span><input value={orderSearch} onChange={(event) => setOrderSearch(event.currentTarget.value)} placeholder="Search by Order ID, Customer..." /><button type="button" aria-label="Clear order search" onClick={() => setOrderSearch("")} disabled={!orderSearch}><X aria-hidden="true" /></button></label>
+            </div>
+            {orderMsg && <p className="hz-orders-message" role="status">{orderMsg}</p>}
+            {!orders.length ? <div className="hz-canteen-empty hz-orders-empty"><ShoppingBag aria-hidden="true" /><p>No online orders yet.</p><span>New customer orders will appear here.</span></div> : !filteredOrders.length ? <div className="hz-canteen-empty hz-orders-empty"><Search aria-hidden="true" /><p>No matching orders.</p><span>Try another status or search term.</span></div> : (
+              <div className="hz-orders-list">
+                {filteredOrders.map((o) => (
+                  <article key={o.id} className="hz-online-order-card">
+                    <aside className="hz-online-order-identity">
+                      <div className="hz-online-order-avatar"><ShoppingBag aria-hidden="true" /></div>
+                      <span className="hz-online-order-id-label">ORDER ID</span>
+                      <strong className="hz-online-order-id">{o.order_number}</strong>
+                      <span className="hz-online-order-type">{o.order_type === "parcel" ? "PARCEL" : "DINE-IN"}</span>
+                      <OrderStatusBadge status={o.status} className="hz-online-order-status max-w-none text-left text-[10px] tracking-widest" />
+                    </aside>
+                    <div className="hz-online-order-main">
+                      <div className="hz-online-order-meta">
+                        <div><UserRound aria-hidden="true" /><span>Customer<strong>{o.customer_name}</strong></span></div>
+                        <div><CalendarDays aria-hidden="true" /><span>Order Time<strong>{new Date(o.created_at).toLocaleString()}</strong></span></div>
+                        <div><Receipt aria-hidden="true" /><span>Pickup Code<strong className="font-mono tracking-wider">{o.pickup_code}</strong></span></div>
+                        <div><CreditCard aria-hidden="true" /><span>Payment<strong>{orderPaymentMethodLabel(o.payment_method)} · {orderPaymentStatusLabel(o.payment_status)}{o.payment_method === "counter" && o.payment_status !== "paid" ? ` · ₹${o.total} due` : ""}</strong></span></div>
+                      </div>
+                      <div className="hz-online-order-items">
+                        <h3><UtensilsCrossed aria-hidden="true" /> Food Items</h3>
+                        {o.lines.map((line, index) => <div key={`${line.name}-${index}`} className="hz-online-order-line"><span data-no-translate><b>{line.qty} ×</b> {line.name}</span><span>₹{line.price} each <strong>₹{line.price * line.qty}</strong></span></div>)}
+                      </div>
+                      <div className="hz-online-order-total"><span><Receipt aria-hidden="true" /> Total Amount</span><strong>₹{o.total.toLocaleString("en-IN")}</strong></div>
+                      {o.completion_workflow === "printed" && <p className="hz-online-order-notice">{o.food_received_confirmed_at ? "Customer confirmed that food was received." : "Printed bill confirmed; waiting for customer to confirm food receipt."}</p>}
+                    </div>
+                    <div className="hz-online-order-actions">
+                      {o.status !== "cancelled" && o.completion_workflow !== "manual" && (o.bill_print_confirmed_at ? <><button type="button" disabled className="hz-online-order-action is-confirmed">BILL PRINTED ✓</button><button type="button" disabled={printing || busyOrder === o.id} onClick={() => { if (window.confirm(`Authorized reprint for ${o.order_number}? This will not create another print record or customer notification.`)) void startReceiptPrint({ kind: "order", order: o }); }} className="hz-online-order-action"><Printer aria-hidden="true" /> REPRINT</button></> : <button type="button" disabled={printing || busyOrder === o.id} onClick={() => void startReceiptPrint({ kind: "order", order: o })} className="hz-online-order-action is-primary"><Printer aria-hidden="true" /> PRINT BILL</button>)}
+                      {NEXT[o.status] && o.completion_workflow !== "printed" && <button disabled={busyOrder === o.id} onClick={() => setStatus(o, NEXT[o.status] as "preparing" | "ready" | "collected")} className="hz-online-order-action is-primary">{o.status === "ready" && o.payment_method === "counter" ? "Mark paid & collected" : `Mark ${ORDER_LABELS[NEXT[o.status]!]}`}</button>}
+                      {o.status === "placed" && <button disabled={busyOrder === o.id} onClick={() => setStatus(o, "cancelled")} className="hz-online-order-action">Cancel</button>}
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
+          </div>) : tab === "template" ? (
           <form onSubmit={saveTemplate} className="glass-red mt-6 grid gap-4 rounded-3xl p-5">
             <div>
               <h2 className="display text-xl">Student Home Banner</h2>
