@@ -1068,7 +1068,7 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
           </div>
         </aside>
         <main className="hz-canteen-main"><div className="hz-canteen-content">
-        <header className="hz-canteen-header grid grid-cols-1 gap-4 rounded-3xl border border-border bg-card p-4 sm:p-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center lg:gap-6">
+        {tab === "overview" && <header className="hz-canteen-header grid grid-cols-1 gap-4 rounded-3xl border border-border bg-card p-4 sm:p-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center lg:gap-6">
           <div className="hz-canteen-brand flex min-w-0 items-start gap-3 sm:gap-4">
             <BackButton inline />
             <img src="/HUNGRY%20Z%20CANTEEN%20DAHSBOARD%20LOGO.png" alt="HUNGRY Z Canteen Dashboard" className="h-11 w-11 shrink-0 rounded-full object-contain sm:h-12 sm:w-12" />
@@ -1084,7 +1084,7 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
             <LanguageSelect language={language} onChange={onLanguageChange} className="hz-canteen-header-control" />
             <button onClick={onSignOut} className="hz-canteen-header-control flex min-h-10 shrink-0 items-center gap-2 rounded-full border border-border px-4 py-2 text-xs text-muted-foreground hover:text-foreground"><LogOut className="h-3.5 w-3.5" /> Log out</button>
           </div>
-        </header>
+        </header>}
         {canteen.visibility === "maintenance" && <p className="mt-4 rounded-2xl border border-primary/40 bg-primary/10 p-3 text-sm text-primary-bright">Your canteen is in maintenance mode — customers can't place orders.</p>}
         {tab === "overview" && <section className="hz-canteen-overview-banner"><CanteenTemplateBanner layout="dashboard" imageUrl={template.banner_image_url} heading={template.heading} description={template.description} canteenName={canteen.name} universityName={canteen.university_name} cropX={template.banner_crop_x} cropY={template.banner_crop_y} cropZoom={template.banner_crop_zoom} /></section>}
         {tab === "overview" && <div id="canteen-availability"><CanteenAvailabilityPanel
