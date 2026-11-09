@@ -5,6 +5,14 @@ import { localizeDashboard, translateDashboardText } from "@/lib/dashboard-langu
 afterEach(() => document.body.replaceChildren());
 
 describe("event dashboard language and status presentation", () => {
+  it("translates the POS physical and on-screen keyboard controls to Hindi and Kannada", () => {
+    for (const language of ["hi", "kn"] as const) {
+      for (const label of ["PHYSICAL KEYBOARD", "ON-SCREEN KEYBOARD", "⌫ BACKSPACE", "SPACE", "CLEAR"]) {
+        expect(translateDashboardText(label, language), `${language}: ${label}`).not.toBe(label);
+      }
+    }
+  });
+
   it("switches event controls and notifications between Hindi and Kannada while retaining event data", () => {
     const root = document.createElement("section");
     root.innerHTML = '<h2>Faculty Events</h2><button>Open Event</button><p>3 tokens remaining</p><p>Event request sent to FLAMES. Event Code: 1234567. The canteen will review the request and send a quotation.</p><p data-no-translate>Campus Innovation Day</p>';

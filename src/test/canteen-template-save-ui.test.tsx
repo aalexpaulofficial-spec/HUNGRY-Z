@@ -118,4 +118,28 @@ describe("canteen template save flow", () => {
     await waitFor(() => expect(screen.getByRole("slider", { name: "Banner image zoom" })).toHaveValue("1.8"));
     expect(container.querySelector(".cursor-grab img")).toHaveStyle({ transform: "translate(40%, -40%) scale(1.8)" });
   });
+
+  it("switches between physical and touch search keyboards and updates the POS search instantly", async () => {
+    render(<Dashboard canteen={{ id: "canteen-1", code: "ABC1234", name: "Main Canteen", university_name: "Campus", visibility: "public", is_active: true, availability_mode: "schedule", timezone: "Asia/Kolkata", operating_hours: { mon: { open: "00:00", close: "24:00" }, tue: { open: "00:00", close: "24:00" }, wed: { open: "00:00", close: "24:00" }, thu: { open: "00:00", close: "24:00" }, fri: { open: "00:00", close: "24:00" }, sat: { open: "00:00", close: "24:00" }, sun: { open: "00:00", close: "24:00" } } }} language="en" onLanguageChange={() => undefined} onSignOut={() => undefined} />);
+    fireEvent.click(screen.getByRole("button", { name: /OFFLINE POS/ }));
+
+    const search = screen.getByRole("searchbox", { name: "Search POS menu" });
+    expect(search).not.toHaveAttribute("readonly");
+    expect(screen.queryByRole("group", { name: "On-screen search keyboard" })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "ON-SCREEN KEYBOARD" }));
+    expect(search).toHaveAttribute("readonly");
+    expect(screen.getByRole("group", { name: "On-screen search keyboard" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "A" }));
+    fireEvent.click(screen.getByRole("button", { name: "2" }));
+    expect(search).toHaveValue("A2");
+    fireEvent.click(screen.getByRole("button", { name: "Backspace" }));
+    expect(search).toHaveValue("A");
+    fireEvent.click(screen.getByRole("button", { name: "CLEAR" }));
+    expect(search).toHaveValue("");
+
+    fireEvent.click(screen.getByRole("button", { name: "PHYSICAL KEYBOARD" }));
+    expect(search).not.toHaveAttribute("readonly");
+    expect(screen.queryByRole("group", { name: "On-screen search keyboard" })).not.toBeInTheDocument();
+  });
 });

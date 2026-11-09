@@ -290,6 +290,7 @@ function OfflinePOSTab({
   onHold: () => void; onResume: (order: HeldPOSOrder) => void; onClear: () => void; onPrint: () => void; onPaymentMethod: (value: OfflinePaymentMethod) => void; onPaymentStatus: (value: "paid" | "unpaid") => void;
 }) {
   // Online stock/availability controls online ordering only. Counter staff can bill any saved menu item.
+  const [searchMode, setSearchMode] = useState<"physical" | "onscreen">("physical");
   const items = menu;
   const categories = ["All", ...Array.from(new Set(items.map((item) => item.category)))];
   const filtered = items.filter((item) =>
@@ -308,16 +309,32 @@ function OfflinePOSTab({
 
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.55fr)_minmax(19rem,.9fr)]">
         <div className="min-w-0 rounded-3xl border border-border bg-card p-4 shadow-[var(--shadow-device)] sm:p-5">
-          <label className="relative block">
+          <div className="grid grid-cols-2 gap-2" role="group" aria-label="POS keyboard input mode">
+            <button type="button" aria-pressed={searchMode === "physical"} onClick={() => setSearchMode("physical")} className={cn("min-h-12 rounded-xl border px-2 text-[10px] font-black tracking-wide transition sm:px-3 sm:text-xs", searchMode === "physical" ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary/40")}>PHYSICAL KEYBOARD</button>
+            <button type="button" aria-pressed={searchMode === "onscreen"} onClick={() => setSearchMode("onscreen")} className={cn("min-h-12 rounded-xl border px-2 text-[10px] font-black tracking-wide transition sm:px-3 sm:text-xs", searchMode === "onscreen" ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary/40")}>ON-SCREEN KEYBOARD</button>
+          </div>
+          <label className="relative mt-3 block">
             <Search aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <input aria-label="Search POS menu" type="search" value={search} onChange={(event) => onSearch(event.currentTarget.value)} placeholder="Search dishes by name or category" className="hz-pos-search w-full rounded-2xl border border-input bg-ink-soft py-3 pl-11 pr-4 text-sm text-foreground outline-none focus:border-primary" />
+            <input aria-label="Search POS menu" type="search" inputMode={searchMode === "onscreen" ? "none" : "search"} readOnly={searchMode === "onscreen"} value={search} onChange={(event) => onSearch(event.currentTarget.value)} placeholder="Search dishes by name or category" className="hz-pos-search w-full rounded-2xl border border-input bg-ink-soft py-3 pl-11 pr-12 text-sm text-foreground outline-none focus:border-primary" />
             {search && <button type="button" aria-label="Clear search" onClick={() => onSearch("")} className="absolute right-2 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-full text-muted-foreground hover:bg-muted"><X className="h-4 w-4" /></button>}
           </label>
+          {searchMode === "onscreen" && <div role="group" className="mt-3 rounded-2xl border border-border bg-ink-soft p-2.5 sm:p-3" aria-label="On-screen search keyboard">
+            <div className="grid gap-1.5 sm:gap-2">
+              {["1234567890", "QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"].map((row, rowIndex) => <div key={rowIndex} className="grid grid-cols-5 gap-1.5 sm:grid-cols-10 sm:gap-2">
+                {[...row].map((key) => <button key={key} type="button" onClick={() => onSearch(`${search}${key}`)} className="min-h-12 touch-manipulation select-none rounded-xl border border-border bg-card text-sm font-bold text-foreground shadow-sm transition active:scale-95 active:border-primary active:bg-primary/10 sm:min-h-14 sm:text-base">{key}</button>)}
+                {rowIndex === 3 && <button type="button" aria-label="Backspace" onClick={() => onSearch(Array.from(search).slice(0, -1).join(""))} className="col-span-2 min-h-12 touch-manipulation rounded-xl border border-border bg-card px-3 text-sm font-black text-foreground shadow-sm active:scale-95 active:border-primary active:bg-primary/10 sm:col-span-3 sm:min-h-14">⌫ BACKSPACE</button>}
+              </div>)}
+              <div className="grid grid-cols-5 gap-1.5 sm:grid-cols-10 sm:gap-2">
+                <button type="button" onClick={() => onSearch(`${search} `)} className="col-span-3 min-h-12 touch-manipulation rounded-xl border border-border bg-card text-xs font-bold text-foreground shadow-sm active:scale-95 active:border-primary active:bg-primary/10 sm:col-span-7 sm:min-h-14">SPACE</button>
+                <button type="button" onClick={() => onSearch("")} className="col-span-2 min-h-12 touch-manipulation rounded-xl border border-primary/40 bg-primary/10 text-xs font-black text-primary shadow-sm active:scale-95 sm:col-span-3 sm:min-h-14">CLEAR</button>
+              </div>
+            </div>
+          </div>}
           <div className="hz-pos-categories mt-4 flex gap-2 overflow-x-auto pb-1" aria-label="Food categories">
             {categories.map((name) => <button key={name} type="button" onClick={() => onCategory(name)} aria-pressed={category === name} className={cn("min-h-10 shrink-0 rounded-full border px-4 text-xs font-bold transition", category === name ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background text-muted-foreground hover:border-primary/50 hover:text-foreground")}>{name}</button>)}
           </div>
-          {filtered.length ? <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
-            {filtered.map((item) => <button key={item.id} type="button" onClick={() => onAdd(item)} aria-label={`Add ${item.name}, ₹${item.price}`} className="hz-pos-item flex min-h-28 flex-col justify-between rounded-2xl border border-border bg-background p-4 text-left transition hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-lg active:scale-[.98]">
+          {filtered.length ? <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+            {filtered.map((item) => <button key={item.id} type="button" onClick={() => onAdd(item)} aria-label={`Add ${item.name}, ₹${item.price}`} className="hz-pos-item flex min-h-32 touch-manipulation flex-col justify-between rounded-2xl border border-border bg-background p-4 text-left transition hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-lg active:scale-[.98] sm:p-5">
               <span data-no-translate className="line-clamp-2 block text-sm font-bold leading-snug">{item.name}</span>
               <span className="mt-3 block text-base font-black text-primary">₹{item.price}</span>
             </button>)}
@@ -902,8 +919,8 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
 
   return (
     <div className="hz-canteen-app min-h-screen bg-background">
-      <div className="hz-canteen-shell mx-auto max-w-6xl px-4 py-5 sm:px-6 sm:py-8">
-        <header className="hz-canteen-header flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-border bg-card p-4 sm:p-5">
+      <div className="hz-canteen-shell mx-auto w-full max-w-screen-2xl px-4 py-5 sm:px-6 sm:py-8 xl:px-8">
+        <header className="hz-canteen-header flex flex-wrap items-start justify-between gap-4 rounded-3xl border border-border bg-card p-4 sm:p-5 lg:items-center">
           <div className="flex min-w-0 items-start gap-3">
           <BackButton inline />
           <img src="/HUNGRY%20Z%20CANTEEN%20DAHSBOARD%20LOGO.png" alt="HUNGRY Z Canteen Dashboard" className="h-12 w-12 shrink-0 rounded-full object-contain" />
@@ -914,7 +931,7 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
             <p className="text-sm text-muted-foreground"><span data-no-translate>{canteen.university_name}</span> · <span className="capitalize">{canteen.visibility}</span></p>
           </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex min-w-0 flex-wrap items-center gap-2 sm:gap-3">
             <ThemeToggle />
             <LanguageSelect language={language} onChange={onLanguageChange} />
             <button onClick={onSignOut} className="flex items-center gap-2 rounded-full border border-border px-4 py-2 text-xs text-muted-foreground hover:text-foreground"><LogOut className="h-3.5 w-3.5" /> Log out</button>
