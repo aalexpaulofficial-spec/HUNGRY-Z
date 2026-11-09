@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { CalendarDays, CircleX, Coins, Layers3, List, MapPin, Store, Ticket, Trash2, Utensils, UsersRound, Wallet, X } from "lucide-react";
+import { CalendarDays, CircleX, Clock3, Coins, Layers3, List, MapPin, Store, Ticket, Trash2, Utensils, UsersRound, Wallet, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { collectFacultyEventToken, createFacultyEvent, deleteFacultyEvent, publishFacultyEvent, requestFacultyEventCapacity, resolveAdditionalFacultyEventTokens, resolveFacultyEventCapacity, reviewFacultyEventQuotation, reviewFacultyEventRequest, submitFacultyEventQuotation, updateFacultyEvent, updateFacultyEventLogo, updateFacultyEventServedQuantities } from "@/lib/hungry.functions";
 import { FACULTY_EVENT_LOGO_BUCKET, FACULTY_EVENT_LOGO_MAX_BYTES, facultyEventLogoObjectPath, getFacultyEventLogoUrls } from "@/lib/faculty-event-logos";
@@ -491,6 +491,7 @@ export function EventCapacityPanel({ mode, canteenId, canteenName, userId }: { m
           {Object.keys(quotationQuantities).length > 0 && <div className="mt-2"><FoodQuantitySummary quantities={quotationQuantities} prices={quotationPrices} title="Canteen quotation and confirmed food" /></div>}
           {mode === "faculty" && event.status === "published" && Object.keys(quotationQuantities).length > 0 && <ActualFoodQuantitiesSummary requested={event.food_requirements} facultyMessage={event.food_request_message} planned={quotationQuantities} served={event.served_food_quantities ?? {}} updatedAt={event.served_food_updated_at} />}
           {event.canteen_note && <p className="mt-2 rounded-xl bg-ink-soft p-3 text-xs text-muted-foreground">Canteen response: {event.canteen_note}</p>}
+          {mode === "canteen" && event.status === "quotation_received" && <div className="hz-event-quotation-pending" role="status" aria-live="polite"><Clock3 aria-hidden="true" /><p>The quotation has been sent to the faculty and is awaiting their approval.</p></div>}
 
           {studentTokenRequests.filter((request) => request.event_id === event.id).length > 0 && <section className="mt-4 space-y-2 rounded-2xl border border-border p-4" aria-label={`Additional student token requests for ${event.name}`}>
             <h4 className="text-sm font-bold">Student additional token requests</h4>
