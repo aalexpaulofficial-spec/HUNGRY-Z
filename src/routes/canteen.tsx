@@ -1226,7 +1226,7 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
                 <div className="hz-owner-settings-profile-heading"><p>PROFILE</p><h3>{canteen.name}</h3><span>{canteen.university_name}</span></div>
                 <dl>
                   <div><dt>Canteen code</dt><dd>{canteen.code}</dd></div>
-                  <div><dt>Listing visibility</dt><dd>{canteen.visibility}</dd></div>
+                  <div><dt>Listing visibility</dt><dd className="capitalize">{canteen.visibility}</dd></div>
                   <div><dt>Account status</dt><dd>{canteen.is_active ? "Active" : "Inactive"}</dd></div>
                 </dl>
                 <button type="button" onClick={() => { void navigator.clipboard.writeText(canteen.code).then(() => { setCanteenCodeCopied(true); window.setTimeout(() => setCanteenCodeCopied(false), 1800); }).catch(() => setCanteenCodeCopied(false)); }}><Copy aria-hidden="true" /> {canteenCodeCopied ? "Copied" : "Copy canteen code"}</button>
