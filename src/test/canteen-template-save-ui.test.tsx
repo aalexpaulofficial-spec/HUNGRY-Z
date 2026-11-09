@@ -139,6 +139,8 @@ describe("canteen template save flow", () => {
     expect(search).toHaveValue("A2");
     fireEvent.click(screen.getByRole("button", { name: "Backspace" }));
     expect(search).toHaveValue("A");
+    fireEvent.click(screen.getByRole("button", { name: "SPACE" }));
+    expect(search).toHaveValue("A ");
     fireEvent.click(screen.getByRole("button", { name: "CLEAR" }));
     expect(search).toHaveValue("");
     fireEvent.click(screen.getByRole("button", { name: "A" }));
