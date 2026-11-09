@@ -426,7 +426,7 @@ export function EventCapacityPanel({ mode, canteenId, canteenName, userId }: { m
         const requestedFoodImageKey = menuItems.find((item) => (event.food_requirements[item.name] ?? 0) > 0)?.image ?? menuItems[0]?.image;
         const requestedFoodImage = requestedFoodImageKey ? foodImage(requestedFoodImageKey) : undefined;
         const eventImage = eventLogoUrls[event.id] ?? requestedFoodImage ?? foodImage("food-indian");
-        return <article key={event.id} className={mode === "canteen" ? "hz-canteen-event-card rounded-3xl border border-border bg-card p-5" : "rounded-3xl border border-border bg-card p-5"}>
+        return <article key={event.id} className={mode === "canteen" ? "hz-canteen-event-card rounded-3xl border border-border bg-card p-4" : "rounded-3xl border border-border bg-card p-5"}>
           {mode === "canteen" ? <div className="hz-faculty-event-overview">
             <div className="hz-faculty-event-photo"><img src={eventImage} alt={`${event.name} event food`} loading="lazy" /></div>
             <div className="hz-faculty-event-details">

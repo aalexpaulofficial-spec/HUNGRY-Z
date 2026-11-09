@@ -939,15 +939,15 @@ html[data-theme="light"] .hz-canteen-nav { background: color-mix(in oklab, white
 .hz-canteen-metric-arrow { width: 1rem; height: 1rem; flex: 0 0 auto; margin-left: auto; color: var(--metric-accent); }
 .hz-canteen-overview-panels { display: grid; grid-template-columns: minmax(0, .98fr) minmax(0, 1.02fr); gap: 1rem; align-items: stretch; }
 .hz-canteen-overview-panel { min-width: 0; border: 1px solid var(--border); border-radius: 1.6rem; background: var(--card); padding: 1.15rem; box-shadow: var(--hz-shadow-card); }
-.hz-canteen-event-card { display: grid; gap: 1.1rem; box-shadow: var(--hz-shadow-card); }
-.hz-faculty-event-overview { display: grid; grid-template-columns: minmax(14rem, .3fr) minmax(0, .7fr); align-items: stretch; gap: 1.25rem; }
-.hz-faculty-event-photo { min-width: 0; min-height: 15rem; max-height: 20rem; overflow: hidden; border: 1px solid var(--border); border-radius: 1.35rem; background: var(--ink-soft); }
-.hz-faculty-event-photo img { display: block; width: 100%; height: 100%; min-height: 15rem; max-height: 20rem; object-fit: cover; }
+.hz-canteen-event-card { display: grid; gap: .9rem; box-shadow: var(--hz-shadow-card); }
+.hz-faculty-event-overview { display: grid; grid-template-columns: minmax(13rem, .25fr) minmax(0, .75fr); align-items: stretch; gap: 1rem; }
+.hz-faculty-event-photo { width: 100%; max-width: 18rem; min-width: 0; min-height: 14rem; max-height: 18rem; overflow: hidden; border: 1px solid var(--border); border-radius: 1.2rem; background: var(--ink-soft); }
+.hz-faculty-event-photo img { display: block; width: 100%; height: 100%; min-height: 14rem; max-height: 18rem; object-fit: cover; }
 .hz-faculty-event-details { display: flex; min-width: 0; flex-direction: column; justify-content: center; gap: .45rem; }
 .hz-faculty-event-topline { display: flex; align-items: flex-start; justify-content: space-between; gap: .75rem; }
 .hz-faculty-event-token-badge { display: inline-flex; min-height: 2.75rem; flex: 0 0 auto; align-items: center; gap: .55rem; border: 1px solid var(--border); border-radius: 999px; background: var(--card); padding: .55rem .85rem; color: var(--foreground); font-size: .75rem; font-weight: 700; box-shadow: 0 2px 7px color-mix(in oklab, var(--foreground) 9%, transparent); }
 .hz-faculty-event-token-badge svg { color: var(--primary); }
-.hz-faculty-event-name { margin-top: .15rem; font-size: clamp(1.6rem, 2.3vw, 2.25rem); font-weight: 850; line-height: 1.05; }
+.hz-faculty-event-name { margin-top: .15rem; font-size: clamp(1.5rem, 2.1vw, 2rem); font-weight: 850; line-height: 1.05; }
 .hz-faculty-event-canteen { color: var(--muted-foreground); font-size: .9rem; font-weight: 600; }
 .hz-faculty-event-code { color: var(--muted-foreground); font-size: .78rem; }
 .hz-faculty-event-code span { color: var(--foreground); font-weight: 800; letter-spacing: .08em; }
@@ -956,7 +956,7 @@ html[data-theme="light"] .hz-canteen-nav { background: color-mix(in oklab, white
 .hz-faculty-event-meta span { display: inline-flex; min-width: 0; align-items: center; gap: .42rem; }
 .hz-faculty-event-meta svg { width: 1rem; height: 1rem; flex: 0 0 auto; }
 .hz-faculty-event-meta b { overflow-wrap: anywhere; }
-.hz-faculty-event-food-budget { display: grid; grid-template-columns: minmax(12rem, auto) minmax(0, 1fr) minmax(10rem, auto); align-items: center; gap: 1rem; border-radius: 1.35rem; background: var(--ink-soft); padding: .85rem 1rem; }
+.hz-faculty-event-food-budget { display: grid; grid-template-columns: minmax(12rem, auto) minmax(0, 1fr) minmax(10rem, auto); align-items: center; gap: .8rem; border-radius: 1.25rem; background: var(--ink-soft); padding: .7rem .9rem; }
 .hz-faculty-event-food-title { display: flex; align-items: center; gap: .65rem; color: var(--foreground); font-size: .92rem; }
 .hz-faculty-event-food-title svg { width: 1.2rem; height: 1.2rem; flex: 0 0 auto; }
 .hz-faculty-event-food-list { display: flex; min-width: 0; flex-wrap: wrap; gap: .5rem; margin: 0; padding: 0; list-style: none; }
@@ -966,11 +966,11 @@ html[data-theme="light"] .hz-canteen-nav { background: color-mix(in oklab, white
 .hz-faculty-event-budget svg { grid-row: span 2; width: 1.2rem; height: 1.2rem; }
 .hz-faculty-event-budget span { font-size: .68rem; font-weight: 650; }
 .hz-faculty-event-budget strong { font-size: 1.4rem; font-weight: 850; line-height: 1.1; }
-.hz-faculty-event-statistics { border: 1px solid var(--border); border-radius: 1.35rem; background: var(--card); padding: 1rem; }
+.hz-faculty-event-statistics { border: 1px solid var(--border); border-radius: 1.25rem; background: var(--card); padding: .85rem; }
 .hz-faculty-event-statistics h4 { display: flex; align-items: center; gap: .6rem; margin: 0 0 .8rem; font-size: 1rem; font-weight: 800; }
 .hz-faculty-event-statistics h4 svg { width: 1.15rem; height: 1.15rem; }
-.hz-faculty-event-stat-grid { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: .6rem; }
-.hz-faculty-event-stat { display: grid; min-width: 0; min-height: 5.5rem; grid-template-columns: 1.25rem minmax(0, 1fr); align-content: center; align-items: start; gap: .35rem .5rem; border-radius: 1rem; background: var(--ink-soft); padding: .75rem; }
+.hz-faculty-event-stat-grid { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: .5rem; }
+.hz-faculty-event-stat { display: grid; min-width: 0; min-height: 5rem; grid-template-columns: 1.15rem minmax(0, 1fr); align-content: center; align-items: start; gap: .3rem .45rem; border-radius: .9rem; background: var(--ink-soft); padding: .65rem; }
 .hz-faculty-event-stat > svg { width: 1.15rem; height: 1.15rem; }
 .hz-faculty-event-stat > span { color: var(--muted-foreground); font-size: .67rem; font-weight: 650; line-height: 1.25; }
 .hz-faculty-event-stat > strong { grid-column: 2; overflow-wrap: anywhere; color: var(--foreground); font-size: 1.2rem; font-weight: 850; line-height: 1.1; }
@@ -1043,7 +1043,7 @@ html[data-theme="light"] .hz-canteen-sidebar { background: var(--sidebar); }
   .hz-canteen-side-link > svg { width: 1rem; height: 1rem; }
   .hz-canteen-main { padding: .8rem .8rem 1.5rem; }
   .hz-canteen-header { grid-template-columns: minmax(0, 1fr); align-items: start; }
-  .hz-faculty-event-overview { grid-template-columns: minmax(11rem, .36fr) minmax(0, .64fr); gap: 1rem; }
+  .hz-faculty-event-overview { grid-template-columns: minmax(11rem, .36fr) minmax(0, .64fr); gap: .85rem; }
   .hz-faculty-event-meta { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .hz-faculty-event-food-budget { grid-template-columns: minmax(0, 1fr) auto; }
   .hz-faculty-event-food-list { grid-column: 1 / -1; grid-row: 2; }
@@ -1063,7 +1063,7 @@ html[data-theme="light"] .hz-canteen-sidebar { background: var(--sidebar); }
   .hz-canteen-brand > img { width: 2.65rem; height: 2.65rem; }
   .hz-canteen-brand-copy h1 { font-size: 1.15rem; }
   .hz-faculty-event-overview { grid-template-columns: minmax(0, 1fr); }
-  .hz-faculty-event-photo { min-height: 0; aspect-ratio: 16 / 9; }
+  .hz-faculty-event-photo { width: 100%; max-width: none; min-height: 0; aspect-ratio: 16 / 9; }
   .hz-faculty-event-photo img { min-height: 0; max-height: none; }
   .hz-faculty-event-topline { align-items: center; }
   .hz-faculty-event-token-badge { min-height: 2.4rem; padding: .45rem .65rem; font-size: .68rem; }
