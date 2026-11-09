@@ -954,21 +954,21 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
   return (
     <div className="hz-canteen-app min-h-screen bg-background">
       <div className="hz-canteen-shell mx-auto w-full max-w-screen-2xl px-4 py-5 sm:px-6 sm:py-8 xl:px-8">
-        <header className="hz-canteen-header flex flex-wrap items-start justify-between gap-4 rounded-3xl border border-border bg-card p-4 sm:p-5 lg:items-center">
-          <div className="flex min-w-0 items-start gap-3">
-          <BackButton inline />
-          <img src="/HUNGRY%20Z%20CANTEEN%20DAHSBOARD%20LOGO.png" alt="HUNGRY Z Canteen Dashboard" className="h-12 w-12 shrink-0 rounded-full object-contain" />
-          <div className="min-w-0">
-            <p className="text-[10px] tracking-[0.3em] text-primary-bright">CANTEEN DASHBOARD</p>
-            <h1 data-no-translate className="display text-3xl">{canteen.name}</h1>
-            <button type="button" onClick={() => { void navigator.clipboard.writeText(canteen.code).then(() => { setCanteenCodeCopied(true); window.setTimeout(() => setCanteenCodeCopied(false), 1800); }).catch(() => setCanteenCodeCopied(false)); }} className="mt-2 inline-flex min-h-10 items-center gap-2 rounded-xl border border-primary/35 bg-primary/10 px-3 font-mono text-sm font-black tracking-[0.18em] text-primary" aria-label="Copy HUNGRY Z Canteen Code">CANTEEN CODE · <span data-no-translate>{canteen.code}</span> <span className="font-sans text-[10px] tracking-normal">{canteenCodeCopied ? "COPIED" : "COPY"}</span></button>
-            <p className="text-sm text-muted-foreground"><span data-no-translate>{canteen.university_name}</span> · <span className="capitalize">{canteen.visibility}</span></p>
+        <header className="hz-canteen-header grid grid-cols-1 gap-4 rounded-3xl border border-border bg-card p-4 sm:p-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+          <div className="hz-canteen-brand flex min-w-0 items-start gap-3">
+            <BackButton inline />
+            <img src="/HUNGRY%20Z%20CANTEEN%20DAHSBOARD%20LOGO.png" alt="HUNGRY Z Canteen Dashboard" className="h-12 w-12 shrink-0 rounded-full object-contain" />
+            <div className="hz-canteen-brand-copy min-w-0 flex-1">
+              <p className="mb-0.5 text-[10px] tracking-[0.3em] text-primary-bright">CANTEEN DASHBOARD</p>
+              <h1 data-no-translate className="display text-2xl leading-tight sm:text-3xl">{canteen.name}</h1>
+              <button type="button" onClick={() => { void navigator.clipboard.writeText(canteen.code).then(() => { setCanteenCodeCopied(true); window.setTimeout(() => setCanteenCodeCopied(false), 1800); }).catch(() => setCanteenCodeCopied(false)); }} className="mt-1.5 inline-flex min-h-10 max-w-full flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border border-primary/35 bg-primary/10 px-3 py-1.5 font-mono text-sm font-black tracking-[0.18em] text-primary" aria-label="Copy HUNGRY Z Canteen Code"><span>CANTEEN CODE</span><span aria-hidden="true">·</span><span data-no-translate>{canteen.code}</span><span className="font-sans text-[10px] tracking-normal">{canteenCodeCopied ? "COPIED" : "COPY"}</span></button>
+              <p className="mt-1.5 flex flex-wrap items-center gap-x-2 text-sm leading-tight text-muted-foreground"><span data-no-translate>{canteen.university_name}</span><span aria-hidden="true">·</span><span className="capitalize">{canteen.visibility}</span></p>
+            </div>
           </div>
-          </div>
-          <div className="flex min-w-0 flex-wrap items-center gap-2 sm:gap-3">
+          <div className="hz-canteen-actions flex min-w-0 flex-wrap items-center gap-2 sm:gap-3 lg:justify-self-end">
             <ThemeToggle />
             <LanguageSelect language={language} onChange={onLanguageChange} />
-            <button onClick={onSignOut} className="flex items-center gap-2 rounded-full border border-border px-4 py-2 text-xs text-muted-foreground hover:text-foreground"><LogOut className="h-3.5 w-3.5" /> Log out</button>
+            <button onClick={onSignOut} className="flex min-h-10 shrink-0 items-center gap-2 rounded-full border border-border px-4 py-2 text-xs text-muted-foreground hover:text-foreground"><LogOut className="h-3.5 w-3.5" /> Log out</button>
           </div>
         </header>
         {canteen.visibility === "maintenance" && <p className="mt-4 rounded-2xl border border-primary/40 bg-primary/10 p-3 text-sm text-primary-bright">Your canteen is in maintenance mode — customers can't place orders.</p>}
