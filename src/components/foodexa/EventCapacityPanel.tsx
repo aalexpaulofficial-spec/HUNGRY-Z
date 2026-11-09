@@ -221,23 +221,20 @@ export function EventCapacityPanel({ mode, canteenId, canteenName, userId }: { m
   async function sendQuotation(event: EventRow) {
     setError(""); setMessage(""); setBusy(true);
     try {
-      let quantities: Record<string, number>;
-      let prices: Record<string, number>;
-      if (Object.keys(event.food_requirements).length === 0) {
-        const lines = manualQuotationItems[event.id] ?? [];
-        const normalizedNames = lines.map((line) => line.name.trim());
-        if (!lines.length || lines.some((line, index) => !normalizedNames[index] || !Number.isInteger(Number(line.quantity)) || Number(line.quantity) < 1 || Number(line.quantity) > 100000 || line.price.trim() === "" || !Number.isInteger(Number(line.price)) || Number(line.price) < 0 || Number(line.price) > 10000000)) {
-          throw new Error("Add a food name, a quantity, and a valid price for every quotation item.");
-        }
-        if (new Set(normalizedNames.map((name) => name.toLocaleLowerCase())).size !== normalizedNames.length) {
-          throw new Error("Each manual quotation item must have a unique food name.");
-        }
-        quantities = Object.fromEntries(lines.map((line, index) => [normalizedNames[index], Number(line.quantity)]));
-        prices = Object.fromEntries(lines.map((line, index) => [normalizedNames[index], Number(line.price)]));
-      } else {
-        quantities = Object.fromEntries(Object.entries(confirmedFoodSelection[event.id] ?? event.food_requirements).filter(([, quantity]) => Number.isInteger(quantity) && quantity > 0));
-        prices = Object.fromEntries(Object.keys(quantities).map((food) => [food, Number(confirmedPrices[event.id]?.[food] ?? menuPrices[food] ?? 0)]));
+      const selectedQuantities = Object.fromEntries(Object.entries(confirmedFoodSelection[event.id] ?? event.food_requirements).filter(([, quantity]) => Number.isInteger(quantity) && quantity > 0));
+      const quantities: Record<string, number> = { ...selectedQuantities };
+      const prices: Record<string, number> = Object.fromEntries(Object.keys(selectedQuantities).map((food) => [food, Number(confirmedPrices[event.id]?.[food] ?? menuPrices[food] ?? 0)]));
+      const manualLines = (manualQuotationItems[event.id] ?? []).filter((line) => line.name.trim() || line.price.trim());
+      const normalizedNames = manualLines.map((line) => line.name.trim());
+      if (manualLines.some((line, index) => !normalizedNames[index] || !Number.isInteger(Number(line.quantity)) || Number(line.quantity) < 1 || Number(line.quantity) > 100000 || line.price.trim() === "" || !Number.isInteger(Number(line.price)) || Number(line.price) < 0 || Number(line.price) > 10000000)) {
+        throw new Error("Add a food name, a quantity, and a valid price for every manual quotation item.");
       }
+      const names = [...Object.keys(quantities), ...normalizedNames].map((food) => food.toLocaleLowerCase());
+      if (new Set(names).size !== names.length) throw new Error("Each requested or manual quotation item must have a unique food name.");
+      manualLines.forEach((line, index) => {
+        quantities[normalizedNames[index]!] = Number(line.quantity);
+        prices[normalizedNames[index]!] = Number(line.price);
+      });
       if (!Object.keys(quantities).length || Object.values(prices).some((price) => !Number.isInteger(price) || price < 0)) throw new Error("Select at least one item and enter a valid price for each item.");
       const result = await quoteEvent({ data: { eventId: event.id, quantities, prices, note: notes[event.id] ?? "" } });
       setMessage(`Quotation sent to Faculty. Estimated budget: ₹${result.estimatedBudget}.`);
@@ -526,11 +523,11 @@ export function EventCapacityPanel({ mode, canteenId, canteenName, userId }: { m
             {Object.keys(event.food_requirements).length > 0 ? <>
               <p className="text-xs text-muted-foreground">Select requested dishes or alternatives, confirm quantities, and enter event prices. Faculty must approve before publishing.</p>
               <MenuConfirmationEditor items={menuItems} quantities={event.food_requirements} confirmedQuantities={confirmedFoodSelection[event.id] ?? event.food_requirements} prices={confirmedPrices[event.id] ?? {}} onQuantityChange={(food, quantity) => setConfirmedFoodSelection((current) => ({ ...current, [event.id]: { ...(current[event.id] ?? event.food_requirements), [food]: quantity } }))} onPriceChange={(food, price) => setConfirmedPrices((current) => ({ ...current, [event.id]: { ...(current[event.id] ?? {}), [food]: price } }))} />
-              <QuotationBudget quantities={confirmedFoodSelection[event.id] ?? event.food_requirements} prices={confirmedPrices[event.id] ?? menuPrices} />
             </> : <>
               <p className="text-xs text-muted-foreground">Faculty did not select menu items. Prepare the quotation from the faculty instructions above.</p>
-              <ManualQuotationEditor items={manualQuotationItems[event.id] ?? []} onChange={(items) => setManualQuotationItems((current) => ({ ...current, [event.id]: items }))} />
             </>}
+            <ManualQuotationEditor items={manualQuotationItems[event.id] ?? []} onChange={(items) => setManualQuotationItems((current) => ({ ...current, [event.id]: items }))} />
+            <QuotationBudget quantities={confirmedFoodSelection[event.id] ?? event.food_requirements} prices={{ ...menuPrices, ...confirmedPrices[event.id] }} manualItems={manualQuotationItems[event.id] ?? []} />
             <textarea maxLength={500} placeholder="Note for Faculty (optional)" aria-label={`Quotation note for ${event.name}`} value={notes[event.id] ?? ""} onChange={(formEvent) => setNotes({ ...notes, [event.id]: formEvent.currentTarget.value })} className="w-full rounded-xl border border-input bg-ink-soft px-3 py-2 text-sm" rows={2} />
             <button type="button" disabled={busy} onClick={() => sendQuotation(event)} className="rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50">Send quotation to Faculty</button>
           </div>}
@@ -702,8 +699,8 @@ function ManualQuotationEditor({ items, onChange }: { items: ManualQuotationItem
       <div className="flex items-center justify-between gap-3 sm:col-span-4"><p className="text-xs font-semibold text-foreground">Subtotal: ₹{subtotal.toLocaleString("en-IN")}</p><button type="button" aria-label={`Remove manual food item ${index + 1}`} onClick={() => onChange(items.filter((_, row) => row !== index))} className="rounded-full border border-border px-3 py-2 text-xs font-semibold text-muted-foreground">Remove Item</button></div>
     </div>;
     })}
-    {!items.length && <p className="text-xs text-muted-foreground">Add one or more food items to prepare the quotation.</p>}
-    <p className="rounded-xl bg-ink-soft p-3 text-sm font-semibold">Estimated quotation total: ₹{total.toLocaleString("en-IN")}</p>
+    {!items.length && <p className="text-xs text-muted-foreground">Optional: add custom food items to this quotation.</p>}
+    <p className="rounded-xl bg-ink-soft p-3 text-sm font-semibold">Manual items subtotal: {formatINR(total)}</p>
   </section>;
 }
 
@@ -733,9 +730,15 @@ function ActualFoodQuantitiesSummary({ requested, facultyMessage, planned, serve
   </section>;
 }
 
-function QuotationBudget({ quantities, prices }: { quantities: Record<string, number>; prices: Record<string, number | string> }) {
-  const total = Object.entries(quantities).reduce((sum, [name, quantity]) => sum + (quantity > 0 ? quantity * Number(prices[name] ?? 0) : 0), 0);
-  return <p className="rounded-xl bg-ink-soft p-3 text-sm font-semibold">Estimated quotation total: ?{total}</p>;
+function QuotationBudget({ quantities, prices, manualItems = [] }: { quantities: Record<string, number>; prices: Record<string, number | string>; manualItems?: ManualQuotationItem[] }) {
+  const menuTotal = Object.entries(quantities).reduce((sum, [name, quantity]) => sum + (quantity > 0 ? quantity * Number(prices[name] ?? 0) : 0), 0);
+  const manualTotal = manualItems.reduce((sum, item) => {
+    const quantity = Number(item.quantity);
+    const price = Number(item.price);
+    return item.name.trim() && Number.isInteger(quantity) && quantity > 0 && Number.isInteger(price) && price >= 0 ? sum + quantity * price : sum;
+  }, 0);
+  const total = menuTotal + manualTotal;
+  return <p className="rounded-xl bg-ink-soft p-3 text-sm font-semibold">Estimated quotation total: {formatINR(total)}</p>;
 }
 
 export function eventStatusLabel(status: string) {
