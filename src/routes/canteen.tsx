@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { flushSync } from "react-dom";
 import { z } from "zod";
-import { LogOut, Plus, Trash2, Pencil, Printer, Settings, Search, Minus, Pause, Play, ShoppingBag, X, Receipt, UtensilsCrossed, LayoutDashboard, CalendarDays, Image as ImageIcon, ChartNoAxesCombined, CircleHelp, Store, ArrowUpRight, Clock3, ChevronLeft, ChevronRight, LockKeyhole, Copy, UserRound, CreditCard } from "lucide-react";
+import { LogOut, Plus, Trash2, Pencil, Printer, Settings, Search, Minus, Pause, Play, ShoppingBag, X, Receipt, UtensilsCrossed, LayoutDashboard, CalendarDays, Image as ImageIcon, ChartNoAxesCombined, CircleHelp, Store, ArrowUpRight, Clock3, ChevronLeft, ChevronRight, LockKeyhole, Copy, UserRound, CreditCard, Maximize2, Minimize2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { CanteenTemplatePreview } from "@/components/foodexa/CanteenTemplatePreview";
 import { CanteenTemplateBanner } from "@/components/foodexa/CanteenTemplateBanner";
@@ -282,9 +282,11 @@ function ThermalReceipt({ job, paperWidth }: { job: ReceiptPrintJob; paperWidth:
 
 function OfflinePOSTab({
   canteenName, menu, current, held, pendingSyncCount, search, category, message, printing, paymentMethod, paymentStatus,
+  printerSettingsOpen, isFullScreen, onTogglePrinterSettings, onToggleFullScreen,
   onSearch, onCategory, onAdd, onQuantity, onHold, onResume, onClear, onPrint, onPaymentMethod, onPaymentStatus,
 }: {
   canteenName: string; menu: MenuItem[]; current: POSLine[]; held: HeldPOSOrder[]; pendingSyncCount: number; search: string; category: string; message: string; printing: boolean; paymentMethod: OfflinePaymentMethod; paymentStatus: "paid" | "unpaid";
+  printerSettingsOpen: boolean; isFullScreen: boolean; onTogglePrinterSettings: () => void; onToggleFullScreen: () => void;
   onSearch: (value: string) => void; onCategory: (value: string) => void; onAdd: (item: MenuItem) => void; onQuantity: (id: string, delta: number) => void;
   onHold: () => void; onResume: (order: HeldPOSOrder) => void; onClear: () => void; onPrint: () => void; onPaymentMethod: (value: OfflinePaymentMethod) => void; onPaymentStatus: (value: "paid" | "unpaid") => void;
 }) {
@@ -324,13 +326,17 @@ function OfflinePOSTab({
 
   return (
     <section className="hz-pos mt-5" aria-labelledby="offline-pos-title">
-      <header className="mb-5 flex flex-wrap items-end justify-between gap-3">
+      <header className="hz-pos-header mb-5 flex flex-wrap items-end justify-between gap-3">
         <div><p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">Counter billing · {canteenName}</p><h2 id="offline-pos-title" className="display mt-2 text-2xl sm:text-3xl">Offline POS</h2><p className="mt-2 text-xs text-muted-foreground">Quick sale using your published canteen menu and current prices.</p></div>
-        <div className="rounded-2xl border border-border bg-card px-4 py-2 text-right"><p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Items in bill</p><p className="text-xl font-black tabular-nums">{itemCount}</p></div>
+        <div className="hz-pos-header-actions">
+          <button type="button" onClick={onTogglePrinterSettings} aria-expanded={printerSettingsOpen} aria-controls="printer-settings-panel" className="hz-pos-header-action"><Printer aria-hidden="true" /> Printer Settings</button>
+          <button type="button" onClick={onToggleFullScreen} aria-pressed={isFullScreen} className="hz-pos-header-action">{isFullScreen ? <Minimize2 aria-hidden="true" /> : <Maximize2 aria-hidden="true" />}{isFullScreen ? " Exit full screen" : " Full screen"}</button>
+          <div className="rounded-2xl border border-border bg-card px-4 py-2 text-right"><p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Items in bill</p><p className="text-xl font-black tabular-nums">{itemCount}</p></div>
+        </div>
       </header>
 
-      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.55fr)_minmax(19rem,.9fr)]">
-        <div className="min-w-0 rounded-3xl border border-border bg-card p-4 shadow-[var(--shadow-device)] sm:p-5">
+      <div className="hz-pos-layout grid items-start gap-5 lg:grid-cols-[minmax(0,1.55fr)_minmax(19rem,.9fr)]">
+        <div className="hz-pos-menu-panel min-w-0 rounded-3xl border border-border bg-card p-4 shadow-[var(--shadow-device)] sm:p-5">
           <div ref={searchAreaRef}>
             <label className="hz-pos-search-wrap relative block">
               <Search aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -469,6 +475,8 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
   const [orderKeyboardShifted, setOrderKeyboardShifted] = useState(false);
   const [busyOrder, setBusyOrder] = useState<string | null>(null);
   const [printerSettingsOpen, setPrinterSettingsOpen] = useState(false);
+  const [posFullScreen, setPOSFullScreen] = useState(false);
+  const canteenAppRef = useRef<HTMLDivElement>(null);
   const [printerPaperWidth, setPrinterPaperWidth] = useState<ReceiptPaperWidth>(() => readPrinterPaperWidth(canteen.id));
   const [printerSettingsMsg, setPrinterSettingsMsg] = useState("");
   const [canteenCodeCopied, setCanteenCodeCopied] = useState(false);
@@ -641,6 +649,24 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
     setPrinterPaperWidth(readPrinterPaperWidth(canteen.id));
   }, [canteen.id]);
 
+  useEffect(() => {
+    const syncPOSFullScreen = () => setPOSFullScreen(document.fullscreenElement === canteenAppRef.current);
+    document.addEventListener("fullscreenchange", syncPOSFullScreen);
+    return () => document.removeEventListener("fullscreenchange", syncPOSFullScreen);
+  }, []);
+
+  async function togglePOSFullScreen() {
+    const app = canteenAppRef.current;
+    if (!app) return;
+    try {
+      if (document.fullscreenElement === app) await document.exitFullscreen();
+      else if (app.requestFullscreen) await app.requestFullscreen();
+      else setPOSMessage("Full screen mode is not supported in this browser.");
+    } catch {
+      setPOSMessage("Could not enter full screen. Use your browser's full screen shortcut and try again.");
+    }
+  }
+
   function savePrinterPreferences() {
     try {
       localStorage.setItem(printerPreferenceKey(canteen.id), JSON.stringify({ paperWidth: printerPaperWidth }));
@@ -668,18 +694,13 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
 
   function setPOSQuantity(itemId: string, delta: number) {
     setPOSMessage("");
-    const line = posState.current.find((row) => row.id === itemId);
     const item = menu.find((candidate) => candidate.id === itemId);
-    const nextQty = (line?.qty ?? 0) + delta;
-    if (line && nextQty < 1) {
-      return;
-    }
     setPOSState((current) => ({
       ...current,
       current: current.current.flatMap((line) => {
         if (line.id !== itemId) return [line];
         const nextQty = line.qty + delta;
-        if (nextQty < 1) return [];
+        if (nextQty <= 0) return [];
         return [{ ...line, ...(item ? { name: item.name, price: item.price, image: item.image, category: item.category, stock: item.stock } : {}), qty: nextQty }];
       }),
     }));
@@ -1052,7 +1073,7 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
   }
 
   return (
-    <div className="hz-canteen-app min-h-screen bg-background">
+    <div ref={canteenAppRef} className={cn("hz-canteen-app min-h-screen bg-background", posFullScreen && "is-pos-fullscreen")}>
       <div className={cn("hz-canteen-layout mx-auto w-full max-w-[1760px]", sidebarCollapsed && "is-sidebar-collapsed")}>
         <aside id="hz-canteen-sidebar" className="hz-canteen-sidebar" aria-label="Canteen dashboard navigation">
           <div className="hz-canteen-sidebar-brand"><img src="/HUNGRY%20Z%20Q%20LOGO.png" alt="HUNGRY Z" /><span>HUNGRY Z</span><button type="button" className="hz-canteen-sidebar-toggle" aria-controls="hz-canteen-sidebar" aria-expanded={!sidebarCollapsed} aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"} title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"} onClick={() => setSidebarCollapsed((collapsed) => !collapsed)}>{sidebarCollapsed ? <ChevronRight aria-hidden="true" /> : <ChevronLeft aria-hidden="true" />}</button></div>
@@ -1116,7 +1137,7 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
         </section>}
 
         {orderMsg && tab === "orders" && <p className="mt-4 rounded-2xl border border-primary/40 bg-primary/10 p-3 text-sm">{orderMsg}</p>}
-        {(tab === "orders" || tab === "settings") && printerSettingsOpen && (
+        {(tab === "orders" || tab === "settings" || tab === "pos") && printerSettingsOpen && (
           <section id="printer-settings-panel" className="hz-printer-settings mt-3" aria-labelledby="printer-settings-title">
             <div className="hz-printer-settings-heading">
               <span className="hz-printer-settings-icon"><Printer aria-hidden="true" /></span>
@@ -1138,7 +1159,7 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
             </div>
           </section>
         )}
-        {tab === "pos" ? <OfflinePOSTab canteenName={canteen.name} menu={menu} current={posState.current} held={posState.held} pendingSyncCount={posState.completed.filter((sale) => sale.syncStatus !== "synced").length} search={posSearch} category={posCategory} message={posMessage} printing={printing} paymentMethod={posState.paymentMethod} paymentStatus={posState.paymentStatus} onPaymentMethod={(paymentMethod) => setPOSState((current) => ({ ...current, paymentMethod }))} onPaymentStatus={(paymentStatus) => setPOSState((current) => ({ ...current, paymentStatus }))} onSearch={setPOSSearch} onCategory={setPOSCategory} onAdd={addPOSItem} onQuantity={setPOSQuantity} onHold={holdPOSOrder} onResume={resumePOSOrder} onClear={clearPOSOrder} onPrint={printPOSBill} /> : tab === "orders" ? (
+        {tab === "pos" ? <OfflinePOSTab canteenName={canteen.name} menu={menu} current={posState.current} held={posState.held} pendingSyncCount={posState.completed.filter((sale) => sale.syncStatus !== "synced").length} search={posSearch} category={posCategory} message={posMessage} printing={printing} paymentMethod={posState.paymentMethod} paymentStatus={posState.paymentStatus} printerSettingsOpen={printerSettingsOpen} isFullScreen={posFullScreen} onTogglePrinterSettings={() => { setPrinterSettingsOpen((open) => !open); setPrinterSettingsMsg(""); }} onToggleFullScreen={() => { void togglePOSFullScreen(); }} onPaymentMethod={(paymentMethod) => setPOSState((current) => ({ ...current, paymentMethod }))} onPaymentStatus={(paymentStatus) => setPOSState((current) => ({ ...current, paymentStatus }))} onSearch={setPOSSearch} onCategory={setPOSCategory} onAdd={addPOSItem} onQuantity={setPOSQuantity} onHold={holdPOSOrder} onResume={resumePOSOrder} onClear={clearPOSOrder} onPrint={printPOSBill} /> : tab === "orders" ? (
           <div className="hz-orders-page mt-6">
             <section className="hz-orders-banner" aria-labelledby="online-orders-title">
               <div className="hz-orders-banner-icon"><LockKeyhole aria-hidden="true" /></div>
