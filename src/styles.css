@@ -1168,14 +1168,14 @@ html[data-theme="dark"] .hz-order-detail-action.is-primary { border-color: #f4f4
 .hz-canteen-actions .hz-canteen-header-control { min-height: 2.65rem; border: 1px solid color-mix(in oklab, var(--border) 82%, var(--foreground) 18%); border-radius: 999px; background: var(--card); padding: .6rem 1.1rem; color: var(--foreground); font-family: inherit; font-size: .76rem; font-weight: 650; letter-spacing: .01em; line-height: 1.15; box-shadow: 0 1px 2px color-mix(in oklab, var(--foreground) 10%, transparent), 0 5px 12px -5px color-mix(in oklab, var(--foreground) 24%, transparent); transition: background .16s ease, border-color .16s ease, box-shadow .16s ease, transform .16s ease; }
 .hz-canteen-actions .hz-canteen-header-control:hover { transform: translateY(-1px); border-color: color-mix(in oklab, var(--border) 62%, var(--foreground)); background: color-mix(in oklab, var(--card) 94%, var(--foreground)); color: var(--foreground); box-shadow: 0 2px 4px color-mix(in oklab, var(--foreground) 12%, transparent), 0 8px 16px -6px color-mix(in oklab, var(--foreground) 28%, transparent); }
 .hz-canteen-actions .hz-canteen-header-control:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
-.hz-canteen-overview-banner { aspect-ratio: 4 / 1; overflow: hidden; border: 1px solid var(--border); border-radius: 1.8rem; background: #111; box-shadow: var(--hz-shadow-card); }
+.hz-canteen-overview-banner { aspect-ratio: 4.5 / 1; overflow: hidden; border: 1px solid var(--border); border-radius: 1.8rem; background: #111; box-shadow: var(--hz-shadow-card); }
 .hz-canteen-overview-banner > div { width: 100%; height: 100%; border: 0; border-radius: inherit; }
 .hz-template-banner-dashboard { position: relative; display: block; isolation: isolate; background: #111; color: #fff; }
 .hz-template-banner-dashboard::after { position: absolute; z-index: 1; inset: 0; background: rgb(0 0 0 / 36%); content: ""; pointer-events: none; }
 .hz-template-banner-dashboard > .hz-template-dashboard-image { position: absolute; z-index: 0; inset: 0; display: block; width: 100%; max-width: none; min-width: 0; min-height: 0; height: 100%; object-fit: cover !important; object-position: center; }
-.hz-template-preview-frame { aspect-ratio: 4 / 1; container-type: inline-size; }
-.hz-template-preview-frame[data-preview-size="tablet"] { aspect-ratio: 3 / 1; }
-.hz-template-preview-frame[data-preview-size="mobile"] { aspect-ratio: 1.8 / 1; }
+.hz-template-preview-frame { aspect-ratio: 4.5 / 1; container-type: inline-size; }
+.hz-template-preview-frame[data-preview-size="tablet"] { aspect-ratio: 3.3 / 1; }
+.hz-template-preview-frame[data-preview-size="mobile"] { aspect-ratio: 2 / 1; }
 .hz-template-banner-preview { width: 100%; height: 100%; background: #111; }
 .hz-template-banner-preview.hz-template-banner-dashboard > .hz-template-dashboard-image { width: 100%; height: 100%; }
 .hz-template-banner-preview.hz-template-banner-dashboard > .hz-template-dashboard-copy { position: absolute !important; z-index: 2; inset: 0 !important; width: min(78%, 68rem); }
@@ -1441,7 +1441,7 @@ html[data-theme="dark"] .hz-printer-test:hover:not(:disabled) { background: #ddd
   .hz-faculty-event-food-list { grid-column: 1 / -1; grid-row: 2; }
   .hz-faculty-event-budget { grid-column: 2; grid-row: 1; }
   .hz-canteen-actions { justify-content: flex-start; }
-  .hz-canteen-overview-banner { aspect-ratio: 3 / 1; }
+  .hz-canteen-overview-banner { aspect-ratio: 3.3 / 1; }
   .hz-template-dashboard-copy { padding: 1.2rem clamp(1rem, 4vw, 2rem); }
   .hz-template-dashboard-copy button { min-height: 2.7rem; margin-top: .8rem; }
 }
@@ -1471,7 +1471,7 @@ html[data-theme="dark"] .hz-printer-test:hover:not(:disabled) { background: #ddd
   .hz-event-served-control input { width: 4.5rem; }
   .hz-canteen-actions { justify-content: flex-start; }
   .hz-canteen-overview-banner { border-radius: 1.25rem; }
-  .hz-canteen-overview-banner { aspect-ratio: 1.8 / 1; }
+  .hz-canteen-overview-banner { aspect-ratio: 2 / 1; }
   .hz-template-dashboard-copy { padding: .8rem .9rem; }
   .hz-template-dashboard-copy > p:first-child { font-size: .58rem; letter-spacing: .06em; }
   .hz-template-dashboard-copy h2 { margin-top: .3rem; font-size: 1.25rem; line-height: 1.05; }
