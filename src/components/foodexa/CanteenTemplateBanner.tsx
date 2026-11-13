@@ -64,8 +64,13 @@ export function CanteenTemplateBanner({
       onPointerCancel={() => { drag.current = null; }}
       onLostPointerCapture={() => { drag.current = null; }}
     >
-      {layout === "dashboard" && <div aria-hidden="true" className="hz-template-dashboard-backdrop" style={{ backgroundImage: `url("${resolvedImageUrl}")` }} />}
-      <img src={resolvedImageUrl} alt="" className={`block h-auto w-full object-contain ${layout === "dashboard" ? "hz-template-dashboard-image" : ""}`} style={bannerCropStyle({ x: cropX, y: cropY, zoom: cropZoom })} />
+      {layout === "dashboard" ? (
+        <div className="hz-template-dashboard-media" style={{ backgroundImage: `url("${resolvedImageUrl}")` }}>
+          <img src={resolvedImageUrl} alt="" className="hz-template-dashboard-image" style={bannerCropStyle({ x: cropX, y: cropY, zoom: cropZoom })} />
+        </div>
+      ) : (
+        <img src={resolvedImageUrl} alt="" className="block h-auto w-full object-contain" style={bannerCropStyle({ x: cropX, y: cropY, zoom: cropZoom })} />
+      )}
       <div className={layout === "dashboard" ? "hz-template-dashboard-copy" : "absolute bottom-5 left-5 right-5"}>
         <p data-no-translate className="text-xs font-semibold uppercase tracking-widest text-primary-bright">{canteenName} · {universityName}</p>
         <h2 data-no-translate={heading?.trim() ? "" : undefined} className="display mt-1 text-3xl">{heading?.trim() || "Browse campus food."}</h2>
