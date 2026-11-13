@@ -1142,6 +1142,7 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
             <div className="hz-printer-settings-heading">
               <span className="hz-printer-settings-icon"><Printer aria-hidden="true" /></span>
               <div><p className="hz-printer-settings-eyebrow">RECEIPT SETUP</p><h2 id="printer-settings-title" className="display">Printer Settings</h2><p>Choose your installed Epson printer in the browser print dialog. Automatic uses the paper size selected by that printer driver; browser pages cannot read printer capabilities directly. If the driver does not provide the expected width, select 58mm or 80mm and match the driver paper setting. Windows Epson drivers and supported ESC/POS printers use the standard print interface.</p></div>
+              <button type="button" onClick={() => { setPrinterSettingsOpen(false); setPrinterSettingsMsg(""); }} aria-label="Close Printer Settings" title="Close Printer Settings" className="hz-printer-settings-close"><X aria-hidden="true" /></button>
             </div>
             <fieldset className="hz-printer-widths">
               <legend>Receipt paper width</legend>
