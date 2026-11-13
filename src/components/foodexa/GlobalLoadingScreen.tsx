@@ -8,11 +8,7 @@ export function GlobalLoadingScreen({ overlay = false, visible = true }: { overl
           <circle className="hz-global-loading-track" cx="102" cy="102" r="99" />
           <circle className="hz-global-loading-progress" cx="102" cy="102" r="99" />
         </svg>
-        <svg className="hz-global-loading-logo" viewBox="0 0 48 56" fill="none">
-          <path d="M0 0 14 8v14h15v7H14v27L0 48V0Z" fill="currentColor" />
-          <path d="m29 0 19 10v17L29 17V0Z" fill="currentColor" />
-          <path d="m29 33 19 10v13L29 46V33Z" fill="currentColor" />
-        </svg>
+        <img className="hz-global-loading-logo" src="/HUNGRY%20Z%20CANTEEN%20DAHSBOARD%20LOGO.png" alt="" />
       </div>
     </div>
   );
