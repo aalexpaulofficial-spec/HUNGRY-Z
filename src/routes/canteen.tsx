@@ -204,6 +204,7 @@ type OfflineSale = { id: string; createdAt: string; lines: POSLine[]; subtotal: 
 type HeldPOSOrder = { id: string; createdAt: string; lines: POSLine[]; paymentMethod?: OfflinePaymentMethod; paymentStatus?: "paid" | "unpaid" };
 type OfflinePOSState = { current: POSLine[]; held: HeldPOSOrder[]; completed: OfflineSale[]; paymentMethod: OfflinePaymentMethod; paymentStatus: "paid" | "unpaid" };
 type ReceiptPrintJob = { kind: "order"; order: Order } | { kind: "test"; counterName: string; createdAt: string } | { kind: "offline"; counterName: string; createdAt: string; orderNumber: string; transactionId: string; lines: { name: string; qty: number; price: number }[]; saleLines: POSLine[]; subtotal: number; total: number; paymentMethod: OfflinePaymentMethod; paymentStatus: "paid" | "unpaid" };
+type ActiveReceiptPrint = { job: ReceiptPrintJob; paperWidth: ReceiptPaperWidth };
 const printerPreferenceKey = (canteenId: string) => `hungry:printer-preferences:${canteenId}`;
 const offlinePOSStorageKey = (canteenId: string) => `hungry:offline-pos:${canteenId}`;
 const offlineMenuStorageKey = (canteenId: string) => `hungry:offline-menu:${canteenId}`;
@@ -479,7 +480,7 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
   const [printerPaperWidth, setPrinterPaperWidth] = useState<ReceiptPaperWidth>(() => readPrinterPaperWidth(canteen.id));
   const [printerSettingsMsg, setPrinterSettingsMsg] = useState("");
   const [canteenCodeCopied, setCanteenCodeCopied] = useState(false);
-  const [printJob, setPrintJob] = useState<ReceiptPrintJob | null>(null);
+  const [printJob, setPrintJob] = useState<ActiveReceiptPrint | null>(null);
 
   const orderStatusCounts = {
     all: orders.length,
@@ -649,6 +650,15 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
   }, [canteen.id]);
 
   useEffect(() => {
+    const syncPrinterPreference = (event: StorageEvent) => {
+      if (event.key !== null && event.key !== printerPreferenceKey(canteen.id)) return;
+      setPrinterPaperWidth(readPrinterPaperWidth(canteen.id));
+    };
+    window.addEventListener("storage", syncPrinterPreference);
+    return () => window.removeEventListener("storage", syncPrinterPreference);
+  }, [canteen.id]);
+
+  useEffect(() => {
     const syncPOSFullScreen = () => setPOSFullScreen(document.fullscreenElement === canteenAppRef.current);
     document.addEventListener("fullscreenchange", syncPOSFullScreen);
     return () => document.removeEventListener("fullscreenchange", syncPOSFullScreen);
@@ -739,6 +749,7 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
 
   async function startReceiptPrint(job: ReceiptPrintJob) {
     if (printLock.current) return;
+    const receiptPaperWidth = printerPaperWidth;
     printLock.current = true;
     setPrinting(true);
     let finished = false;
@@ -774,7 +785,7 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
         return;
       }
       setBusyOrder(job.order.id);
-      void recordConfirmedPrint({ data: { orderId: job.order.id, paperWidth: printerPaperWidth } })
+      void recordConfirmedPrint({ data: { orderId: job.order.id, paperWidth: receiptPaperWidth } })
         .then(({ alreadyConfirmed, confirmedAt }) => {
           setOrders((current) => current.map((order) => order.id === job.order.id ? { ...order, bill_print_confirmed_at: confirmedAt, completion_workflow: "printed" } : order));
           setOrderMsg(alreadyConfirmed
@@ -800,7 +811,7 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
     window.addEventListener("afterprint", finishAfterPrint, { once: true });
     const cleanupTimer = window.setTimeout(finishWithoutPrintConfirmation, 60_000);
     try {
-      flushSync(() => setPrintJob(job));
+      flushSync(() => setPrintJob({ job, paperWidth: receiptPaperWidth }));
       const logo = document.querySelector<HTMLImageElement>("#hungry-thermal-print .hungry-receipt-header img");
       if (!logo) throw new Error("The HUNGRY Z receipt logo is missing.");
       if (!logo.complete) await new Promise<void>((resolve, reject) => {
@@ -1357,7 +1368,7 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
 
       {ownerFeedbackOpen && <FeedbackDialog mode="canteen-report" onClose={() => setOwnerFeedbackOpen(false)} />}
       {ownerLegalPage && <LegalDialog legalDocument={ownerLegalPage === "privacy" ? privacyPolicy : termsConditions} onClose={() => setOwnerLegalPage(null)} />}
-      {printJob && <ThermalReceipt job={printJob} paperWidth={printerPaperWidth} />}
+      {printJob && <ThermalReceipt job={printJob.job} paperWidth={printJob.paperWidth} />}
     </div>
   );
 }
