@@ -282,11 +282,11 @@ function ThermalReceipt({ job, paperWidth }: { job: ReceiptPrintJob; paperWidth:
 
 function OfflinePOSTab({
   canteenName, menu, current, held, pendingSyncCount, search, category, message, printing, paymentMethod, paymentStatus,
-  printerSettingsOpen, isFullScreen, onTogglePrinterSettings, onToggleFullScreen,
+  isFullScreen, onToggleFullScreen,
   onSearch, onCategory, onAdd, onQuantity, onHold, onResume, onClear, onPrint, onPaymentMethod, onPaymentStatus,
 }: {
   canteenName: string; menu: MenuItem[]; current: POSLine[]; held: HeldPOSOrder[]; pendingSyncCount: number; search: string; category: string; message: string; printing: boolean; paymentMethod: OfflinePaymentMethod; paymentStatus: "paid" | "unpaid";
-  printerSettingsOpen: boolean; isFullScreen: boolean; onTogglePrinterSettings: () => void; onToggleFullScreen: () => void;
+  isFullScreen: boolean; onToggleFullScreen: () => void;
   onSearch: (value: string) => void; onCategory: (value: string) => void; onAdd: (item: MenuItem) => void; onQuantity: (id: string, delta: number) => void;
   onHold: () => void; onResume: (order: HeldPOSOrder) => void; onClear: () => void; onPrint: () => void; onPaymentMethod: (value: OfflinePaymentMethod) => void; onPaymentStatus: (value: "paid" | "unpaid") => void;
 }) {
@@ -329,7 +329,6 @@ function OfflinePOSTab({
       <header className="hz-pos-header mb-5 flex flex-wrap items-end justify-between gap-3">
         <div><p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">Counter billing · {canteenName}</p><h2 id="offline-pos-title" className="display mt-2 text-2xl sm:text-3xl">Offline POS</h2><p className="mt-2 text-xs text-muted-foreground">Quick sale using your published canteen menu and current prices.</p></div>
         <div className="hz-pos-header-actions">
-          <button type="button" onClick={onTogglePrinterSettings} aria-expanded={printerSettingsOpen} aria-controls="printer-settings-panel" className={cn("hz-printer-settings-toggle", printerSettingsOpen && "is-open")}><Settings aria-hidden="true" /> Printer Settings <span>{printerSettingsOpen ? "Hide" : "Configure"}</span></button>
           <button type="button" onClick={onToggleFullScreen} aria-pressed={isFullScreen} className="hz-pos-header-action">{isFullScreen ? <Minimize2 aria-hidden="true" /> : <Maximize2 aria-hidden="true" />}{isFullScreen ? " Exit full screen" : " Full screen"}</button>
           <div className="rounded-2xl border border-border bg-card px-4 py-2 text-right"><p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Items in bill</p><p className="text-xl font-black tabular-nums">{itemCount}</p></div>
         </div>
@@ -1112,8 +1111,6 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
           saving={availabilitySaving}
           onSave={updateAvailability}
         /></div>}
-        {tab === "orders" && <div className="hz-printer-settings-toggle-row"><button type="button" onClick={() => { setPrinterSettingsOpen((open) => !open); setPrinterSettingsMsg(""); }} aria-expanded={printerSettingsOpen} aria-controls="printer-settings-panel" className={cn("hz-printer-settings-toggle", printerSettingsOpen && "is-open")}><Settings aria-hidden="true" /> Printer Settings <span>{printerSettingsOpen ? "Hide" : "Configure"}</span></button></div>}
-
         {tab === "overview" && <section className="hz-canteen-overview" aria-label="Dashboard overview">
           <div className="hz-canteen-metric-grid">
             <button type="button" onClick={() => selectSection("orders")} className="hz-canteen-metric hz-metric-online"><span className="hz-canteen-metric-icon"><ShoppingBag aria-hidden="true" /></span><span><small>ONLINE ACTIVE ORDERS</small><strong>{activeOrderCount.toLocaleString(language === "hi" ? "hi-IN" : language === "kn" ? "kn-IN" : "en-IN")}</strong></span><ArrowUpRight aria-hidden="true" className="hz-canteen-metric-arrow" /></button>
@@ -1137,7 +1134,7 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
         </section>}
 
         {orderMsg && tab === "orders" && <p className="mt-4 rounded-2xl border border-primary/40 bg-primary/10 p-3 text-sm">{orderMsg}</p>}
-        {(tab === "orders" || tab === "settings" || tab === "pos") && printerSettingsOpen && (
+        {tab === "settings" && printerSettingsOpen && (
           <section id="printer-settings-panel" className="hz-printer-settings mt-3" aria-labelledby="printer-settings-title">
             <div className="hz-printer-settings-heading">
               <span className="hz-printer-settings-icon"><Printer aria-hidden="true" /></span>
@@ -1160,7 +1157,7 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
             </div>
           </section>
         )}
-        {tab === "pos" ? <OfflinePOSTab canteenName={canteen.name} menu={menu} current={posState.current} held={posState.held} pendingSyncCount={posState.completed.filter((sale) => sale.syncStatus !== "synced").length} search={posSearch} category={posCategory} message={posMessage} printing={printing} paymentMethod={posState.paymentMethod} paymentStatus={posState.paymentStatus} printerSettingsOpen={printerSettingsOpen} isFullScreen={posFullScreen} onTogglePrinterSettings={() => { setPrinterSettingsOpen((open) => !open); setPrinterSettingsMsg(""); }} onToggleFullScreen={() => { void togglePOSFullScreen(); }} onPaymentMethod={(paymentMethod) => setPOSState((current) => ({ ...current, paymentMethod }))} onPaymentStatus={(paymentStatus) => setPOSState((current) => ({ ...current, paymentStatus }))} onSearch={setPOSSearch} onCategory={setPOSCategory} onAdd={addPOSItem} onQuantity={setPOSQuantity} onHold={holdPOSOrder} onResume={resumePOSOrder} onClear={clearPOSOrder} onPrint={printPOSBill} /> : tab === "orders" ? (
+        {tab === "pos" ? <OfflinePOSTab canteenName={canteen.name} menu={menu} current={posState.current} held={posState.held} pendingSyncCount={posState.completed.filter((sale) => sale.syncStatus !== "synced").length} search={posSearch} category={posCategory} message={posMessage} printing={printing} paymentMethod={posState.paymentMethod} paymentStatus={posState.paymentStatus} isFullScreen={posFullScreen} onToggleFullScreen={() => { void togglePOSFullScreen(); }} onPaymentMethod={(paymentMethod) => setPOSState((current) => ({ ...current, paymentMethod }))} onPaymentStatus={(paymentStatus) => setPOSState((current) => ({ ...current, paymentStatus }))} onSearch={setPOSSearch} onCategory={setPOSCategory} onAdd={addPOSItem} onQuantity={setPOSQuantity} onHold={holdPOSOrder} onResume={resumePOSOrder} onClear={clearPOSOrder} onPrint={printPOSBill} /> : tab === "orders" ? (
           <div className="hz-orders-page mt-6">
             <section className="hz-orders-banner" aria-labelledby="online-orders-title">
               <div className="hz-orders-banner-icon"><LockKeyhole aria-hidden="true" /></div>
