@@ -310,9 +310,9 @@ export function EventCapacityPanel({ mode, canteenId, canteenName, userId }: { m
     <section className="space-y-5" aria-label="Event token management">
       {mode === "faculty" ? (
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">Event management</p>
-          <h2 className="display mt-1 text-2xl">Manage My Events</h2>
-          <p className="mt-1 text-sm text-muted-foreground">Create event requests, review canteen quotations and follow token capacity and serving progress.</p>
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">ORGANIZE</p>
+          <h2 className="display mt-1 text-2xl">Plan an event</h2>
+          <p className="mt-1 text-sm text-muted-foreground">Send your event details and food needs to the canteen. You can review its reply and manage tokens here.</p>
         </div>
       ) : (
         <div className="rounded-3xl border border-primary/25 bg-primary/[0.04] p-5">
@@ -335,14 +335,14 @@ export function EventCapacityPanel({ mode, canteenId, canteenName, userId }: { m
           </div>
         </div>
       )}
-      {mode === "faculty" && <form onSubmit={createEvent} className="glass-red space-y-3 rounded-3xl p-5">
-        <h2 className="display text-xl">Create a Faculty Event</h2>
-        <p className="text-xs text-muted-foreground">Follow these steps to submit your event for canteen review.</p>
-        <section className="space-y-2"><p className="text-xs font-bold uppercase tracking-wider text-primary">1 · Event information</p>
+      {mode === "faculty" && <form onSubmit={createEvent} className="hz-faculty-create-form glass-red space-y-3 rounded-3xl p-5">
+        <h3 className="display text-xl">Create an event request</h3>
+        <p className="text-sm text-muted-foreground">Add the event, audience and food details. The canteen will review your request and send a quotation.</p>
+        <section className="space-y-2"><p className="text-xs font-bold uppercase tracking-wider text-primary">Event details</p>
           <input required minLength={2} maxLength={120} value={name} onChange={(event) => setName(event.currentTarget.value)} placeholder="Event name" aria-label="Event name" className="w-full rounded-2xl border border-input bg-ink-soft px-4 py-3 text-sm" />
           <label htmlFor="faculty-event-details" className="block space-y-2 rounded-2xl border border-primary/45 bg-primary/[0.06] p-3 shadow-[0_0_24px_hsl(var(--primary)/0.06)] focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20">
-            <span className="block text-xs font-bold tracking-[0.14em] text-primary">FACULTY EVENT DETAILS</span>
-            <textarea id="faculty-event-details" maxLength={1000} value={description} onChange={(event) => setDescription(event.currentTarget.value)} placeholder="Describe the event" aria-label="Faculty event details" className="min-h-20 w-full resize-y rounded-xl border border-primary/25 bg-background/75 px-4 py-3 text-sm leading-relaxed text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" rows={2} />
+            <span className="block text-xs font-bold tracking-[0.14em] text-primary">ABOUT YOUR EVENT (OPTIONAL)</span>
+            <textarea id="faculty-event-details" maxLength={1000} value={description} onChange={(event) => setDescription(event.currentTarget.value)} placeholder="What is the event for? Add any details the canteen should know." aria-label="About your event (optional)" className="min-h-20 w-full resize-y rounded-xl border border-primary/25 bg-background/75 px-4 py-3 text-sm leading-relaxed text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" rows={2} />
           </label>
           <div className="space-y-3 rounded-2xl border border-border bg-card/70 p-3" aria-label="Event logo upload">
             <label className="block space-y-2 text-xs text-muted-foreground">
@@ -373,42 +373,28 @@ export function EventCapacityPanel({ mode, canteenId, canteenName, userId }: { m
         <label className="block text-xs text-muted-foreground"><span className="font-bold uppercase tracking-wider text-primary">2 · Expected participants</span>
           <input required type="number" min={1} max={9999} value={capacity} onChange={(event) => setCapacity(event.currentTarget.value)} aria-label="Expected participants" className="mt-1 w-full rounded-2xl border border-input bg-ink-soft px-4 py-3 text-sm text-foreground" />
         </label>
-        <label className="block text-xs text-muted-foreground"><span className="font-bold uppercase tracking-wider text-primary">3 · Seven-digit Event Access Code</span>
+        <label className="block text-xs text-muted-foreground"><span className="font-bold uppercase tracking-wider text-primary">3 · Create a 7-digit event access code</span>
           <input required inputMode="numeric" pattern="[0-9]{7}" maxLength={7} value={eventCode} onChange={(event) => setEventCode(event.currentTarget.value.replace(/\D/g, "").slice(0, 7))} aria-label="7-digit Event Code" placeholder="1234567" className="mt-1 w-full rounded-2xl border border-input bg-ink-soft px-4 py-3 font-mono tracking-[0.3em] text-foreground" />
         </label>
+        <p className="-mt-2 text-xs text-muted-foreground">Share this code with attendees. They will use it to view the published event and request a token.</p>
         <p className="text-xs text-muted-foreground">This event will be sent privately to {canteenName}. It becomes visible to users after approval and publication.</p>
         <div className="space-y-2">
           <p className="text-xs font-bold uppercase tracking-wider text-primary">4 · Food menu selection</p>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div><h3 className="text-sm font-semibold text-foreground">Food preparation request</h3><p className="mt-1 text-xs text-muted-foreground">Selected canteen: <strong className="font-semibold text-foreground">{canteenName}</strong></p></div>
-            <button type="button" onClick={() => setMenuDialogOpen(true)} aria-label={`Open ${canteenName} menu`} className="inline-flex min-h-10 items-center gap-2 rounded-full border border-primary/40 bg-primary/5 px-4 py-2 text-sm font-bold tracking-wide text-foreground transition hover:border-primary hover:bg-primary/10"><List className="h-4 w-4 text-primary" /> MENU</button>
+            <button type="button" onClick={() => setMenuDialogOpen(true)} aria-label={`Choose food from ${canteenName} menu`} className="inline-flex min-h-10 items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm font-bold text-foreground transition hover:border-primary"><List className="h-4 w-4 text-primary" /> Choose food</button>
           </div>
           <FoodQuantitySummary quantities={foodSelection} title="Selected items" />
         </div>
         <label className="block space-y-1 text-xs text-muted-foreground"><span className="font-bold uppercase tracking-wider text-primary">5 · Message to Canteen (Optional)</span><textarea maxLength={500} value={foodRequestMessage} onChange={(event) => setFoodRequestMessage(event.currentTarget.value)} placeholder="Special instructions or notes for the canteen" aria-label="Message to Canteen (Optional)" rows={2} className="w-full rounded-xl border border-input bg-ink-soft px-3 py-2 text-sm text-foreground" /></label>
-        <button disabled={busy} className="rounded-full bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground disabled:opacity-60">{busy ? "Sending…" : "6. Submit Food Request"}</button>
+        <button disabled={busy} className="hz-faculty-submit-request rounded-full bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground disabled:opacity-60">{busy ? "Sending…" : "Send event request"}</button>
       </form>}
 
       {(error || message) && <p role={error ? "alert" : "status"} className={`rounded-2xl border p-3 text-sm ${error ? "border-red-500/40 bg-red-500/10 text-red-500" : "border-emerald-500/30 bg-emerald-500/10 text-emerald-600"}`}>{error || message}</p>}
-      {!events.length && <p className="rounded-3xl border border-border bg-card p-6 text-center text-sm text-muted-foreground">No events for {canteenName} yet.</p>}
+      {mode === "faculty" && menuLoading && !events.length && <p role="status" className="text-sm text-muted-foreground">Loading your event requests…</p>}
+      {!events.length && mode === "faculty" && !menuLoading && <div className="hz-faculty-events-empty"><h3>Your event requests will appear here</h3><p>After you send a request, use this space to review the canteen's response, quotation and event progress.</p></div>}
 
-      {mode === "faculty" && events.length > 0 && <section className="space-y-3" aria-label="Faculty event requests">
-        <div><h3 className="display text-xl">Event Requests</h3><p className="mt-1 text-xs text-muted-foreground">Review each canteen response, quotation, budget and publication stage.</p></div>
-        <div className="grid gap-3 sm:grid-cols-2">{events.map((event) => {
-          const eventTokens = tokens.filter((token) => token.event_id === event.id && token.status !== "cancelled");
-          const quotationQuantities = event.food_confirmation.quantities ?? {};
-          return <article key={`request-summary-${event.id}`} className="rounded-2xl border border-border bg-card p-4">
-            <p className="text-[10px] font-black tracking-[0.18em] text-primary">{formatFacultyEventSerial(event.serial_number)}</p>
-            <div className="flex flex-wrap items-start justify-between gap-2"><h4 data-no-translate className="font-semibold">{event.name}</h4><span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase ${eventStatusClass(event.status)}`}>{eventStatusLabel(event.status)}</span></div>
-            <p className="mt-2 text-xs text-muted-foreground">Canteen response: {event.canteen_note || "Waiting for the canteen"}</p>
-            {Object.keys(quotationQuantities).length > 0 && <p className="mt-2 text-xs text-muted-foreground">Quotation: {Object.entries(quotationQuantities).map(([food, quantity]) => `${food} × ${quantity}`).join(" · ")}</p>}
-            <div className="mt-3 grid grid-cols-2 gap-2 text-xs"><Metric label="Estimated budget" value={`₹${event.estimated_budget || 0}`} /><Metric label="Token capacity" value={`${tokens.filter((token) => token.event_id === event.id && token.status !== "cancelled").length} / ${event.approved_capacity}`} /></div>
-            <p className="mt-2 text-[10px] text-muted-foreground">Publication status: {eventStatusLabel(event.status)}</p>
-          </article>;
-        })}</div>
-      </section>}
-
-      {mode === "faculty" && events.length > 0 && <div className="border-t border-border pt-5"><p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">Below · Manage Events</p><h3 className="display mt-1 text-xl">Manage Events</h3><p className="mt-1 text-xs text-muted-foreground">Open an event to edit its details, review tokens, or monitor participants and expenditure.</p></div>}
+      {mode === "faculty" && events.length > 0 && <div className="hz-faculty-event-list-heading"><p className="hz-customer-eyebrow">TRACK PROGRESS</p><h3 className="display">Your event requests</h3><p>Each card shows the canteen's latest response, quotation, participant tokens and next steps.</p></div>}
 
       {events.map((event) => {
         const eventTokens = tokens.filter((token) => token.event_id === event.id);

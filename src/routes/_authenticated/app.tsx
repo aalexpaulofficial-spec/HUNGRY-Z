@@ -371,7 +371,7 @@ function OrderingApp() {
     navigate({ to: "/auth", replace: true });
   }
 
-  if (profile === undefined) return <GlobalLoadingScreen />;
+  if (profile === undefined) return <GlobalLoadingScreen tone="student" />;
   if (profile === null)
     return (
       <div className="grid min-h-screen place-items-center bg-background px-5">
@@ -658,12 +658,12 @@ export function FoodCard({ item, onOpen, onAdd, wide }: { item: MenuItem; onOpen
 }
 
 export function HomeTab({ menu, canteen, template, onOpen, onAdd, goMenu }: { menu: MenuItem[]; canteen: Canteen; template: CanteenTemplate | null; onOpen: (i: MenuItem) => void; onAdd: (i: MenuItem) => void; goMenu: () => void }) {
-  const templateBanner = <CanteenTemplateBanner imageUrl={template?.banner_image_url} heading={template?.heading} description={template?.description} canteenName={canteen.name} universityName={canteen.university_name} cropX={template?.banner_crop_x} cropY={template?.banner_crop_y} cropZoom={template?.banner_crop_zoom} onOrder={goMenu} />;
+  const templateBanner = <div className="hz-customer-template-banner"><CanteenTemplateBanner layout="dashboard" imageUrl={template?.banner_image_url} heading={template?.heading} description={template?.description} canteenName={canteen.name} universityName={canteen.university_name} cropX={template?.banner_crop_x} cropY={template?.banner_crop_y} cropZoom={template?.banner_crop_zoom} onOrder={goMenu} /></div>;
   if (!menu.length) return <div className="space-y-8 pt-2">{templateBanner}<Empty title="Your canteen is getting ready" text={`${canteen.name} hasn't published its menu yet. It will appear here live as soon as it does.`} /></div>;
   const featured = menu.filter((m) => m.tag);
   const quick = menu.filter((m) => m.prep_minutes <= 8);
   return (
-      <div className="hz-home-page space-y-8 pt-2">
+      <div className="hz-home-page space-y-6 pt-2">
       {templateBanner}
       <section>
         <h2 className="mb-3 text-lg font-bold">{featured.length ? "Today's picks" : "On the menu"}</h2>

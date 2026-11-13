@@ -33,7 +33,7 @@ type VerifiedEvent = {
   event_logo_url: string | null;
 };
 
-export function StudentEventsTab({ canteenId, canteenName, userId }: { canteenId: string; canteenName: string; userId: string }) {
+export function StudentEventsTab({ canteenId, canteenName, userId, audience = "student" }: { canteenId: string; canteenName: string; userId: string; audience?: "student" | "faculty" }) {
   const [events, setEvents] = useState<EventCard[]>([]);
   const [selected, setSelected] = useState<SelectedEvent | null>(null);
   const [opened, setOpened] = useState<VerifiedEvent | null>(null);
@@ -134,11 +134,11 @@ export function StudentEventsTab({ canteenId, canteenName, userId }: { canteenId
     }
   }
 
-  return <section className="space-y-5 pt-2" aria-label="Faculty Events">
-    <div><h2 className="display text-2xl">Faculty Events</h2><p className="mt-1 text-sm text-muted-foreground">Choose a published event and enter its access code to view details and generate a participation token.</p></div>
+  return <section className={`hz-published-events${audience === "faculty" ? " is-faculty" : ""}`} aria-label="Published faculty events">
+    <div className="hz-customer-section-heading"><p className="hz-customer-eyebrow">PARTICIPATE</p><h2 className="display">{audience === "faculty" ? "Published events" : "Faculty events"}</h2><p>{audience === "faculty" ? "Choose an event, verify its 7-digit access code, then create your participation token." : "Choose a published event and enter its access code to view details and generate a participation token."}</p></div>
     {loading && <p role="status" className="text-sm text-muted-foreground">Loading events…</p>}
     {loadingError && <p role="alert" className="rounded-2xl border border-primary/30 bg-primary/10 p-3 text-sm text-primary-bright">{loadingError}</p>}
-    {!loading && !loadingError && events.length === 0 && <p className="rounded-3xl border border-border bg-card p-6 text-center text-sm text-muted-foreground">No published events for this canteen yet.</p>}
+    {!loading && !loadingError && events.length === 0 && <div className="hz-events-empty"><span><Ticket aria-hidden="true" /></span><div><h3>No published events yet</h3><p>{audience === "faculty" ? "When the canteen publishes an event, it will appear here. To organize one, use the Plan an event section below." : "New events from this canteen will appear here when they are published."}</p></div></div>}
     {events.length > 0 && <div className="grid min-w-0 gap-3 sm:grid-cols-2">{events.map((event) => <article key={event.id} className="min-w-0 overflow-hidden rounded-2xl border border-border bg-card p-4 sm:p-5">
       {event.event_logo_url
         ? <EventLogoImage src={event.event_logo_url} alt={`${event.name} event image`} className="min-h-0 max-h-44 sm:min-h-0" />

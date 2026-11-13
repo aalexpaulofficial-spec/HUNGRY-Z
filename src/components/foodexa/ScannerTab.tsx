@@ -119,7 +119,7 @@ export function ScannerTab({ userId }: { userId?: string }) {
     finally { setCorrectionBusy(null); }
   }
 
-  if (!access) return <GlobalLoadingScreen />;
+  if (!access) return <GlobalLoadingScreen tone="student" />;
   if (!access.ok) return <div className="scanner-card p-6 text-center text-sm text-muted-foreground">{access.message}</div>;
   const livePlan = STUDENT_SCANNER_PLANS.find((plan) => plan.status === "live")!;
   return <div className="scanner-shell mx-auto flex w-full max-w-3xl flex-col gap-5 pb-6">
