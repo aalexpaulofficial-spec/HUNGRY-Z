@@ -1159,7 +1159,7 @@ html[data-theme="dark"] .hz-order-detail-action.is-primary { border-color: #f4f4
 .hz-canteen-plan-card span { color: var(--muted-foreground); font-size: .65rem; }
 .hz-canteen-main { min-width: 0; padding: 1.4rem clamp(1rem, 2.2vw, 2.25rem) 2rem; }
 .hz-canteen-content { display: grid; gap: 1rem; min-width: 0; }
-.hz-canteen-app.is-pos-fullscreen:fullscreen { width: 100vw; height: 100vh; min-height: 0; overflow: hidden; background: var(--background); }
+.hz-canteen-app.is-pos-fullscreen:fullscreen { width: 100vw; height: 100vh; height: 100dvh; min-height: 0; overflow: hidden; background: var(--background); }
 .hz-canteen-app.is-pos-fullscreen .hz-canteen-layout { display: block; width: 100%; height: 100%; min-height: 0; max-width: none; margin: 0; overflow: hidden; }
 .hz-canteen-app.is-pos-fullscreen .hz-canteen-sidebar { display: none; }
 .hz-canteen-app.is-pos-fullscreen .hz-canteen-main { width: 100%; height: 100%; overflow: hidden; padding: 0; }
@@ -1169,9 +1169,18 @@ html[data-theme="dark"] .hz-order-detail-action.is-primary { border-color: #f4f4
 .hz-canteen-app.is-pos-fullscreen .hz-pos-layout { height: 100%; min-height: 0; grid-template-columns: minmax(0, 1.5fr) minmax(22rem, .9fr); align-items: stretch; gap: clamp(.65rem, 1vw, 1rem); overflow: hidden; }
 .hz-canteen-app.is-pos-fullscreen .hz-pos-menu-panel { height: 100%; overflow: auto; overscroll-behavior: contain; }
 .hz-canteen-app.is-pos-fullscreen .hz-pos-bill { position: relative; top: auto; height: 100%; overflow: auto; overscroll-behavior: contain; }
-.hz-canteen-app.is-pos-fullscreen #printer-settings-panel { position: fixed; z-index: 100; inset: 1rem; max-height: calc(100vh - 2rem); margin: 0; overflow: auto; box-shadow: 0 20px 70px rgb(0 0 0 / 36%); }
-@media (max-width: 900px) {
+.hz-canteen-app.is-pos-fullscreen .hz-pos-menu-panel { padding: clamp(.65rem, 1vw, 1rem); }
+.hz-canteen-app.is-pos-fullscreen .hz-pos-item { min-height: clamp(5.5rem, 13vh, 8rem); padding: clamp(.65rem, 1vw, 1rem); }
+.hz-canteen-app.is-pos-fullscreen #printer-settings-panel { position: fixed; z-index: 100; inset: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left)); max-height: calc(100vh - 2rem); max-height: calc(100dvh - 2rem); margin: 0; overflow: auto; box-shadow: 0 20px 70px rgb(0 0 0 / 36%); }
+@media (max-width: 900px), (orientation: portrait) {
   .hz-canteen-app.is-pos-fullscreen .hz-pos-layout { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) minmax(0, 1fr); }
+}
+@media (max-height: 720px) {
+  .hz-canteen-app.is-pos-fullscreen .hz-pos { gap: .45rem; padding: .5rem; }
+  .hz-canteen-app.is-pos-fullscreen .hz-pos-header { min-height: 2.75rem; }
+  .hz-canteen-app.is-pos-fullscreen .hz-pos-header > div:first-child > p:last-child { display: none; }
+  .hz-canteen-app.is-pos-fullscreen .hz-pos-header > div:first-child h2 { margin-top: .1rem; }
+  .hz-canteen-app.is-pos-fullscreen .hz-pos-header-action { min-height: 2.5rem; padding-block: .4rem; }
 }
 .hz-canteen-header { grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 1rem; border: 0 !important; border-radius: 0 !important; background: transparent !important; box-shadow: none; padding: 0 !important; }
 .hz-canteen-brand { align-items: center; gap: .8rem; }

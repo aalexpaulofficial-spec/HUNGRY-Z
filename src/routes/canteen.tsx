@@ -329,7 +329,7 @@ function OfflinePOSTab({
       <header className="hz-pos-header mb-5 flex flex-wrap items-end justify-between gap-3">
         <div><p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">Counter billing · {canteenName}</p><h2 id="offline-pos-title" className="display mt-2 text-2xl sm:text-3xl">Offline POS</h2><p className="mt-2 text-xs text-muted-foreground">Quick sale using your published canteen menu and current prices.</p></div>
         <div className="hz-pos-header-actions">
-          <button type="button" onClick={onTogglePrinterSettings} aria-expanded={printerSettingsOpen} aria-controls="printer-settings-panel" className="hz-pos-header-action"><Printer aria-hidden="true" /> Printer Settings</button>
+          <button type="button" onClick={onTogglePrinterSettings} aria-expanded={printerSettingsOpen} aria-controls="printer-settings-panel" className={cn("hz-printer-settings-toggle", printerSettingsOpen && "is-open")}><Settings aria-hidden="true" /> Printer Settings <span>{printerSettingsOpen ? "Hide" : "Configure"}</span></button>
           <button type="button" onClick={onToggleFullScreen} aria-pressed={isFullScreen} className="hz-pos-header-action">{isFullScreen ? <Minimize2 aria-hidden="true" /> : <Maximize2 aria-hidden="true" />}{isFullScreen ? " Exit full screen" : " Full screen"}</button>
           <div className="rounded-2xl border border-border bg-card px-4 py-2 text-right"><p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Items in bill</p><p className="text-xl font-black tabular-nums">{itemCount}</p></div>
         </div>
