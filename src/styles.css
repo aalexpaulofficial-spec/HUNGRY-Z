@@ -1168,17 +1168,20 @@ html[data-theme="dark"] .hz-order-detail-action.is-primary { border-color: #f4f4
 .hz-canteen-actions .hz-canteen-header-control { min-height: 2.65rem; border: 1px solid color-mix(in oklab, var(--border) 82%, var(--foreground) 18%); border-radius: 999px; background: var(--card); padding: .6rem 1.1rem; color: var(--foreground); font-family: inherit; font-size: .76rem; font-weight: 650; letter-spacing: .01em; line-height: 1.15; box-shadow: 0 1px 2px color-mix(in oklab, var(--foreground) 10%, transparent), 0 5px 12px -5px color-mix(in oklab, var(--foreground) 24%, transparent); transition: background .16s ease, border-color .16s ease, box-shadow .16s ease, transform .16s ease; }
 .hz-canteen-actions .hz-canteen-header-control:hover { transform: translateY(-1px); border-color: color-mix(in oklab, var(--border) 62%, var(--foreground)); background: color-mix(in oklab, var(--card) 94%, var(--foreground)); color: var(--foreground); box-shadow: 0 2px 4px color-mix(in oklab, var(--foreground) 12%, transparent), 0 8px 16px -6px color-mix(in oklab, var(--foreground) 28%, transparent); }
 .hz-canteen-actions .hz-canteen-header-control:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
-.hz-canteen-overview-banner { aspect-ratio: 5.04 / 1; overflow: hidden; border: 1px solid var(--border); border-radius: 1.8rem; background: var(--card); box-shadow: var(--hz-shadow-card); }
+.hz-canteen-overview-banner { aspect-ratio: 4.6 / 1; overflow: hidden; border: 1px solid var(--border); border-radius: 1.8rem; background: var(--card); box-shadow: var(--hz-shadow-card); }
 .hz-canteen-overview-banner > div { width: 100%; height: 100%; border: 0; border-radius: inherit; }
 .hz-canteen-overview-banner img { width: 100%; height: 100%; max-height: 100%; object-fit: contain; }
 .hz-canteen-overview-banner > .hz-template-banner-dashboard { display: grid; grid-template-columns: minmax(0, .39fr) minmax(0, .61fr); background: linear-gradient(135deg, color-mix(in oklab, var(--sidebar) 74%, var(--card)), var(--card) 64%, color-mix(in oklab, var(--primary) 7%, var(--card))); color: var(--foreground); }
 .hz-template-banner-dashboard > img { display: block; }
-.hz-template-dashboard-image { grid-column: 2; grid-row: 1; min-width: 0; min-height: 0; background: var(--sidebar); object-fit: cover !important; object-position: center center !important; }
-.hz-template-preview-frame { aspect-ratio: 5.04 / 1; container-type: inline-size; }
-.hz-template-preview-frame[data-preview-size="tablet"] { aspect-ratio: 3.75 / 1; }
-.hz-template-preview-frame[data-preview-size="mobile"] { aspect-ratio: 2.45 / 1; }
+.hz-template-dashboard-backdrop { position: absolute; z-index: 0; grid-column: 2; grid-row: 1; overflow: hidden; background-position: center; background-size: cover; }
+.hz-template-dashboard-backdrop::before { position: absolute; inset: -1rem; background: inherit; background-position: center; background-size: cover; content: ""; filter: blur(1.35rem); transform: scale(1.06); }
+.hz-template-dashboard-backdrop::after { position: absolute; inset: 0; background: linear-gradient(90deg, color-mix(in oklab, var(--foreground) 12%, transparent), transparent 32%, color-mix(in oklab, var(--foreground) 12%, transparent)); content: ""; }
+.hz-template-dashboard-image { position: relative; z-index: 1; grid-column: 2; grid-row: 1; min-width: 0; min-height: 0; object-fit: contain !important; object-position: center center !important; filter: drop-shadow(0 8px 16px color-mix(in oklab, var(--foreground) 22%, transparent)); }
+.hz-template-preview-frame { aspect-ratio: 4.6 / 1; container-type: inline-size; }
+.hz-template-preview-frame[data-preview-size="tablet"] { aspect-ratio: 3.4 / 1; }
+.hz-template-preview-frame[data-preview-size="mobile"] { aspect-ratio: 2.05 / 1; }
 .hz-template-banner-preview { width: 100%; height: 100%; background: var(--card); }
-.hz-template-banner-preview.hz-template-banner-dashboard > img { position: relative; inset: auto; grid-column: 2; grid-row: 1; width: 100%; height: 100%; object-fit: cover !important; }
+.hz-template-banner-preview.hz-template-banner-dashboard > img { width: 100%; height: 100%; }
 .hz-template-banner-preview.hz-template-banner-dashboard > .hz-template-dashboard-copy { grid-column: 1; grid-row: 1; }
 .hz-template-banner-preview h2 { max-width: 100%; font-size: clamp(1.2rem, 3.1cqi, 1.875rem); line-height: 1.08; overflow-wrap: break-word; text-wrap: balance; }
 .hz-template-banner-preview button { margin-top: .5rem; padding-block: .55rem; }
@@ -1444,7 +1447,7 @@ html[data-theme="dark"] .hz-printer-test:hover:not(:disabled) { background: #ddd
   .hz-faculty-event-food-list { grid-column: 1 / -1; grid-row: 2; }
   .hz-faculty-event-budget { grid-column: 2; grid-row: 1; }
   .hz-canteen-actions { justify-content: flex-start; }
-  .hz-canteen-overview-banner { aspect-ratio: 3.75 / 1; }
+  .hz-canteen-overview-banner { aspect-ratio: 3.4 / 1; }
   .hz-canteen-overview-banner > .hz-template-banner-dashboard { grid-template-columns: minmax(0, .43fr) minmax(0, .57fr); }
   .hz-template-dashboard-copy { padding: 1.2rem clamp(1rem, 4vw, 2rem); }
   .hz-template-dashboard-copy button { min-height: 2.7rem; margin-top: .8rem; }
@@ -1475,7 +1478,7 @@ html[data-theme="dark"] .hz-printer-test:hover:not(:disabled) { background: #ddd
   .hz-event-served-control input { width: 4.5rem; }
   .hz-canteen-actions { justify-content: flex-start; }
   .hz-canteen-overview-banner { border-radius: 1.25rem; }
-  .hz-canteen-overview-banner { aspect-ratio: 2.45 / 1; }
+  .hz-canteen-overview-banner { aspect-ratio: 2.05 / 1; }
   .hz-canteen-overview-banner > .hz-template-banner-dashboard { grid-template-columns: minmax(0, .48fr) minmax(0, .52fr); }
   .hz-template-dashboard-copy { padding: .8rem .9rem; }
   .hz-template-dashboard-copy > p:first-child { font-size: .58rem; letter-spacing: .06em; }
