@@ -1595,3 +1595,91 @@ html[data-theme="dark"] .hz-printer-test:hover:not(:disabled) { background: #ddd
   @keyframes scanner-border-spin { to { --scan-angle: 360deg; } }
   @media (prefers-reduced-motion: reduce) { .scanner-image-frame-active, .scanner-sweep { animation-duration: 8s; } }
 }
+
+/* Student app: warm, editorial food ordering surfaces inspired by the supplied reference. */
+.hz-customer-app {
+  --background: oklch(0.985 0.012 80);
+  --foreground: oklch(0.22 0.012 35);
+  --ink: oklch(0.96 0.012 80);
+  --ink-soft: oklch(0.97 0.01 80);
+  --card: oklch(0.999 0.003 80);
+  --card-foreground: oklch(0.22 0.012 35);
+  --popover: oklch(0.999 0.003 80);
+  --popover-foreground: oklch(0.22 0.012 35);
+  --primary: oklch(0.62 0.205 31);
+  --primary-foreground: oklch(1 0 0);
+  --primary-bright: oklch(0.57 0.205 31);
+  --primary-deep: oklch(0.48 0.18 31);
+  --secondary: oklch(0.95 0.018 80);
+  --secondary-foreground: oklch(0.27 0.015 35);
+  --muted: oklch(0.95 0.012 80);
+  --muted-foreground: oklch(0.5 0.015 35);
+  --accent: oklch(0.95 0.035 60);
+  --accent-foreground: oklch(0.28 0.03 35);
+  --border: oklch(0.89 0.012 65);
+  --input: oklch(0.86 0.014 65);
+  --ring: oklch(0.62 0.205 31);
+  --hz-shadow-card: 0 12px 32px rgb(62 39 22 / 7%), 0 2px 8px rgb(62 39 22 / 3%);
+  min-height: 100svh;
+  color: var(--foreground);
+  color-scheme: light;
+  background:
+    radial-gradient(ellipse at 50% -18%, rgb(255 232 211 / 52%), transparent 48%),
+    var(--background);
+}
+.hz-customer-app .hz-customer-shell { max-width: 64rem; }
+.hz-customer-app .hz-customer-header {
+  border-color: color-mix(in oklab, var(--border) 72%, transparent);
+  background: color-mix(in oklab, var(--background) 90%, transparent);
+}
+.hz-customer-app .hz-campus-switch {
+  border-color: color-mix(in oklab, var(--border) 85%, white);
+  background: color-mix(in oklab, white 82%, var(--background));
+  box-shadow: 0 5px 20px rgb(62 39 22 / 5%);
+}
+.hz-customer-app .hz-hours-banner {
+  border-color: color-mix(in oklab, var(--border) 75%, white);
+  background: color-mix(in oklab, white 82%, var(--background));
+  box-shadow: 0 5px 20px rgb(62 39 22 / 4%);
+}
+.hz-customer-app .hz-bottom-nav {
+  border-color: color-mix(in oklab, var(--border) 76%, white);
+  background: rgb(255 253 249 / 94%);
+  box-shadow: 0 -10px 34px rgb(62 39 22 / 9%);
+}
+.hz-customer-app .hz-bottom-nav button { min-height: 3.35rem; font-size: 9px; }
+.hz-customer-app .hz-bottom-nav button[aria-current="page"] { color: var(--primary-bright); }
+.hz-customer-app .hz-customer-content { padding-bottom: 2rem; }
+.hz-customer-app .hz-customer-content .rounded-3xl.border,
+.hz-customer-app .hz-customer-content .rounded-\[2rem\].border,
+.hz-customer-app .hz-customer-content .glass-red {
+  border-color: color-mix(in oklab, var(--border) 78%, white);
+  background-color: var(--card);
+  box-shadow: var(--hz-shadow-card);
+}
+.hz-customer-app .hz-customer-content .group.overflow-hidden.rounded-3xl {
+  border-color: color-mix(in oklab, var(--border) 72%, white);
+  background: var(--card);
+  box-shadow: var(--hz-shadow-card);
+}
+.hz-customer-app .hz-customer-content .group.overflow-hidden.rounded-3xl img { aspect-ratio: 4 / 3; }
+.hz-customer-app .hz-search-field,
+.hz-customer-app .hz-customer-content input:not([type="checkbox"]),
+.hz-customer-app .hz-customer-content textarea {
+  background-color: color-mix(in oklab, white 88%, var(--background));
+}
+.hz-customer-app .hz-home-page section > h2 { letter-spacing: -0.025em; }
+.hz-customer-app .hz-menu-page > div:first-child h1 { letter-spacing: -0.045em; }
+.hz-customer-app .hz-customer-content button { -webkit-tap-highlight-color: transparent; }
+.hz-customer-app .hz-customer-content button:focus-visible,
+.hz-customer-app .hz-bottom-nav button:focus-visible {
+  outline-color: color-mix(in oklab, var(--primary) 62%, white);
+}
+@media (max-width: 639px) {
+  .hz-customer-app .hz-customer-shell { padding-bottom: calc(6rem + env(safe-area-inset-bottom)); }
+  .hz-customer-app .hz-customer-header { padding-top: .75rem; padding-bottom: .8rem; }
+  .hz-customer-app .hz-customer-content { padding-right: 1rem; padding-left: 1rem; }
+  .hz-customer-app .hz-home-page { gap: 1.6rem; }
+  .hz-customer-app .hz-customer-content .grid.grid-cols-2 { gap: .8rem; }
+  .hz-customer-app .hz-bottom-nav { padding-top: .55rem; }
+}
