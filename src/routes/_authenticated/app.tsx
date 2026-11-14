@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { QRCodeCanvas } from "qrcode.react";
 import { useServerFn } from "@tanstack/react-start";
-import { Home, UtensilsCrossed, Receipt, User, ScanLine, Plus, Minus, ShoppingBag, Clock, X, Check, LogOut, Repeat, MapPin, Store, Download, Ticket } from "lucide-react";
+import { Home, UtensilsCrossed, Receipt, User, ScanLine, Plus, Minus, ShoppingBag, Clock, X, Check, LogOut, Repeat, MapPin, Store, Download, Ticket, Search, SlidersHorizontal, ChevronRight } from "lucide-react";
 import { CanteenTemplateBanner } from "@/components/foodexa/CanteenTemplateBanner";
 import { GlobalLoadingScreen } from "@/components/foodexa/GlobalLoadingScreen";
 import { FeedbackDialog } from "@/components/foodexa/FeedbackDialog";
@@ -106,6 +106,7 @@ function OrderingApp() {
   const [menu, setMenu] = useState<MenuItem[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [tab, setTab] = useSessionState<Tab>("hungry-student-dashboard-tab", "home");
+  const [menuCategory, setMenuCategory] = useState("All");
   const [cart, setCart] = useSessionState<CartLine[]>("hungry-student-dashboard-cart", []);
   const [detail, setDetail] = useState<MenuItem | null>(null);
   const [checkout, setCheckout] = useState(false);
@@ -419,8 +420,8 @@ function OrderingApp() {
 
         <AnimatePresence mode="wait">
           <motion.main key={tab} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.25 }} className="hz-customer-content px-4 sm:px-7">
-            {tab === "home" && <HomeTab menu={liveMenu} canteen={canteen} template={canteenTemplate} onOpen={setDetail} onAdd={add} goMenu={() => setTab("menu")} />}
-            {tab === "menu" && <MenuTab menu={liveMenu} onOpen={setDetail} onAdd={add} />}
+            {tab === "home" && <HomeTab menu={liveMenu} canteen={canteen} template={canteenTemplate} onOpen={setDetail} onAdd={add} goMenu={(category) => { if (category) setMenuCategory(category); setTab("menu"); }} />}
+            {tab === "menu" && <MenuTab menu={liveMenu} onOpen={setDetail} onAdd={add} selectedCategory={menuCategory} onCategoryChange={setMenuCategory} />}
             {tab === "events" && (profile.role === "faculty"
               ? <FacultyEventSections canteenId={canteen.id} canteenName={canteen.name} userId={profile.id} />
               : <div className="space-y-8"><StudentEventsTab canteenId={canteen.id} canteenName={canteen.name} userId={profile.id} /></div>)}
@@ -631,14 +632,15 @@ function Empty({ title, text }: { title: string; text: string }) {
 
 export function FoodCard({ item, onOpen, onAdd, wide }: { item: MenuItem; onOpen: (i: MenuItem) => void; onAdd: (i: MenuItem) => void; wide?: boolean }) {
   return (
-    <motion.div whileTap={{ scale: 0.97 }} className={cn("group min-w-0 overflow-hidden rounded-3xl border border-border bg-card", wide && "w-60 shrink-0")}>
-      <button onClick={() => onOpen(item)} className="relative block aspect-[4/3] w-full overflow-hidden">
+    <motion.div whileTap={{ scale: 0.985 }} className={cn("hz-food-card group min-w-0 overflow-hidden rounded-3xl border border-border bg-card", wide && "hz-food-card-feature w-60 shrink-0")}>
+      <button onClick={() => onOpen(item)} className={cn("relative block w-full overflow-hidden", wide ? "aspect-[1.48/1]" : "aspect-[4/3]")}>
         <img data-no-translate src={foodImage(item.image)} alt={item.name} loading="lazy" className="h-full w-full object-cover transition duration-700 group-hover:scale-110" />
-        {item.tag && <span data-no-translate className="absolute left-3 top-3 rounded-full bg-primary px-2.5 py-1 text-[10px] font-bold text-primary-foreground">{item.tag}</span>}
+        {item.tag && <span data-no-translate className="hz-food-tag absolute left-3 top-3 rounded-full bg-primary px-2.5 py-1 text-[10px] font-bold text-primary-foreground">{item.tag}</span>}
+        {wide && <span className="hz-food-feature-copy"><span data-no-translate>{item.name}</span><span><Clock className="h-3 w-3" /> {item.prep_minutes} min <span aria-hidden="true">·</span> {item.veg ? "Veg" : "Non-veg"}</span></span>}
       </button>
       <div className="flex min-w-0 items-end justify-between gap-2 p-3 sm:p-4">
         <button onClick={() => onOpen(item)} className="min-w-0 flex-1 text-left">
-          <p data-no-translate className="line-clamp-2 break-words text-sm font-semibold leading-tight">{item.name}</p>
+          <p data-no-translate className={cn("line-clamp-2 break-words text-sm font-semibold leading-tight", wide && "sr-only")}>{item.name}</p>
           {item.description && <p data-no-translate className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-muted-foreground">{item.description}</p>}
           <p className="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground sm:flex-nowrap sm:gap-2">
             <span className="flex shrink-0 items-center gap-0.5"><Clock className="h-3 w-3" />{item.prep_minutes}m</span>
@@ -657,23 +659,35 @@ export function FoodCard({ item, onOpen, onAdd, wide }: { item: MenuItem; onOpen
   );
 }
 
-export function HomeTab({ menu, canteen, template, onOpen, onAdd, goMenu }: { menu: MenuItem[]; canteen: Canteen; template: CanteenTemplate | null; onOpen: (i: MenuItem) => void; onAdd: (i: MenuItem) => void; goMenu: () => void }) {
+export function HomeTab({ menu, canteen, template, onOpen, onAdd, goMenu }: { menu: MenuItem[]; canteen: Canteen; template: CanteenTemplate | null; onOpen: (i: MenuItem) => void; onAdd: (i: MenuItem) => void; goMenu: (category?: string) => void }) {
   const templateBanner = <div className="hz-customer-template-banner"><CanteenTemplateBanner layout="dashboard" imageUrl={template?.banner_image_url} heading={template?.heading} description={template?.description} canteenName={canteen.name} universityName={canteen.university_name} cropX={template?.banner_crop_x} cropY={template?.banner_crop_y} cropZoom={template?.banner_crop_zoom} onOrder={goMenu} /></div>;
   if (!menu.length) return <div className="space-y-8 pt-2">{templateBanner}<Empty title="Your canteen is getting ready" text={`${canteen.name} hasn't published its menu yet. It will appear here live as soon as it does.`} /></div>;
   const featured = menu.filter((m) => m.tag);
   const quick = menu.filter((m) => m.prep_minutes <= 8);
+  const categories = Array.from(new Set(menu.map((item) => item.category))).slice(0, 7);
+  const categoryEmoji = (category: string) => /drink|beverage|juice|coffee/i.test(category) ? "🥤" : /dessert|sweet|cake|ice.?cream/i.test(category) ? "🍰" : /snack|starter|side/i.test(category) ? "🥪" : /breakfast/i.test(category) ? "🍳" : /meal|lunch|dinner|main/i.test(category) ? "🍛" : "🍽️";
   return (
       <div className="hz-home-page space-y-6 pt-2">
+      <div className="hz-discover-search-row">
+        <button type="button" onClick={() => goMenu()} className="hz-discover-search" aria-label="Search dishes">
+          <Search className="h-4 w-4 shrink-0" />
+          <span>Search dishes</span>
+          <span className="hz-discover-search-filter"><SlidersHorizontal className="h-4 w-4" /></span>
+        </button>
+      </div>
+      <nav className="hz-category-rail" aria-label="Menu categories">
+        {categories.map((category) => <button key={category} type="button" onClick={() => goMenu(category)} className="hz-category-chip"><span aria-hidden="true">{categoryEmoji(category)}</span><span data-no-translate>{category}</span></button>)}
+      </nav>
       {templateBanner}
-      <section>
-        <h2 className="mb-3 text-lg font-bold">{featured.length ? "Today's picks" : "On the menu"}</h2>
-        <div className="-mx-5 flex gap-4 overflow-x-auto px-5 pb-2">
+      <section className="hz-home-section">
+        <div className="hz-home-section-heading"><h2>{featured.length ? "Today's picks" : "On the menu"}</h2><button type="button" onClick={() => goMenu()} aria-label="See all dishes">See all <ChevronRight className="h-3.5 w-3.5" /></button></div>
+        <div className="hz-food-rail">
           {(featured.length ? featured : menu.slice(0, 8)).map((m) => <FoodCard key={m.id} item={m} onOpen={onOpen} onAdd={onAdd} wide />)}
         </div>
       </section>
       {quick.length > 0 && (
-        <section>
-          <h2 className="mb-3 text-lg font-bold">Quick bites</h2>
+        <section className="hz-home-section">
+          <div className="hz-home-section-heading"><h2>Quick bites</h2><button type="button" onClick={() => goMenu()} aria-label="See all dishes">See all <ChevronRight className="h-3.5 w-3.5" /></button></div>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
             {quick.map((m) => <FoodCard key={m.id} item={m} onOpen={onOpen} onAdd={onAdd} />)}
           </div>
@@ -683,10 +697,10 @@ export function HomeTab({ menu, canteen, template, onOpen, onAdd, goMenu }: { me
   );
 }
 
-function MenuTab({ menu, onOpen, onAdd }: { menu: MenuItem[]; onOpen: (i: MenuItem) => void; onAdd: (i: MenuItem) => void }) {
-  const [cat, setCat] = useState("All");
+function MenuTab({ menu, onOpen, onAdd, selectedCategory, onCategoryChange }: { menu: MenuItem[]; onOpen: (i: MenuItem) => void; onAdd: (i: MenuItem) => void; selectedCategory: string; onCategoryChange: (category: string) => void }) {
   const [q, setQ] = useState("");
   const cats = useMemo(() => ["All", ...Array.from(new Set(menu.map((m) => m.category)))], [menu]);
+  const cat = cats.includes(selectedCategory) ? selectedCategory : "All";
   const list = useMemo(() => menu.filter((m) => (cat === "All" || m.category === cat) && m.name.toLowerCase().includes(q.toLowerCase())), [menu, cat, q]);
   if (!menu.length) return <Empty title="No menu yet" text="Your canteen hasn't published its menu on HUNGRY Z yet." />;
   return (
@@ -695,7 +709,7 @@ function MenuTab({ menu, onOpen, onAdd }: { menu: MenuItem[]; onOpen: (i: MenuIt
       <input aria-label="Search dishes" value={q} onChange={(e) => setQ(e.target.value)} maxLength={50} placeholder="Search dishes…" className="hz-search-field w-full rounded-2xl border border-input bg-card px-5 py-3.5 text-sm outline-none focus:border-primary" />
       <div className="-mx-5 mt-4 flex gap-2 overflow-x-auto px-5">
         {cats.map((c) => (
-          <button data-no-translate key={c} onClick={() => setCat(c)} className={cn("shrink-0 rounded-full border px-4 py-2 text-xs font-semibold transition", cat === c ? "border-primary bg-primary text-primary-foreground" : "border-border text-muted-foreground")}>{c}</button>
+          <button data-no-translate key={c} onClick={() => onCategoryChange(c)} className={cn("shrink-0 rounded-full border px-4 py-2 text-xs font-semibold transition", cat === c ? "border-primary bg-primary text-primary-foreground" : "border-border text-muted-foreground")}>{c}</button>
         ))}
       </div>
       <p className="mt-5 text-xs font-semibold text-muted-foreground">{list.length} {list.length === 1 ? "dish" : "dishes"}</p>
