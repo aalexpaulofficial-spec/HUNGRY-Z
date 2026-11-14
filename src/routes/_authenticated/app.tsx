@@ -667,7 +667,7 @@ export function HomeTab({ menu, canteen, template, onOpen, onAdd, goMenu }: { me
   const categories = Array.from(new Set(menu.map((item) => item.category))).slice(0, 7);
   const categoryEmoji = (category: string) => /drink|beverage|juice|coffee/i.test(category) ? "🥤" : /dessert|sweet|cake|ice.?cream/i.test(category) ? "🍰" : /snack|starter|side/i.test(category) ? "🥪" : /breakfast/i.test(category) ? "🍳" : /meal|lunch|dinner|main/i.test(category) ? "🍛" : "🍽️";
   return (
-      <div className="hz-home-page space-y-6 pt-2">
+      <div className="hz-home-page pt-2">
       <div className="hz-discover-search-row">
         <button type="button" onClick={() => goMenu()} className="hz-discover-search" aria-label="Search dishes">
           <Search className="h-4 w-4 shrink-0" />
