@@ -140,7 +140,7 @@ function RootComponent() {
   const [showRouteLoader, setShowRouteLoader] = useState(false);
   const appFromUrl = new URLSearchParams(searchStr).get("hungry_app");
   const hasAppLaunchMarker = appFromUrl === "student" || appFromUrl === "canteen";
-  const [standaloneApp, setStandaloneApp] = useState(hasAppLaunchMarker);
+  const [standaloneApp, setStandaloneApp] = useState(false);
 
   useEffect(() => {
     const recoverFromStaleBundle = (event: Event) => {
@@ -169,7 +169,7 @@ function RootComponent() {
 
   useEffect(() => {
     const standalone = isStandaloneApp();
-    setStandaloneApp(standalone || hasAppLaunchMarker);
+    setStandaloneApp(standalone);
     const app = appFromUrl;
     if (standalone && (app === "student" || app === "canteen")) {
       markAppInstalled(app, true);

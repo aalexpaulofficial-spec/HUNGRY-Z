@@ -2,6 +2,7 @@ import { useLocation, useRouter } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { isStandaloneApp } from "@/lib/pwa-install";
 
 /**
  * Global Back navigation.
@@ -135,7 +136,7 @@ export async function navigateBack(
 export function BackButton({ inline = false }: { inline?: boolean }) {
   const ctx = useContext(BackCtx);
   const router = useRouter();
-  const { pathname } = useLocation();
+  const { pathname, searchStr } = useLocation();
   const setInline = ctx?.setInline;
   const enabled = ctx?.enabled ?? true;
   useEffect(() => {
@@ -146,7 +147,8 @@ export function BackButton({ inline = false }: { inline?: boolean }) {
   if (ctx?.enabled === false || pathname === "/") return null;
   if (!inline && (ctx?.inline ?? 0) > 0) return null;
   const goBack = () => {
-    if (pathname === "/install/canteen") {
+    const websiteCanteenLaunch = pathname === "/canteen" && new URLSearchParams(searchStr).get("hungry_app") === "canteen" && !isStandaloneApp();
+    if (pathname === "/install/canteen" || websiteCanteenLaunch) {
       void router.navigate({ to: "/", replace: true });
       return;
     }
