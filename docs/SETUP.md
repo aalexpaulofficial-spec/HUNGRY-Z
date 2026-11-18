@@ -72,4 +72,4 @@ npm run lint      # Run ESLint
 - Keep sensitive registration documents in private storage with restrictive Storage policies and authorized review access.
 - Use test-mode provider credentials for local payment exercises. Do not place real customer or government ID data in development fixtures.
 
-For application boundaries and domain flows, see [Architecture](ARCHITECTURE.md). For product-facing data practices, see the live [Privacy Policy](https://hungryz.vercel.app/privacy).
+For application boundaries and domain flows, see [Architecture](ARCHITECTURE.md). For product-facing data practices, see the live [Privacy Policy](https://www.hungryz.in/privacy).

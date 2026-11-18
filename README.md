@@ -7,7 +7,7 @@
 <p align="center"><strong>Campus food ordering, canteen operations, and faculty events in one platform.</strong></p>
 
 <p align="center">
-  <a href="https://hungryz.vercel.app/">Product</a> ·
+  <a href="https://www.hungryz.in/">Product</a> ·
   <a href="docs/SETUP.md">Setup</a> ·
   <a href="docs/ARCHITECTURE.md">Architecture</a> ·
   <a href="LICENSE">License</a>
@@ -65,7 +65,7 @@ Screenshots show the current HUNGRY Z landing page at desktop and mobile widths.
   <img src="docs/screenshots/landing-mobile.png" alt="HUNGRY Z landing page on a mobile screen" width="260" />
 </p>
 
-Open the [live HUNGRY Z website](https://hungryz.vercel.app/) for the interactive product. No separate video demo is included in this repository.
+Open the [live HUNGRY Z website](https://www.hungryz.in/) for the interactive product. No separate video demo is included in this repository.
 
 ## Technology
 
@@ -115,7 +115,7 @@ npm run lint      # Run ESLint
 
 ## Usage
 
-Use the [live product](https://hungryz.vercel.app/) to explore the public experience. The main application routes are:
+Use the [live product](https://www.hungryz.in/) to explore the public experience. The main application routes are:
 
 | Route | Purpose |
 | --- | --- |
@@ -155,7 +155,7 @@ The event lifecycle is faculty request → canteen quotation → faculty review 
 - Online payment is treated as confirmed only after server-side provider verification or a verified Razorpay webhook.
 - Server secrets must not be added to `VITE_` variables, browser code, screenshots, issues or commits.
 - Do not include personal data, government ID documents, passwords, payment credentials or access tokens in public issues or logs.
-- Read the website's [Privacy Policy](https://hungryz.vercel.app/privacy) and [Terms & Conditions](https://hungryz.vercel.app/terms) for product-facing information. Repository code and configuration should be reviewed before deployment.
+- Read the website's [Privacy Policy](https://www.hungryz.in/privacy) and [Terms & Conditions](https://www.hungryz.in/terms) for product-facing information. Repository code and configuration should be reviewed before deployment.
 
 ## Contributing and support
 

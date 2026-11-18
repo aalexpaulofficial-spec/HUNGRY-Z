@@ -80,17 +80,17 @@ describe("HUNGRY Z order email content", () => {
       expect(email.html.match(/alt="Official HUNGRY Z logo"/g)).toHaveLength(2);
       expect(email.html.indexOf("Official HUNGRY Z logo")).toBeLessThan(email.html.indexOf("<h1"));
       expect(email.html).toContain("HUNGRY Z</p>");
-      expect(email.html).toContain('href="https://www.instagram.com/hungryz___?obrf=MTBoOHp3ZjJzZW9tdg=="');
+      expect(email.html).toContain('href="https://www.instagram.com/hungryz___?gwpx=MTBoOHp3ZjJzZW9tdg=="');
       expect(email.html).toContain('href="https://whatsapp.com/channel/0029Vb9EpYJ0G0XmfZmSme1H"');
       expect(email.html).toContain('href="https://www.linkedin.com/company/hungryz/"');
-      expect(email.html).toContain('href="https://hungryz.vercel.app/" style="color:#555;text-decoration:underline">Privacy Policy</a>');
-      expect(email.html).toContain('href="https://hungryz.vercel.app/" style="color:#555;text-decoration:underline">Terms &amp; Conditions</a>');
+      expect(email.html).toContain('href="https://www.hungryz.in/privacy" style="color:#555;text-decoration:underline">Privacy Policy</a>');
+      expect(email.html).toContain('href="https://www.hungryz.in/" style="color:#555;text-decoration:underline">Terms &amp; Conditions</a>');
       expect(email.html).toContain('aria-label="Instagram"');
       expect(email.html).toContain('aria-label="WhatsApp Community"');
       expect(email.html).toContain('aria-label="LinkedIn"');
-      expect(email.html).toContain("https://hungryz.vercel.app/email-instagram.png");
-      expect(email.html).toContain("https://hungryz.vercel.app/email-whatsapp.png");
-      expect(email.html).toContain("https://hungryz.vercel.app/email-linkedin.png");
+      expect(email.html).toContain("https://www.hungryz.in/INSTAGRAM%201.png");
+      expect(email.html).toContain("https://www.hungryz.in/WHATSAPP%202.png");
+      expect(email.html).toContain("https://www.hungryz.in/LINKEDIN%203.png");
       expect(email.html).not.toContain("background-image");
       expect(email.html).toContain('width="32" height="32"');
       expect(email.html).toContain('width="64" height="64"');
@@ -100,10 +100,10 @@ describe("HUNGRY Z order email content", () => {
 
   it("adds social and legal destinations to plain-text email fallbacks only once", () => {
     const email = withEmailTextFooter({ subject: "Order", text: "Order confirmed", html: "<p>Order confirmed</p>" });
-    expect(email.text).toContain("Instagram: https://www.instagram.com/hungryz___?obrf=MTBoOHp3ZjJzZW9tdg==");
+    expect(email.text).toContain("Instagram: https://www.instagram.com/hungryz___?gwpx=MTBoOHp3ZjJzZW9tdg==");
     expect(email.text).toContain("WhatsApp Community: https://whatsapp.com/channel/0029Vb9EpYJ0G0XmfZmSme1H");
-    expect(email.text).toContain("Privacy Policy: https://hungryz.vercel.app/");
-    expect(email.text).toContain("Terms & Conditions: https://hungryz.vercel.app/");
+    expect(email.text).toContain("Privacy Policy: https://www.hungryz.in/privacy");
+    expect(email.text).toContain("Terms & Conditions: https://www.hungryz.in/");
     expect(email.text).toContain("LinkedIn: https://www.linkedin.com/company/hungryz/");
     expect(withEmailTextFooter(email).text).toBe(email.text);
   });

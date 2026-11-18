@@ -44,7 +44,7 @@ describe("HUNGRY Z authentication", () => {
     fireEvent.change(screen.getByLabelText("Enter your registered email address."), { target: { value: "student@example.com" } });
     fireEvent.click(screen.getByRole("button", { name: "Send reset link" }));
 
-    await waitFor(() => expect(resetPasswordForEmail).toHaveBeenCalledWith("student@example.com", { redirectTo: "https://hungryz.vercel.app/reset-password" }));
+    await waitFor(() => expect(resetPasswordForEmail).toHaveBeenCalledWith("student@example.com", { redirectTo: "https://www.hungryz.in/reset-password" }));
     expect(await screen.findByRole("status")).toHaveTextContent("If an account exists for that email, we’ve sent a password reset link.");
     expect(dialog).toBeInTheDocument();
   });

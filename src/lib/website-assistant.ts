@@ -117,9 +117,9 @@ const answers: Record<Topic, Record<AssistantLanguage, string>> = {
     kn: "HUNGRY AI Scan ಫೋಟೋದಿಂದ ಆಹಾರ ಗುರುತಿಸಿ ಅಂದಾಜು ಪೌಷ್ಟಿಕಾಂಶ ಮಾಹಿತಿಯನ್ನು ಪಡೆಯಬಹುದು. ಫಲಿತಾಂಶಗಳು ಅಪೂರ್ಣ ಅಥವಾ ತಪ್ಪಾಗಿರಬಹುದು; ಇದು ವೈದ್ಯಕೀಯ, ಅಲರ್ಜಿ ಅಥವಾ ಆಹಾರ ಸಲಹೆಯಲ್ಲ. ಪದಾರ್ಥ ಮತ್ತು ಅಲರ್ಜಿ ಬಗ್ಗೆ ಕ್ಯಾಂಟೀನ್‌ನಿಂದಲೇ ಖಚಿತಪಡಿಸಿಕೊಳ್ಳಿ.",
   },
   privacy: {
-    en: "The Privacy Policy and Terms & Conditions are available at hungryz.vercel.app from the website footer, sign-up flow and dashboard profile. The policy explains account, order, payment, support, scanner and event information. You can email privacy questions or requests to hungryofficialx@gmail.com.",
-    hi: "Privacy Policy और Terms & Conditions hungryz.vercel.app पर website footer, sign-up और dashboard profile से उपलब्ध हैं। नीति में account, order, payment, support, scanner और event जानकारी समझाई गई है। गोपनीयता संबंधी सवाल या अनुरोध hungryofficialx@gmail.com पर भेजें।",
-    kn: "Privacy Policy ಮತ್ತು Terms & Conditions hungryz.vercel.app ನಲ್ಲಿ website footer, sign-up ಮತ್ತು dashboard profile ಮೂಲಕ ಲಭ್ಯವಿವೆ. ನೀತಿಯಲ್ಲಿ account, order, payment, support, scanner ಮತ್ತು event ಮಾಹಿತಿಯನ್ನು ವಿವರಿಸಲಾಗಿದೆ. ಗೌಪ್ಯತೆ ಪ್ರಶ್ನೆ ಅಥವಾ ವಿನಂತಿಗಾಗಿ hungryofficialx@gmail.com ಗೆ ಬರೆಯಿರಿ.",
+    en: "The Privacy Policy and Terms & Conditions are available at www.hungryz.in from the website footer, sign-up flow and dashboard profile. The policy explains account, order, payment, support, scanner and event information. You can email privacy questions or requests to hungryofficialx@gmail.com.",
+    hi: "Privacy Policy और Terms & Conditions www.hungryz.in पर website footer, sign-up और dashboard profile से उपलब्ध हैं। नीति में account, order, payment, support, scanner और event जानकारी समझाई गई है। गोपनीयता संबंधी सवाल या अनुरोध hungryofficialx@gmail.com पर भेजें।",
+    kn: "Privacy Policy ಮತ್ತು Terms & Conditions www.hungryz.in ನಲ್ಲಿ website footer, sign-up ಮತ್ತು dashboard profile ಮೂಲಕ ಲಭ್ಯವಿವೆ. ನೀತಿಯಲ್ಲಿ account, order, payment, support, scanner ಮತ್ತು event ಮಾಹಿತಿಯನ್ನು ವಿವರಿಸಲಾಗಿದೆ. ಗೌಪ್ಯತೆ ಪ್ರಶ್ನೆ ಅಥವಾ ವಿನಂತಿಗಾಗಿ hungryofficialx@gmail.com ಗೆ ಬರೆಯಿರಿ.",
   },
   support: {
     en: "For account, order, payment, refund, event or privacy help, email hungryofficialx@gmail.com. Include your Order ID and payment reference for payment problems. Never send a password, one-time code or full card details.",

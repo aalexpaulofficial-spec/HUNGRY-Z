@@ -33,9 +33,7 @@ async function admin() {
 }
 
 function canteenDashboardInstallUrl() {
-  const configuredHost = process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.VERCEL_URL || "hungryz.vercel.app";
-  const origin = configuredHost.startsWith("https://") ? configuredHost : `https://${configuredHost}`;
-  return new URL("/install/canteen", origin).toString();
+  return "https://www.hungryz.in/install/canteen";
 }
 
 const CANTEEN_DOCUMENT_BUCKET = "canteen-registration-documents";

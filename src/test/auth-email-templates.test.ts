@@ -17,14 +17,14 @@ const authTemplates = [
 describe("branded Supabase Auth email templates", () => {
   it.each(authTemplates)("includes the full HUNGRY Z identity in %s", (file) => {
     const html = readFileSync(path.join(templateRoot, file), "utf8");
-    expect(html).toContain("https://hungryz.vercel.app/HUNGRY%20Z%20Q%20LOGO.png");
+    expect(html).toContain("https://www.hungryz.in/HUNGRY%20Z%20Q%20LOGO.png");
     expect(html).toContain("HUNGRY Z</p>");
     expect(html).toContain("— Team HUNGRY Z");
-    expect(html).toContain("https://hungryz.vercel.app/email-instagram.png");
-    expect(html).toContain("https://hungryz.vercel.app/email-whatsapp.png");
-    expect(html).toContain("https://hungryz.vercel.app/email-linkedin.png");
-    expect(html).toContain('href="https://hungryz.vercel.app/" style="color:#555;text-decoration:underline">Privacy Policy</a>');
-    expect(html).toContain('href="https://hungryz.vercel.app/" style="color:#555;text-decoration:underline">Terms &amp; Conditions</a>');
+    expect(html).toContain("https://www.hungryz.in/INSTAGRAM%201.png");
+    expect(html).toContain("https://www.hungryz.in/WHATSAPP%202.png");
+    expect(html).toContain("https://www.hungryz.in/LINKEDIN%203.png");
+    expect(html).toContain('href="https://www.hungryz.in/privacy" style="color:#555;text-decoration:underline">Privacy Policy</a>');
+    expect(html).toContain('href="https://www.hungryz.in/" style="color:#555;text-decoration:underline">Terms &amp; Conditions</a>');
     expect(html).toContain('href="https://whatsapp.com/channel/0029Vb9EpYJ0G0XmfZmSme1H" aria-label="WhatsApp Community"');
     expect(html).not.toMatch(/hungryofficial\.vercel\.app|hungryzq\.vercel\.app/i);
   });

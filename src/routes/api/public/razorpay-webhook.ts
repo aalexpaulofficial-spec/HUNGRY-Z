@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 
-// Razorpay → Dashboard → Settings → Webhooks → URL: https://<your-site>/api/public/razorpay-webhook
+// Razorpay → Dashboard → Settings → Webhooks → URL: https://www.hungryz.in/api/public/razorpay-webhook
 // Events: payment.authorized, payment.captured, payment.failed, order.paid, refund.processed, refund.failed
 // Every request must carry a valid X-Razorpay-Signature (HMAC of the raw body with RAZORPAY_WEBHOOK_SECRET).
 
