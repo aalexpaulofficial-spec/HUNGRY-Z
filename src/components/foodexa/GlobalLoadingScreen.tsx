@@ -8,7 +8,7 @@ export function GlobalLoadingScreen({ overlay = false, visible = true, tone = "c
           <circle className="hz-global-loading-track" cx="102" cy="102" r="99" />
           <circle className="hz-global-loading-progress" cx="102" cy="102" r="99" />
         </svg>
-        <img className="hz-global-loading-logo" src={tone === "student" ? "/HUNGRY%20Z%20Q%20LOGO.png" : "/HUNGRY%20Z%20CANTEEN%20DAHSBOARD%20LOGO.png"} alt="" />
+        <img className="hz-global-loading-logo" src="/HUNGRY%20Z%20Q%20LOGO.png" alt="" />
       </div>
     </div>
   );

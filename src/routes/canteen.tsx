@@ -152,9 +152,9 @@ function CanteenPage() {
       <div className="ember anim-pulse-glow pointer-events-none absolute -top-40 left-1/2 h-[520px] w-[520px] -translate-x-1/2" />
       <div className="relative mx-auto w-full max-w-md">
         {siteNavigationEnabled ? (
-          <Link to="/" className="mb-8 flex items-center justify-center gap-2 display text-[15px] tracking-[0.3em]" aria-label="HUNGRY Z home"><img src="/HUNGRY%20Z%20CANTEEN%20DAHSBOARD%20LOGO.png" alt="" className="h-10 w-10 rounded-full object-contain" />HUNGRY Z</Link>
+          <Link to="/" className="mb-8 flex items-center justify-center gap-2 display text-[15px] tracking-[0.3em]" aria-label="HUNGRY Z home"><img src="/HUNGRY%20Z%20Q%20LOGO.png" alt="" className="h-10 w-10 rounded-full object-contain" />HUNGRY Z</Link>
         ) : (
-          <span className="mb-8 flex items-center justify-center gap-2 display text-[15px] tracking-[0.3em]" aria-label="HUNGRY Z"><img src="/HUNGRY%20Z%20CANTEEN%20DAHSBOARD%20LOGO.png" alt="" className="h-10 w-10 rounded-full object-contain" />HUNGRY Z</span>
+          <span className="mb-8 flex items-center justify-center gap-2 display text-[15px] tracking-[0.3em]" aria-label="HUNGRY Z"><img src="/HUNGRY%20Z%20Q%20LOGO.png" alt="" className="h-10 w-10 rounded-full object-contain" />HUNGRY Z</span>
         )}
         {state !== "ok" && state !== "error" && <div className="mb-5 flex justify-center"><HeroInstallButton app="canteen" /></div>}
         <div className="glass-red anim-rise rounded-[2rem] p-6 sm:p-8">
@@ -1061,7 +1061,7 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
       setTemplateDescription(savedTemplate.description);
       setBannerCrop(normalizeBannerCrop({ x: savedTemplate.banner_crop_x, y: savedTemplate.banner_crop_y, zoom: savedTemplate.banner_crop_zoom }));
       setTemplateImage(null);
-      setTab("menu");
+      setTab("template");
     } catch (error) {
       if (uploadedPath) {
         try {
@@ -1190,7 +1190,7 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
     <div ref={canteenAppRef} className={cn("hz-canteen-app min-h-screen bg-background", posFullScreen && "is-pos-fullscreen")}>
       <div className={cn("hz-canteen-layout mx-auto w-full max-w-[1760px]", sidebarCollapsed && "is-sidebar-collapsed")}>
         <aside id="hz-canteen-sidebar" className="hz-canteen-sidebar" aria-label="Canteen dashboard navigation">
-          <div className="hz-canteen-sidebar-brand"><img src="/HUNGRY%20Z%20CANTEEN%20DAHSBOARD%20LOGO.png" alt="HUNGRY Z" /><span>HUNGRY Z</span><button type="button" className="hz-canteen-sidebar-toggle" aria-controls="hz-canteen-sidebar" aria-expanded={!sidebarCollapsed} aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"} title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"} onClick={() => setSidebarCollapsed((collapsed) => !collapsed)}>{sidebarCollapsed ? <ChevronRight aria-hidden="true" /> : <ChevronLeft aria-hidden="true" />}</button></div>
+          <div className="hz-canteen-sidebar-brand"><img src="/HUNGRY%20Z%20Q%20LOGO.png" alt="HUNGRY Z" /><span>HUNGRY Z</span><button type="button" className="hz-canteen-sidebar-toggle" aria-controls="hz-canteen-sidebar" aria-expanded={!sidebarCollapsed} aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"} title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"} onClick={() => setSidebarCollapsed((collapsed) => !collapsed)}>{sidebarCollapsed ? <ChevronRight aria-hidden="true" /> : <ChevronLeft aria-hidden="true" />}</button></div>
           <nav className="hz-canteen-sidebar-nav" aria-label="Canteen dashboard sections">
             {sidebarSections.map((item) => { const { key, label, icon: Icon } = item; const count = "count" in item ? item.count : 0; return <button key={key} type="button" title={sidebarCollapsed ? label : undefined} aria-current={tab === key ? "page" : undefined} onClick={() => selectSection(key)} className={cn("hz-canteen-side-link", tab === key && "is-active")}><Icon aria-hidden="true" /><span>{label}</span>{count > 0 && <span className="hz-canteen-side-count">{count}</span>}</button>; })}
           </nav>

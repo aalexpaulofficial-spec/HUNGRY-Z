@@ -442,8 +442,9 @@ html[data-theme="light"] .hz-customer-app { background-color: #f5f5f7; backgroun
 .hz-faculty-workspace > section[aria-label="Event token management"] > article { border-radius: 1.35rem; box-shadow: var(--hz-shadow-card); }
 html[data-theme="light"] .hz-customer-app .glass-red { border-color: var(--border); background: var(--card); box-shadow: var(--hz-shadow-card); }
 .hz-global-loading.is-student { color: #e60012; }
-.hz-global-loading.is-canteen { background: #050505; color: #f5f5f5; }
+.hz-global-loading.is-canteen { background: #fff; color: #111; }
 .hz-global-loading.is-canteen .hz-global-loading-track { stroke: #34343a; }
+.hz-global-loading.is-canteen .hz-global-loading-logo { filter: grayscale(1) contrast(2); }
 .hz-canteen-app {
   --background: oklch(0.13 0 0);
   --foreground: oklch(0.96 0 0);
@@ -1126,9 +1127,9 @@ html[data-theme="light"] .hz-global-loading { background: #fff; color: #e60012; 
 html[data-theme="light"] .hz-global-loading-track { stroke: #f1c9cc; }
 html[data-theme="dark"] .hz-global-loading { background: #0f0f10; color: #ff1a1a; }
 html[data-theme="dark"] .hz-global-loading-track { stroke: #34343a; }
-html[data-theme="light"] .hz-global-loading.is-canteen,
+html[data-theme="light"] .hz-global-loading.is-canteen { background: #fff; color: #111; }
+html[data-theme="light"] .hz-global-loading.is-canteen .hz-global-loading-track { stroke: #dedede; }
 html[data-theme="dark"] .hz-global-loading.is-canteen { background: #050505; color: #f5f5f5; }
-html[data-theme="light"] .hz-global-loading.is-canteen .hz-global-loading-track,
 html[data-theme="dark"] .hz-global-loading.is-canteen .hz-global-loading-track { stroke: #34343a; }
 html[data-theme="light"] .hz-global-loading.is-student { background: #fff; color: #e60012; }
 html[data-theme="light"] .hz-global-loading.is-student .hz-global-loading-track { stroke: #f1c9cc; }
@@ -1395,12 +1396,9 @@ html[data-theme="dark"] .hz-global-loading.is-student .hz-global-loading-track {
 .hz-canteen-code-row button { border-radius: .65rem; padding: .5rem; font-size: .63rem; font-weight: 800; }
 .hz-canteen-code-row button:hover { background: color-mix(in oklab, var(--primary) 10%, transparent); }
 html[data-theme="light"] .hz-canteen-sidebar { background: var(--sidebar); }
-html[data-theme="light"] .hz-canteen-sidebar-brand img,
-html[data-theme="light"] .hz-canteen-login > div > a img,
-html[data-theme="light"] .hz-canteen-login > div > span img { filter: brightness(0); }
-html[data-theme="dark"] .hz-canteen-sidebar-brand img,
-html[data-theme="dark"] .hz-canteen-login > div > a img,
-html[data-theme="dark"] .hz-canteen-login > div > span img { filter: none; }
+.hz-canteen-sidebar-brand img,
+.hz-canteen-login > div > a img,
+.hz-canteen-login > div > span img { filter: grayscale(1) contrast(2); }
 
 /* Monochrome reference treatment scoped to the Canteen Online Orders page. */
 .hz-orders-page { display: grid; gap: 1.15rem; min-width: 0; }
