@@ -1190,12 +1190,12 @@ function OrderDetail({ order, canteenName, refund, notice, onNotice }: { order: 
 
       {!awaiting && order.status !== "cancelled" && (
         <div className="mt-7 flex w-full flex-col items-center rounded-3xl border border-primary/30 bg-ink p-3 sm:p-4">
+          <p className="text-xs uppercase tracking-widest text-muted-foreground">Pickup code</p>
+          <p className="display text-3xl tracking-[0.3em]">{order.pickup_code}</p>
+          <p className="mt-2 mb-4 flex flex-wrap justify-center gap-x-1 text-center text-xs text-muted-foreground"><span>Show at</span> <span data-no-translate>{order.counter}</span><span aria-hidden="true">·</span><span>ready in ~{order.prep_minutes} min</span></p>
           <div className="w-fit max-w-full rounded-xl bg-white p-2">
             <QRCodeCanvas value={createOrderQrUrl(window.location.origin, order.id)} size={512} level="M" bgColor="#ffffff" fgColor="#050505" marginSize={4} title="Scan to view secure HUNGRY Z order details" className="block aspect-square h-auto w-32 max-w-full object-contain sm:w-36 md:w-40" />
           </div>
-          <p className="mt-4 text-xs uppercase tracking-widest text-muted-foreground">Pickup code</p>
-          <p className="display text-3xl tracking-[0.3em]">{order.pickup_code}</p>
-          <p className="mt-2 flex flex-wrap justify-center gap-x-1 text-center text-xs text-muted-foreground"><span>Show at</span> <span data-no-translate>{order.counter}</span><span aria-hidden="true">·</span><span>ready in ~{order.prep_minutes} min</span></p>
         </div>
       )}
       <button type="button" onClick={downloadBill} className="mt-5 w-full rounded-full border border-primary/50 px-5 py-3 text-xs font-semibold text-foreground hover:bg-primary/10"><Download className="mr-2 inline h-4 w-4" />Download Bill</button>

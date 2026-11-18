@@ -53,7 +53,10 @@ export function EventLogoCropAdjust({ src, onCropChange }: { src: string; onCrop
           alt=""
           draggable={false}
           className="absolute inset-0 h-full w-full select-none object-cover"
-          style={{ objectPosition: `${crop.x * 100}% ${crop.y * 100}%`, transform: `scale(${crop.zoom})` }}
+          style={{
+            objectPosition: "50% 50%",
+            transform: `translate(${(0.5 - crop.x) * (crop.zoom - 1) * 100}%, ${(0.5 - crop.y) * (crop.zoom - 1) * 100}%) scale(${crop.zoom})`,
+          }}
         />
       </div>
       <div className="grid grid-cols-2 gap-2">
