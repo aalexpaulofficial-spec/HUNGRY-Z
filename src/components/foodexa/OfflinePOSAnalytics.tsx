@@ -1,7 +1,4 @@
-import { useState } from "react";
-import { Download, FileSpreadsheet, FileText, ReceiptText } from "lucide-react";
-import { buildSimplePdf } from "@/lib/simple-pdf";
-import { buildXlsx } from "@/lib/xlsx";
+import { Download, ReceiptText } from "lucide-react";
 
 type Sale = {
   id: string;
@@ -13,23 +10,9 @@ type Sale = {
   paymentStatus: "paid" | "unpaid";
 };
 
-const money = (value: number) => `?${Math.round(value).toLocaleString("en-IN")}`;
-const filenameDate = () => new Date().toISOString().slice(0, 10);
-
-function downloadBlob(blob: Blob, filename: string) {
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  window.setTimeout(() => URL.revokeObjectURL(url), 10000);
-}
+const money = (value: number) => `₹${Math.round(value).toLocaleString("en-IN")}`;
 
 export function OfflinePOSAnalytics({ sales }: { sales: Sale[] }) {
-  const [reportMenu, setReportMenu] = useState(false);
-  const [exportError, setExportError] = useState("");
   const bills = sales.length;
   const billedSales = sales.reduce((sum, sale) => sum + sale.total, 0);
   const paidSales = sales.filter((sale) => sale.paymentStatus === "paid");
@@ -40,74 +23,31 @@ export function OfflinePOSAnalytics({ sales }: { sales: Sale[] }) {
     return { method, count: rows.length, amount: rows.reduce((sum, sale) => sum + sale.total, 0) };
   });
 
-  function downloadExcel() {
-    setReportMenu(false);
-    setExportError("");
-    try {
-      const round = (value: number) => Math.round(value * 100) / 100;
-      downloadBlob(buildXlsx([
-        {
-          name: "OFFLINE Summary",
-          widths: [34, 24],
-          rows: [
-            ["HUNGRY Z OFFLINE POS REPORT", ""],
-            ["Generated", new Date().toLocaleString()],
-            ["Bill count", bills],
-            ["Billed sales", round(billedSales)],
-            ["Collected revenue (paid)", round(revenue)],
-            ["Outstanding (unpaid)", round(outstanding)],
-            ...methods.map((row) => [`${row.method.toUpperCase()} paid bills`, row.count]),
-            ...methods.map((row) => [`${row.method.toUpperCase()} paid amount`, round(row.amount)]),
-          ],
-        },
-        {
-          name: "OFFLINE Bills",
-          widths: [26, 23, 16, 16, 16, 16, 70],
-          filter: true,
-          rows: [
-            ["Bill ID", "Date", "Payment status", "Method", "Subtotal", "Total", "Items"],
-            ...sales.map((sale) => [sale.id, new Date(sale.createdAt).toLocaleString(), sale.paymentStatus.toUpperCase(), sale.paymentMethod.toUpperCase(), round(sale.subtotal), round(sale.total), sale.lines.map((line) => `${line.qty} x ${line.name}`).join(", ")]),
-            ["TOTAL", "", "", "", round(sales.reduce((sum, sale) => sum + sale.subtotal, 0)), round(billedSales), ""],
-          ],
-        },
-        {
-          name: "OFFLINE Items",
-          widths: [26, 36, 14, 16, 18],
-          filter: true,
-          rows: [
-            ["Bill ID", "Item", "Quantity", "Unit price", "Line total"],
-            ...sales.flatMap((sale) => sale.lines.map((line) => [sale.id, line.name, line.qty, round(line.price), round(line.qty * line.price)])),
-          ],
-        },
-      ]), `HUNGRY-Z-OFFLINE-POS-${filenameDate()}.xlsx`);
-    } catch {
-      setExportError("Could not create the offline Excel report. Please try again.");
-    }
-  }
-
-  function downloadPdf() {
-    setReportMenu(false);
-    setExportError("");
-    try {
-      const lines = [
-        "HUNGRY Z | OFFLINE POS REPORT",
-        `Generated: ${new Date().toLocaleString()}`,
-        "",
-        `Bill count: ${bills}`,
-        `Billed sales: INR ${Math.round(billedSales)}`,
-        `Collected revenue (paid): INR ${Math.round(revenue)}`,
-        `Outstanding (unpaid): INR ${Math.round(outstanding)}`,
-        ...methods.map((row) => `${row.method.toUpperCase()} paid: ${row.count} bills | INR ${Math.round(row.amount)}`),
-        "",
-        "OFFLINE BILL DETAILS",
-        ...sales.map((sale) => `${sale.id} | ${new Date(sale.createdAt).toLocaleString()} | ${sale.paymentStatus} | ${sale.paymentMethod} | INR ${sale.total} | ${sale.lines.map((line) => `${line.qty} x ${line.name}`).join(", ")}`),
-        "",
-        "Collected revenue includes paid POS bills only. Unpaid bills are listed as outstanding.",
-      ];
-      downloadBlob(buildSimplePdf(lines), `HUNGRY-Z-OFFLINE-POS-${filenameDate()}.pdf`);
-    } catch {
-      setExportError("Could not create the offline PDF report. Please try again.");
-    }
+  function downloadReport() {
+    const quote = (value: unknown) => `"${String(value ?? "").replaceAll('"', '""')}"`;
+    const rows = [
+      ["OFFLINE POS Report", ""],
+      ["OFFLINE Bill Count", bills],
+      ["OFFLINE Billed Sales", billedSales],
+      ["OFFLINE Collected Revenue", revenue],
+      ["OFFLINE Outstanding", outstanding],
+      ["OFFLINE Cash Paid Bills", methods.find((row) => row.method === "cash")?.count ?? 0],
+      ["OFFLINE Cash Paid Amount", methods.find((row) => row.method === "cash")?.amount ?? 0],
+      ["OFFLINE UPI Paid Bills", methods.find((row) => row.method === "upi")?.count ?? 0],
+      ["OFFLINE UPI Paid Amount", methods.find((row) => row.method === "upi")?.amount ?? 0],
+      ["OFFLINE Card Paid Bills", methods.find((row) => row.method === "card")?.count ?? 0],
+      ["OFFLINE Card Paid Amount", methods.find((row) => row.method === "card")?.amount ?? 0],
+      [],
+      ["OFFLINE Bill ID", "OFFLINE Date", "OFFLINE Items", "OFFLINE Total", "OFFLINE Payment Method", "OFFLINE Payment Status"],
+      ...sales.map((sale) => [sale.id, new Date(sale.createdAt).toLocaleString(), sale.lines.map((line) => `${line.qty} x ${line.name}`).join(", "), sale.total, sale.paymentMethod.toUpperCase(), sale.paymentStatus.toUpperCase()]),
+    ];
+    const csv = rows.map((row) => row.map(quote).join(",")).join("\r\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "HUNGRY-Z-OFFLINE-POS-report.csv";
+    link.click();
+    URL.revokeObjectURL(url);
   }
 
   const cards = [
@@ -125,18 +65,13 @@ export function OfflinePOSAnalytics({ sales }: { sales: Sale[] }) {
           <h2 className="display mt-1 text-2xl">Counter analytics</h2>
           <p className="mt-1 max-w-2xl text-xs text-muted-foreground">Only confirmed OFFLINE POS bills from this browser are shown. Paid bills count as collected revenue; unpaid bills remain outstanding.</p>
         </div>
-        <div className="relative">
-          <button type="button" onClick={() => setReportMenu((open) => !open)} aria-expanded={reportMenu} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-xs font-bold text-primary-foreground"><Download className="h-4 w-4" /> Download Report</button>
-          {reportMenu && <div className="absolute right-0 z-20 mt-2 w-56 rounded-2xl border border-border bg-card p-2 shadow-xl">
-            <button type="button" onClick={downloadExcel} className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-xs hover:bg-muted"><FileSpreadsheet className="h-4 w-4" /> Download Excel (.xlsx)</button>
-            <button type="button" onClick={downloadPdf} className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-xs hover:bg-muted"><FileText className="h-4 w-4" /> Download PDF (.pdf)</button>
-          </div>}
-        </div>
+        <button type="button" onClick={downloadReport} disabled={!sales.length} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-xs font-bold text-primary-foreground disabled:opacity-40"><Download className="h-4 w-4" /> Export OFFLINE report</button>
       </header>
-      {exportError && <p role="alert" className="rounded-xl border border-primary/30 bg-primary/5 p-3 text-sm text-primary">{exportError}</p>}
+
       <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         {cards.map(([label, value]) => <article key={label} className="min-w-0 rounded-3xl border border-border bg-card p-4"><p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{label}</p><p className="display mt-2 truncate text-xl sm:text-2xl">{value}</p></article>)}
       </div>
+
       <section className="rounded-3xl border border-border bg-card p-4 sm:p-5" aria-label="OFFLINE payment statistics">
         <h3 className="display text-lg">OFFLINE payment statistics</h3>
         <div className="mt-3 grid gap-2 sm:grid-cols-3">
@@ -144,6 +79,7 @@ export function OfflinePOSAnalytics({ sales }: { sales: Sale[] }) {
           <article className="rounded-2xl bg-ink-soft p-3 sm:col-span-3"><p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">OFFLINE unpaid bills</p><p className="mt-1 text-sm font-bold">{sales.filter((sale) => sale.paymentStatus === "unpaid").length} bills · {money(outstanding)} due</p></article>
         </div>
       </section>
+
       <section className="rounded-3xl border border-border bg-card p-4 sm:p-5" aria-label="OFFLINE bill history">
         <div className="flex items-center gap-2"><ReceiptText className="h-4 w-4 text-primary" /><h3 className="display text-lg">OFFLINE bill history</h3></div>
         {sales.length ? <div className="mt-3 space-y-3">{sales.map((sale) => <article key={sale.id} className="rounded-2xl border border-border bg-background p-4">

@@ -3,8 +3,6 @@ import { Download, FileSpreadsheet, FileText, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { useSessionState } from "@/lib/session-state";
-import { buildXlsx } from "@/lib/xlsx";
-import { buildSimplePdf } from "@/lib/simple-pdf";
 
 type OrderLine = { id?: string; name: string; price?: number; qty: number };
 export type AnalyticsOrder = {
@@ -30,6 +28,184 @@ const CHART_COLORS = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var
 const money = (value: number) => `₹${Math.round(value).toLocaleString("en-IN")}`;
 const dateInput = (date: Date) =>
   `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+const escapeHtml = (value: unknown) =>
+  String(value ?? "").replace(
+    /[&<>"']/g,
+    (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]!,
+  );
+type WorkbookSheet = {
+  name: string;
+  rows: (string | number)[][];
+  widths?: number[];
+  filter?: boolean;
+};
+const xmlEscape = (value: unknown) =>
+  String(value ?? "").replace(
+    /[&<>"']/g,
+    (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&apos;" })[char]!,
+  );
+function columnName(index: number) {
+  let name = "";
+  for (let value = index + 1; value; value = Math.floor((value - 1) / 26))
+    name = String.fromCharCode(65 + ((value - 1) % 26)) + name;
+  return name;
+}
+function concatBytes(parts: Uint8Array[]) {
+  const result = new Uint8Array(parts.reduce((length, part) => length + part.length, 0));
+  let offset = 0;
+  for (const part of parts) {
+    result.set(part, offset);
+    offset += part.length;
+  }
+  return result;
+}
+function buildXlsx(sheets: WorkbookSheet[]) {
+  const encoder = new TextEncoder();
+  const crcTable = new Uint32Array(256);
+  for (let n = 0; n < 256; n++) {
+    let c = n;
+    for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+    crcTable[n] = c >>> 0;
+  }
+  const crc32 = (bytes: Uint8Array) => {
+    let crc = 0xffffffff;
+    for (const byte of bytes) crc = (crcTable[(crc ^ byte) & 0xff] ?? 0) ^ (crc >>> 8);
+    return (crc ^ 0xffffffff) >>> 0;
+  };
+  const u16 = (value: number) => {
+    const out = new Uint8Array(2);
+    new DataView(out.buffer).setUint16(0, value, true);
+    return out;
+  };
+  const u32 = (value: number) => {
+    const out = new Uint8Array(4);
+    new DataView(out.buffer).setUint32(0, value >>> 0, true);
+    return out;
+  };
+  const files: { name: string; data: Uint8Array }[] = [];
+  files.push({
+    name: "[Content_Types].xml",
+    data: encoder.encode(
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>${sheets.map((_, index) => `<Override PartName="/xl/worksheets/sheet${index + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join("")}</Types>`,
+    ),
+  });
+  files.push({
+    name: "_rels/.rels",
+    data: encoder.encode(
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`,
+    ),
+  });
+  files.push({
+    name: "xl/workbook.xml",
+    data: encoder.encode(
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>${sheets.map((sheet, index) => `<sheet name="${xmlEscape(sheet.name)}" sheetId="${index + 1}" r:id="rId${index + 1}"/>`).join("")}</sheets></workbook>`,
+    ),
+  });
+  files.push({
+    name: "xl/_rels/workbook.xml.rels",
+    data: encoder.encode(
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${sheets.map((_, index) => `<Relationship Id="rId${index + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${index + 1}.xml"/>`).join("")}<Relationship Id="rId${sheets.length + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`,
+    ),
+  });
+  files.push({
+    name: "xl/styles.xml",
+    data: encoder.encode(
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><color rgb="FFEF233C"/><name val="Calibri"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`,
+    ),
+  });
+  sheets.forEach((sheet, index) => {
+    const maxColumns = Math.max(1, ...sheet.rows.map((row) => row.length));
+    const cols = sheet.widths?.length
+      ? `<cols>${sheet.widths.map((width, col) => `<col min="${col + 1}" max="${col + 1}" width="${width}" customWidth="1"/>`).join("")}</cols>`
+      : "";
+    const rows = sheet.rows
+      .map(
+        (row, rowIndex) =>
+          `<row r="${rowIndex + 1}">${row
+            .map((value, columnIndex) => {
+              const reference = `${columnName(columnIndex)}${rowIndex + 1}`;
+              if (typeof value === "number" && Number.isFinite(value))
+                return `<c r="${reference}"${rowIndex === 0 ? ' s="1"' : ""}><v>${value}</v></c>`;
+              return `<c r="${reference}" t="inlineStr"${rowIndex === 0 ? ' s="1"' : ""}><is><t xml:space="preserve">${xmlEscape(value)}</t></is></c>`;
+            })
+            .join("")}</row>`,
+      )
+      .join("");
+    const filterEnd =
+      sheet.rows.at(-1)?.[0] === "TOTAL" ? sheet.rows.length - 1 : sheet.rows.length;
+    const filter =
+      sheet.filter && filterEnd > 1
+        ? `<autoFilter ref="A1:${columnName(maxColumns - 1)}${filterEnd}"/>`
+        : "";
+    files.push({
+      name: `xl/worksheets/sheet${index + 1}.xml`,
+      data: encoder.encode(
+        `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetFormatPr defaultRowHeight="15"/>${cols}<sheetData>${rows}</sheetData>${filter}</worksheet>`,
+      ),
+    });
+  });
+  const localParts: Uint8Array[] = [];
+  const centralParts: Uint8Array[] = [];
+  let localOffset = 0;
+  for (const file of files) {
+    const name = encoder.encode(file.name);
+    const checksum = crc32(file.data);
+    const local = concatBytes([
+      u32(0x04034b50),
+      u16(20),
+      u16(0),
+      u16(0),
+      u16(0),
+      u16(0),
+      u32(checksum),
+      u32(file.data.length),
+      u32(file.data.length),
+      u16(name.length),
+      u16(0),
+      name,
+      file.data,
+    ]);
+    localParts.push(local);
+    centralParts.push(
+      concatBytes([
+        u32(0x02014b50),
+        u16(20),
+        u16(20),
+        u16(0),
+        u16(0),
+        u16(0),
+        u16(0),
+        u32(checksum),
+        u32(file.data.length),
+        u32(file.data.length),
+        u16(name.length),
+        u16(0),
+        u16(0),
+        u16(0),
+        u16(0),
+        u32(0),
+        u32(localOffset),
+        name,
+      ]),
+    );
+    localOffset += local.length;
+  }
+  const central = concatBytes(centralParts);
+  const end = concatBytes([
+    u32(0x06054b50),
+    u16(0),
+    u16(0),
+    u16(files.length),
+    u16(files.length),
+    u32(central.length),
+    u32(localOffset),
+    u16(0),
+  ]);
+  return new Blob([concatBytes([...localParts, central, end])], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  });
+}
+
 function TrendChart({ data }: { data: { label: string; revenue: number; orders: number }[] }) {
   if (!data.length)
     return (
@@ -625,7 +801,7 @@ export function CanteenAnalytics({
       document.body.appendChild(link);
       link.click();
       link.remove();
-      window.setTimeout(() => URL.revokeObjectURL(url), 10000);
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch {
       setExportError("Could not create the Excel report. Please try again.");
     }
@@ -634,41 +810,45 @@ export function CanteenAnalytics({
   function downloadPdf() {
     setReportMenu(false);
     setExportError("");
-    const period = `${start.toLocaleDateString()} - ${new Date(end.getTime() - 1).toLocaleDateString()}`;
-    try {
-      const lines = [
-        "HUNGRY Z | ONLINE ANALYTICS REPORT",
-        canteenName,
-        `Report period: ${period}`,
-        "",
-        `Total online orders: ${filteredOrders.length}`,
-        `Paid online revenue: INR ${Math.round(revenue)}`,
-        `Average order value: INR ${Math.round(average)}`,
-        `Completed / cancelled / pending: ${completed} / ${cancelled} / ${pending}`,
-        "",
-        "DAILY PERFORMANCE",
-        ...dailyRows.map((row) => `${row.key} | ${row.orders} orders | INR ${Math.round(row.revenue)}`),
-        "",
-        "PAYMENT BREAKDOWN",
-        ...paymentRows.map((row) => `${row.name}: ${row.value}`),
-        "",
-        "ONLINE ORDER DETAILS",
-        ...filteredOrders.map((order) => `${order.order_number} | ${new Date(order.created_at).toLocaleString()} | ${order.status} | ${order.payment_status} | INR ${Number(order.total)} | ${(order.lines ?? []).map((line) => `${line.qty} x ${line.name}`).join(", ")}`),
-        "",
-        "Revenue includes paid orders only and excludes cancelled orders.",
-      ];
-      const url = URL.createObjectURL(buildSimplePdf(lines));
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `HUNGRY-Z-${canteenName.replace(/[^a-z0-9]+/gi, "-")}-ONLINE-analytics.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.setTimeout(() => URL.revokeObjectURL(url), 10000);
-    } catch {
-      setExportError("Could not create the PDF report. Please try again.");
+    const popup = window.open("", "_blank", "width=1000,height=800");
+    if (!popup) {
+      setExportError("Allow pop-ups to open the printable PDF report, then choose Save as PDF.");
+      return;
     }
+    const period = `${start.toLocaleDateString()} – ${new Date(end.getTime() - 1).toLocaleDateString()}`;
+    const bars = (rows: { name: string; revenue: number }[]) => {
+      const max = Math.max(1, ...rows.map((row) => row.revenue));
+      return (
+        rows
+          .slice(0, 8)
+          .map(
+            (row) =>
+              `<div class="barrow"><span>${escapeHtml(row.name)}</span><div><i style="width:${Math.max(2, (row.revenue / max) * 100)}%"></i></div><b>${money(row.revenue)}</b></div>`,
+          )
+          .join("") || "<p>No sales data for this period.</p>"
+      );
+    };
+    popup.document
+      .write(`<!doctype html><html><head><meta charset="utf-8"><title>HUNGRY Z Analytics — ${escapeHtml(canteenName)}</title><style>
+      *{box-sizing:border-box}body{font:13px Arial,sans-serif;color:#171717;margin:30px}header{border-bottom:4px solid #ef233c;padding-bottom:16px}h1{font-size:28px;margin:0;color:#ef233c;letter-spacing:3px}h2{font-size:16px;margin:26px 0 12px}.muted{color:#666}.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:18px}.card{border:1px solid #ddd;border-radius:9px;padding:12px}.card small{display:block;color:#666}.card strong{display:block;font-size:19px;margin-top:7px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:25px}.barrow{display:grid;grid-template-columns:120px 1fr 75px;gap:8px;align-items:center;margin:8px 0}.barrow div{height:12px;background:#eee;border-radius:9px}.barrow i{height:100%;display:block;background:#ef233c;border-radius:9px}.barrow b{text-align:right}.chart{width:100%;border-collapse:collapse}.chart th,.chart td{border-bottom:1px solid #ddd;text-align:left;padding:7px}.chart th{background:#f7f7f7}footer{margin-top:30px;color:#777;border-top:1px solid #ddd;padding-top:12px}@media print{body{margin:12mm}.cards,.grid{break-inside:avoid}h2{break-after:avoid}}
+      </style></head><body><header><h1>HUNGRY Z</h1><p><b>${escapeHtml(canteenName)}</b> · Analytics Report</p><p class="muted">Report period: ${escapeHtml(period)}</p></header>
+      <section class="cards"><div class="card"><small>ONLINE Total Orders</small><strong>${filteredOrders.length}</strong></div><div class="card"><small>ONLINE Paid Revenue</small><strong>${money(revenue)}</strong></div><div class="card"><small>ONLINE Average Order Value</small><strong>${money(average)}</strong></div><div class="card"><small>ONLINE Completed / Cancelled</small><strong>${completed} / ${cancelled}</strong></div></section>
+      <div class="grid"><section><h2>Food Item Revenue</h2>${bars(
+        itemRows
+          .filter((row) => row.revenue > 0)
+          .sort((a, b) => b.revenue - a.revenue)
+          .map((row) => ({ name: row.name, revenue: row.revenue })),
+      )}</section><section><h2>Category Revenue</h2>${bars(categoryRows)}</section></div>
+      <h2>Daily Performance</h2><table class="chart"><thead><tr><th>Date</th><th>Orders</th><th>Revenue</th></tr></thead><tbody>${dailyRows.map((row) => `<tr><td>${escapeHtml(row.key)}</td><td>${row.orders}</td><td>${money(row.revenue)}</td></tr>`).join("") || '<tr><td colspan="3">No orders in this period.</td></tr>'}</tbody></table>
+      <h2>Monthly Performance</h2><table class="chart"><thead><tr><th>Month</th><th>Orders</th><th>Revenue</th></tr></thead><tbody>${monthlyRows.map((row) => `<tr><td>${escapeHtml(row.key)}</td><td>${row.orders}</td><td>${money(row.revenue)}</td></tr>`).join("") || '<tr><td colspan="3">No orders in this period.</td></tr>'}</tbody></table>
+      <h2>Food Items and Quantities</h2><table class="chart"><thead><tr><th>Item</th><th>Category</th><th>Quantity Sold</th><th>Revenue</th></tr></thead><tbody>${itemRows.map((row) => `<tr><td>${escapeHtml(row.name)}</td><td>${escapeHtml(row.category)}</td><td>${row.quantity}</td><td>${money(row.revenue)}</td></tr>`).join("") || '<tr><td colspan="4">No food items.</td></tr>'}</tbody></table>
+      <h2>Payment and Order Status</h2><table class="chart"><tbody><tr><th>Paid / Pending / Failed payments</th><td>${paymentRows.map((row) => `${row.name}: ${row.value}`).join(" · ") || "No payment data"}</td></tr><tr><th>Completed / Cancelled / Pending orders</th><td>${completed} / ${cancelled} / ${pending}</td></tr></tbody></table>
+      <footer>Generated by HUNGRY Z Canteen Dashboard. Revenue includes paid orders only and excludes cancelled or refunded orders. Choose “Save as PDF” in the print dialog.</footer>
+      <script>window.addEventListener('load',()=>setTimeout(()=>window.print(),250));</script></body></html>`);
+    popup.document.close();
+    popup.focus();
   }
+
   const cardClass = "rounded-3xl border border-border bg-card p-4 sm:p-5";
   if (loading)
     return (
