@@ -38,6 +38,7 @@ export const Route = createFileRoute("/canteen")({
   head: () => ({
     meta: [
       { title: "HUNGRY Z Canteen Dashboard" },
+      { name: "theme-color", content: "#ffffff" },
       { name: "description", content: "Manage your HUNGRY Z canteen menu and live orders." },
       { property: "og:title", content: "HUNGRY Z Canteen Dashboard" },
       { property: "og:description", content: "Manage your canteen menu and orders on HUNGRY Z." },
@@ -1212,7 +1213,7 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
             </div>
           </div>
           <div className="hz-canteen-actions flex min-w-0 flex-wrap items-center justify-end gap-2 sm:gap-3 lg:justify-self-end">
-            <ThemeToggle />
+            <ThemeToggle scope="canteen" />
             <LanguageSelect language={language} onChange={onLanguageChange} className="hz-canteen-header-control" />
             <button onClick={onSignOut} className="hz-canteen-header-control flex min-h-10 shrink-0 items-center gap-2 rounded-full border border-border px-4 py-2 text-xs text-muted-foreground hover:text-foreground"><LogOut className="h-3.5 w-3.5" /> Log out</button>
           </div>

@@ -8,8 +8,8 @@
   "display": "standalone",
   "display_override": ["standalone", "minimal-ui"],
   "launch_handler": { "client_mode": "navigate-existing" },
-  "background_color": "#050505",
-  "theme_color": "#050505",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
   "related_applications": [
     { "platform": "webapp", "id": "/canteen?hungry_app=canteen", "url": "/manifest-canteen.webmanifest" }
   ],

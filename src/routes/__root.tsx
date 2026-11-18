@@ -121,7 +121,7 @@ function RootShell({ children }: { children: ReactNode }) {
     <html lang="en" data-theme="dark" suppressHydrationWarning>
       <head>
         <HeadContent />
-        <script>{`try { var hungryTheme = localStorage.getItem("hungry-theme"); if (hungryTheme === "light" || hungryTheme === "dark") document.documentElement.dataset.theme = hungryTheme; else if (/^\\/(?:app|canteen)(?:\\/|$)/.test(location.pathname)) document.documentElement.dataset.theme = "light"; } catch {}`}</script>
+        <script>{`try { var hungryPath = location.pathname; var hungryCanteenApp = /^\\/canteen(?:\\/|$)/.test(hungryPath); var hungryInstallPage = hungryPath === "/install/canteen"; var hungryThemeKey = hungryCanteenApp ? "hungry-canteen-theme" : "hungry-theme"; if (hungryInstallPage) { document.documentElement.dataset.theme = "dark"; localStorage.setItem("hungry-theme", "dark"); } else { var hungryTheme = localStorage.getItem(hungryThemeKey); if (hungryTheme === "light" || hungryTheme === "dark") document.documentElement.dataset.theme = hungryTheme; else if (/^\\/(?:app|canteen)(?:\\/|$)/.test(hungryPath)) document.documentElement.dataset.theme = "light"; } } catch {}`}</script>
         {/* Capture Chrome's one-shot install event before the hydrated app bundle loads. */}
         <script src="/pwa-install-capture.js" />
       </head>

@@ -170,7 +170,7 @@ export function CanteenInstallPage() {
 
   return (
     <main className="hungry-install-page relative flex min-h-[100dvh] items-center overflow-hidden bg-[#050505] px-4 py-7 text-white sm:px-7 sm:py-10 lg:px-10">
-      <ThemeToggle className="absolute right-4 top-4 z-20 sm:right-6 sm:top-6" />
+      <ThemeToggle scope="site" className="absolute right-4 top-4 z-20 sm:right-6 sm:top-6" />
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_4%,rgba(190,0,18,0.27),transparent_48%),radial-gradient(ellipse_at_6%_85%,rgba(130,0,12,0.14),transparent_42%)]" />
       <svg aria-hidden="true" className="pointer-events-none absolute inset-0 h-full w-full opacity-70" preserveAspectRatio="none" viewBox="0 0 1440 900">
         <defs>
