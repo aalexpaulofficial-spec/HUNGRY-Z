@@ -10,7 +10,9 @@ export function EventLogoImage({ src, alt, className = "" }: { src: string; alt:
 
 export function EventLogoCropAdjust({ src, onCropChange }: { src: string; onCropChange: (crop: LogoCrop | null) => void }) {
   const [enabled, setEnabled] = useState(true);
-  const [crop, setCrop] = useState<LogoCrop>({ zoom: 1, x: 0.5, y: 0.5 });
+  // A small default crop margin gives horizontal and vertical controls room
+  // to move even when the uploaded image already matches the 16:10 frame.
+  const [crop, setCrop] = useState<LogoCrop>({ zoom: 1.2, x: 0.5, y: 0.5 });
   const [drag, setDrag] = useState<{ pointerId: number; x: number; y: number } | null>(null);
 
   useEffect(() => onCropChange(enabled ? crop : null), [crop, enabled, onCropChange]);
@@ -38,7 +40,7 @@ export function EventLogoCropAdjust({ src, onCropChange }: { src: string; onCrop
     {enabled && <>
       <p className="text-xs text-muted-foreground">Drag to reposition, or use the controls. Preview uses the 16:10 event image frame.</p>
       <div
-        className="relative mx-auto aspect-[16/10] w-full max-w-sm touch-none overflow-hidden rounded-xl border border-border bg-ink-soft"
+        className="relative mx-auto aspect-[16/10] w-full max-w-xs touch-none overflow-hidden rounded-xl border border-border bg-ink-soft"
         onPointerDown={(event) => { event.currentTarget.setPointerCapture(event.pointerId); setDrag({ pointerId: event.pointerId, x: event.clientX, y: event.clientY }); }}
         onPointerMove={move}
         onPointerUp={() => setDrag(null)}
@@ -54,21 +56,21 @@ export function EventLogoCropAdjust({ src, onCropChange }: { src: string; onCrop
           style={{ objectPosition: `${crop.x * 100}% ${crop.y * 100}%`, transform: `scale(${crop.zoom})` }}
         />
       </div>
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid grid-cols-2 gap-2">
         <div className="space-y-1 text-xs text-muted-foreground">
           <label htmlFor="event-image-horizontal-position" className="font-medium text-foreground">Move left or right</label>
           <div className="flex items-center gap-2">
-            <button type="button" aria-label="Move event image left" onClick={() => update({ x: clamp(crop.x + 0.08, 0, 1) })} className="min-h-9 shrink-0 rounded-lg border border-border bg-card px-3 text-xs font-semibold text-foreground">Left</button>
-            <input id="event-image-horizontal-position" type="range" min={0} max={1} step={0.01} value={1 - crop.x} onChange={(event) => update({ x: 1 - Number(event.currentTarget.value) })} aria-label="Event image horizontal position" className="min-h-10 w-full accent-primary" />
-            <button type="button" aria-label="Move event image right" onClick={() => update({ x: clamp(crop.x - 0.08, 0, 1) })} className="min-h-9 shrink-0 rounded-lg border border-border bg-card px-3 text-xs font-semibold text-foreground">Right</button>
+            <button type="button" aria-label="Move event image left" onClick={() => update({ x: clamp(crop.x + 0.08, 0, 1) })} className="min-h-8 shrink-0 rounded-lg border border-border bg-card px-2 text-[10px] font-semibold text-foreground">Left</button>
+            <input id="event-image-horizontal-position" type="range" min={0} max={1} step={0.01} value={1 - crop.x} onChange={(event) => update({ x: 1 - Number(event.currentTarget.value) })} aria-label="Event image horizontal position" className="min-h-8 w-full accent-primary" />
+            <button type="button" aria-label="Move event image right" onClick={() => update({ x: clamp(crop.x - 0.08, 0, 1) })} className="min-h-8 shrink-0 rounded-lg border border-border bg-card px-2 text-[10px] font-semibold text-foreground">Right</button>
           </div>
         </div>
         <div className="space-y-1 text-xs text-muted-foreground">
           <label htmlFor="event-image-zoom" className="font-medium text-foreground">Zoom: {crop.zoom.toFixed(1)}x</label>
           <div className="flex items-center gap-2">
-            <button type="button" aria-label="Zoom event image out" disabled={crop.zoom <= 1} onClick={() => update({ zoom: Math.max(1, Math.round((crop.zoom - 0.1) * 10) / 10) })} className="min-h-10 shrink-0 rounded-lg border border-border bg-card px-3 text-sm font-semibold text-foreground disabled:opacity-40">-</button>
-            <input id="event-image-zoom" type="range" min={1} max={3} step={0.1} value={crop.zoom} onChange={(event) => update({ zoom: Number(event.currentTarget.value) })} aria-label="Event image zoom" className="min-h-10 w-full accent-primary" />
-            <button type="button" aria-label="Zoom event image in" disabled={crop.zoom >= 3} onClick={() => update({ zoom: Math.min(3, Math.round((crop.zoom + 0.1) * 10) / 10) })} className="min-h-10 shrink-0 rounded-lg border border-border bg-card px-3 text-sm font-semibold text-foreground disabled:opacity-40">+</button>
+            <button type="button" aria-label="Zoom event image out" disabled={crop.zoom <= 1} onClick={() => update({ zoom: Math.max(1, Math.round((crop.zoom - 0.1) * 10) / 10) })} className="min-h-8 shrink-0 rounded-lg border border-border bg-card px-2 text-xs font-semibold text-foreground disabled:opacity-40">-</button>
+            <input id="event-image-zoom" type="range" min={1} max={3} step={0.1} value={crop.zoom} onChange={(event) => update({ zoom: Number(event.currentTarget.value) })} aria-label="Event image zoom" className="min-h-8 w-full accent-primary" />
+            <button type="button" aria-label="Zoom event image in" disabled={crop.zoom >= 3} onClick={() => update({ zoom: Math.min(3, Math.round((crop.zoom + 0.1) * 10) / 10) })} className="min-h-8 shrink-0 rounded-lg border border-border bg-card px-2 text-xs font-semibold text-foreground disabled:opacity-40">+</button>
           </div>
         </div>
       </div>

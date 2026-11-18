@@ -1190,11 +1190,6 @@ function OrderDetail({ order, canteenName, refund, notice, onNotice }: { order: 
 
       {!awaiting && order.status !== "cancelled" && (
         <div className="mt-7 flex w-full flex-col items-center rounded-3xl border border-primary/30 bg-ink p-3 sm:p-4">
-          <dl className="mb-4 grid w-full grid-cols-3 gap-2 text-center">
-            <div className="min-w-0 rounded-xl bg-card/70 px-2 py-2"><dt className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">Token number</dt><dd className="mt-1 break-all font-mono text-xs font-bold text-foreground">{order.order_number}</dd></div>
-            <div className="min-w-0 rounded-xl bg-card/70 px-2 py-2"><dt className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">Counter</dt><dd data-no-translate className="mt-1 truncate text-xs font-bold text-foreground">{order.counter}</dd></div>
-            <div className="min-w-0 rounded-xl bg-card/70 px-2 py-2"><dt className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">Timing</dt><dd className="mt-1 text-xs font-bold text-foreground">~{order.prep_minutes} min</dd></div>
-          </dl>
           <div className="w-fit max-w-full rounded-xl bg-white p-2">
             <QRCodeCanvas value={createOrderQrUrl(window.location.origin, order.id)} size={512} level="M" bgColor="#ffffff" fgColor="#050505" marginSize={4} title="Scan to view secure HUNGRY Z order details" className="block aspect-square h-auto w-32 max-w-full object-contain sm:w-36 md:w-40" />
           </div>

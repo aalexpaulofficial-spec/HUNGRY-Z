@@ -363,7 +363,7 @@ export function EventCapacityPanel({ mode, canteenId, canteenName, userId }: { m
             </div>}
             {eventLogoPreview
               ? <EventLogoCropAdjust key={eventLogoFile?.name ?? "event-logo"} src={eventLogoPreview} onCropChange={handleLogoCropChange} />
-              : <div className="mx-auto grid aspect-[16/10] w-full max-w-sm place-items-center rounded-xl border border-dashed border-border bg-ink-soft px-4 text-center text-xs text-muted-foreground" aria-label="Event image preview frame">Your event image preview · 16:10</div>}
+              : <div className="mx-auto grid aspect-[16/10] w-full max-w-xs place-items-center rounded-xl border border-dashed border-border bg-ink-soft px-4 text-center text-xs text-muted-foreground" aria-label="Event image preview frame">Your event image preview · 16:10</div>}
           </div>
           <div className="grid gap-2 sm:grid-cols-2">
             <label className="block text-xs text-muted-foreground">Event date<input required type="date" value={eventDate} onChange={(event) => setEventDate(event.currentTarget.value)} aria-label="Event date" className="mt-1 w-full rounded-xl border border-input bg-ink-soft px-3 py-3 text-sm text-foreground" /></label>
