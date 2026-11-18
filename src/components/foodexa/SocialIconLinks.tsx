@@ -2,7 +2,7 @@ import { HUNGRY_SOCIAL_LINKS } from "@/lib/social-links";
 
 const socialLinks = [
   { label: "Instagram", href: HUNGRY_SOCIAL_LINKS.instagram, src: "/social-instagram-email.png" },
-  { label: "WhatsApp", href: HUNGRY_SOCIAL_LINKS.whatsapp, src: "/social-whatsapp-email.png" },
+  { label: "WhatsApp", href: HUNGRY_SOCIAL_LINKS.whatsapp, src: "/social-whatsapp-email.png?v=2" },
   { label: "LinkedIn", href: HUNGRY_SOCIAL_LINKS.linkedin, src: "/social-linkedin-email.png" },
 ] as const;
 
