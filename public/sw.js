@@ -1,5 +1,5 @@
 const CACHE_PREFIX = "hungry-public-";
-const CACHE_NAME = `${CACHE_PREFIX}v7`;
+const CACHE_NAME = `${CACHE_PREFIX}v8`;
 const PRECACHE_URLS = [
   "/offline.html",
   "/manifest-student.webmanifest",

@@ -449,6 +449,7 @@ html[data-theme="light"] .hz-customer-app .glass-red { border-color: var(--borde
 .hz-global-loading.is-canteen { background: #fff; color: #111; }
 .hz-global-loading.is-canteen .hz-global-loading-track { stroke: #34343a; }
 .hz-global-loading.is-canteen .hz-global-loading-logo { filter: grayscale(1) contrast(2); }
+.hz-global-loading.is-website .hz-global-loading-logo { filter: none; }
 .hz-canteen-app {
   --background: oklch(0.13 0 0);
   --foreground: oklch(0.96 0 0);
@@ -1141,6 +1142,10 @@ html[data-theme="light"] .hz-global-loading.is-student { background: #fff; color
 html[data-theme="light"] .hz-global-loading.is-student .hz-global-loading-track { stroke: #f1c9cc; }
 html[data-theme="dark"] .hz-global-loading.is-student { background: #0f0f10; color: #ff1a1a; }
 html[data-theme="dark"] .hz-global-loading.is-student .hz-global-loading-track { stroke: #34343a; }
+html[data-theme="light"] .hz-global-loading.is-website { background: #fff; color: #e60012; }
+html[data-theme="light"] .hz-global-loading.is-website .hz-global-loading-track { stroke: #f1c9cc; }
+html[data-theme="dark"] .hz-global-loading.is-website { background: #050505; color: #ff1a1a; }
+html[data-theme="dark"] .hz-global-loading.is-website .hz-global-loading-track { stroke: #34343a; }
 @keyframes hz-global-loading-spin { to { transform: rotate(360deg); } }
 @keyframes hz-global-loading-enter { from { opacity: 0; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .hz-global-loading-progress { animation-duration: 6s; } .hz-global-loading.is-overlay { animation: none; } }

@@ -193,7 +193,7 @@ function RootComponent() {
       <BackProvider disabled={standaloneApp && pathname !== "/privacy" && pathname !== "/terms"}>
         {pathname !== "/canteen" && <BackButton />}
         <Outlet />
-        <GlobalLoadingScreen overlay tone={pathname === "/app" || pathname.startsWith("/app/") ? "student" : "canteen"} visible={showRouteLoader} />
+        <GlobalLoadingScreen overlay tone={pathname === "/app" || pathname.startsWith("/app/") ? "student" : pathname === "/canteen" || pathname.startsWith("/canteen/") ? "canteen" : "website"} visible={showRouteLoader} />
       </BackProvider>
     </QueryClientProvider>
   );
