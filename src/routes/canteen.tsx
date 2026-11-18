@@ -858,6 +858,8 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
     if (status === "cancelled" && !window.confirm(o.payment_status === "paid" ? `Cancel ${o.order_number}? The customer will be refunded ₹${o.total} automatically.` : `Cancel ${o.order_number}?`)) return;
     setBusyOrder(o.id);
     setOrderMsg("");
+    const previousStatus = o.status;
+    setOrders((current) => current.map((order) => order.id === o.id ? { ...order, status } : order));
     try {
       const r = await move({ data: {
         orderId: o.id,
@@ -866,10 +868,13 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
         // this flag records the staff member's explicit payment confirmation.
         counterPaymentConfirmed: status === "collected" && o.payment_method === "counter",
       } });
+      setOrders((current) => current.map((order) => order.id === o.id ? { ...order, status, ...(status === "cancelled" && r.refund ? { payment_status: "refund_pending" } : {}) } : order));
       void refreshActiveOrderCount();
       if (r.refund) setOrderMsg(`${o.order_number} cancelled — refund started.`);
+      else if (r.refundNeedsAttention) setOrderMsg(`${o.order_number} cancelled, but the refund needs attention. Please check the refund status and contact support.`);
       if (r.notificationsSent === false) setOrderMsg(`${o.order_number} status updated, but an email notification could not be delivered. Check email configuration and the email log.`);
     } catch (e) {
+      setOrders((current) => current.map((order) => order.id === o.id ? { ...order, status: previousStatus } : order));
       setOrderMsg(e instanceof Error ? e.message : "Could not update order");
     } finally {
       setBusyOrder(null);

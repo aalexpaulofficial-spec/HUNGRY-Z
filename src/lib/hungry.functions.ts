@@ -1640,13 +1640,21 @@ export const ownerUpdateOrderStatus = createServerFn({ method: "POST" })
     if (data.status === "cancelled") {
       if (o.payment_method === "razorpay" && o.payment_status === "paid") {
         const r = await orders.createRefundRequest({ order: o, amount: o.total, reason: "Cancelled by the canteen", requestedBy: "canteen" });
-        await orders.startRefund(r.id);
+        const { data: released, error: releaseError } = await db.rpc("hungry_release_order", { p_order: o.id });
+        if (releaseError || released !== true) throw new Error("This order changed before it could be cancelled. Refresh and try again.");
+        try {
+          await orders.startRefund(r.id);
+        } catch {
+          const notifications = await orders.sendOrderStatusUpdate(o.id, "cancelled");
+          return { ok: true, refund: false, refundNeedsAttention: true, notificationsSent: notifications.sent };
+        }
         const notifications = await orders.sendOrderStatusUpdate(o.id, "cancelled");
-        return { ok: true, refund: true, notificationsSent: notifications.sent };
+        return { ok: true, refund: true, refundNeedsAttention: false, notificationsSent: notifications.sent };
       }
-      await db.rpc("hungry_release_order", { p_order: o.id });
+      const { data: released, error: releaseError } = await db.rpc("hungry_release_order", { p_order: o.id });
+      if (releaseError || released !== true) throw new Error("This order changed before it could be cancelled. Refresh and try again.");
       const notifications = await orders.sendOrderStatusUpdate(o.id, "cancelled");
-      return { ok: true, refund: false, notificationsSent: notifications.sent };
+      return { ok: true, refund: false, refundNeedsAttention: false, notificationsSent: notifications.sent };
     }
     const patch: { status: string; completion_workflow?: string | null; payment_status?: string; paid_at?: string } = {
       status: data.status,

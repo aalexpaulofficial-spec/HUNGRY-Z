@@ -354,6 +354,7 @@ export function EventCapacityPanel({ mode, canteenId, canteenName, userId }: { m
                 setError(""); setEventLogoFile(file);
               }} className="block min-h-11 w-full cursor-pointer rounded-xl border border-input bg-ink-soft px-3 py-2 text-sm text-foreground file:mr-3 file:rounded-full file:border-0 file:bg-primary file:px-4 file:py-2 file:text-xs file:font-semibold file:text-primary-foreground" />
               <span className="block">PNG, JPG or JPEG · maximum 8 MB</span>
+              <span className="block font-medium text-foreground/75">Fixed display size: 16:10 landscape · 1200 × 750 px recommended. Images are cropped to this frame.</span>
             </label>
             {eventLogoFile && <div className="flex flex-wrap items-center gap-2" aria-live="polite">
               <p className="min-w-0 flex-1 truncate text-xs text-foreground"><span className="font-semibold">Selected file:</span> {eventLogoFile.name}</p>

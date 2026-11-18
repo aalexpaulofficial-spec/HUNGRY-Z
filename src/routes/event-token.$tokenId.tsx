@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { CalendarDays, MapPin, Ticket } from "lucide-react";
 import { GlobalLoadingScreen } from "@/components/foodexa/GlobalLoadingScreen";
 import { EventLogoImage } from "@/components/foodexa/FacultyEventLogo";
+import { SocialIconLinks } from "@/components/foodexa/SocialIconLinks";
 import { getPublicFacultyEventTokenDetails } from "@/lib/hungry.functions";
 import { formatFacultyEventSerial } from "@/lib/faculty-event-serial";
 
@@ -58,11 +59,13 @@ function PublicEventTokenPage() {
           {token.event_date && <span className="flex items-center gap-1.5"><CalendarDays className="h-4 w-4 text-primary" />{new Date(`${token.event_date}T00:00:00`).toLocaleDateString()}</span>}
           {token.venue && <span data-no-translate className="flex items-center gap-1.5"><MapPin className="h-4 w-4 text-primary" />{token.venue}</span>}
         </div>
-        <div className="mt-7 rounded-3xl border border-primary/30 bg-background p-5">
+        <div className="mt-5 rounded-3xl border border-primary/30 bg-background p-4">
           <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Event token</p>
-          <p aria-label="Event token number" className="display mt-2 text-6xl font-black leading-none tracking-[0.2em] text-foreground">{token.token_number}</p>
-          <p className="mt-3 text-xs text-muted-foreground">Show this token number at <span data-no-translate>{token.canteen_name}</span> when you attend.</p>
-          <p className="mt-3 inline-flex rounded-full border border-border px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{token.token_status}</p>
+          <p aria-label="Event token number" className="display mt-1 text-5xl font-black leading-none tracking-[0.18em] text-foreground">{token.token_number}</p>
+          <p className="mt-2 text-xs text-muted-foreground">Show this token number at <span data-no-translate>{token.canteen_name}</span> when you attend.</p>
+          <p className="mt-2 text-[10px] font-black uppercase tracking-[0.2em] text-primary">Follow us</p>
+          <SocialIconLinks className="mt-1 gap-2" />
+          <p className="mt-2 inline-flex rounded-full border border-border px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{token.token_status}</p>
         </div>
         <a href="/" className="mt-6 inline-flex min-h-11 items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-bold text-primary-foreground">Open HUNGRY Z</a>
       </div>}
