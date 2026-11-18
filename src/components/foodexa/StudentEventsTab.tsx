@@ -1,12 +1,10 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { CalendarDays, MapPin, Ticket, X } from "lucide-react";
-import { QRCodeCanvas } from "qrcode.react";
 import { issueFacultyEventToken, listPublishedFacultyEventCards, verifyFacultyEventAccessCode } from "@/lib/hungry.functions";
 import { EventLogoImage } from "@/components/foodexa/FacultyEventLogo";
 import { SocialIconLinks } from "@/components/foodexa/SocialIconLinks";
 import { formatFacultyEventSerial } from "@/lib/faculty-event-serial";
-import { createFacultyEventTokenQrUrl } from "@/lib/faculty-event-token-qr";
 
 type EventCard = {
   id: string;
@@ -141,8 +139,8 @@ export function StudentEventsTab({ canteenId, canteenName, userId, audience = "s
     {!loading && !loadingError && events.length === 0 && <div className="hz-events-empty"><span><Ticket aria-hidden="true" /></span><div><h3>No published events yet</h3><p>{audience === "faculty" ? "When the canteen publishes an event, it will appear here. To organize one, use the Plan an event section below." : "New events from this canteen will appear here when they are published."}</p></div></div>}
     {events.length > 0 && <div className="grid min-w-0 gap-3 sm:grid-cols-2">{events.map((event) => <article key={event.id} className="min-w-0 overflow-hidden rounded-2xl border border-border bg-card p-4 sm:p-5">
       {event.event_logo_url
-        ? <EventLogoImage src={event.event_logo_url} alt={`${event.name} event image`} className="min-h-0 max-h-44 sm:min-h-0" />
-        : <div aria-hidden="true" className="grid h-28 place-items-center rounded-2xl border border-border bg-ink-soft text-primary"><Ticket className="h-8 w-8" /></div>}
+        ? <EventLogoImage src={event.event_logo_url} alt={`${event.name} event image`} />
+        : <div aria-hidden="true" className="grid aspect-[16/10] w-full place-items-center rounded-2xl border border-border bg-ink-soft text-primary"><Ticket className="h-8 w-8" /></div>}
       <div className="mt-4 flex items-center justify-between gap-2">
         <span className="text-[10px] font-black tracking-[0.18em] text-primary">{formatFacultyEventSerial(event.serial_number)}</span>
         <span className="rounded-full border border-border px-2.5 py-1 text-[10px] font-semibold text-muted-foreground">Published event</span>
@@ -176,7 +174,7 @@ export function StudentEventsTab({ canteenId, canteenName, userId, audience = "s
       <section role="dialog" aria-modal="true" aria-labelledby="event-dialog-title" className="relative my-auto max-h-[90dvh] w-full max-w-lg overflow-y-auto rounded-3xl border border-primary/30 bg-card p-5 sm:p-6">
         <button type="button" aria-label="Close event" onClick={closeDialogs} className="absolute right-4 top-4 grid h-9 w-9 place-items-center rounded-full border border-border text-muted-foreground"><X className="h-4 w-4" /></button>
         <div className="grid h-12 w-12 place-items-center rounded-2xl bg-primary/10 text-primary"><Ticket className="h-6 w-6" /></div>
-        {opened.event_logo_url && <EventLogoImage src={opened.event_logo_url} alt={`${opened.name} event logo`} className="mt-4 max-h-52" />}
+        {opened.event_logo_url && <EventLogoImage src={opened.event_logo_url} alt={`${opened.name} event logo`} className="mt-4" />}
         <p className="mt-4 text-[10px] font-bold uppercase tracking-[0.2em] text-primary">Event details</p>
         <p className="mt-2 text-xs font-black tracking-[0.18em] text-primary">{formatFacultyEventSerial(opened.serial_number)}</p>
         <h3 data-no-translate id="event-dialog-title" className="display mt-1 pr-9 text-2xl">{opened.name}</h3>
@@ -196,7 +194,6 @@ export function StudentEventsTab({ canteenId, canteenName, userId, audience = "s
             <p className="mt-4 text-[10px] font-black tracking-[0.18em] text-primary">{formatFacultyEventSerial(opened.serial_number)}</p>
             <p aria-label="Your event token number" className="display mt-1 text-5xl font-black leading-none tracking-[0.18em] text-foreground sm:text-6xl">{item.token_number}</p>
             <p className="mt-3 text-xs font-semibold text-muted-foreground">Show this token number at <span data-no-translate>{canteenName}</span> when you attend.</p>
-            <div className="mx-auto mt-3 grid w-fit place-items-center rounded-2xl bg-white p-2"><QRCodeCanvas value={createFacultyEventTokenQrUrl(item.id)} size={160} level="M" title="Scan to view secure HUNGRY Z event token details" /></div>
           </div>)}</div>
         </div> : <button type="button" disabled={issuing || (opened.is_event_creator && !opened.capacity_available)} onClick={() => void generateToken()} className="mt-5 w-full rounded-full bg-primary py-3.5 text-sm font-bold text-primary-foreground disabled:opacity-50">{issuing ? "Generating…" : opened.is_event_creator && !opened.capacity_available ? "EVENT FULL" : "Generate Token"}</button>}
         {error && <p role="alert" className="mt-4 rounded-2xl border border-primary/30 bg-primary/10 p-3 text-sm text-primary-bright">{error}</p>}

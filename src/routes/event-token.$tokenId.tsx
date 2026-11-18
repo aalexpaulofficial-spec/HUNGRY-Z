@@ -50,7 +50,7 @@ function PublicEventTokenPage() {
       </a>
       {error && <div role="alert" className="mt-8 rounded-2xl border border-primary/30 bg-primary/5 p-5 text-center"><Ticket className="mx-auto h-8 w-8 text-primary" /><h1 className="mt-3 text-xl font-bold text-foreground">Token unavailable</h1><p className="mt-2 text-sm text-muted-foreground">{error}</p></div>}
       {token && <div className="mt-7 text-center">
-        {token.event_logo_url && <EventLogoImage src={token.event_logo_url} alt={`${token.event_name} event logo`} className="max-h-48" />}
+        {token.event_logo_url && <EventLogoImage src={token.event_logo_url} alt={`${token.event_name} event logo`} />}
         <p className="mt-5 text-[10px] font-black tracking-[0.2em] text-primary">{formatFacultyEventSerial(token.event_serial_number)}</p>
         <h1 data-no-translate className="display mt-2 break-words text-2xl text-foreground sm:text-3xl">{token.event_name}</h1>
         {token.event_description && <p data-no-translate className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">{token.event_description}</p>}

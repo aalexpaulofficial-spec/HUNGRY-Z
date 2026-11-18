@@ -4,7 +4,6 @@ import { StudentEventsTab } from "@/components/foodexa/StudentEventsTab";
 
 const { listEvents, verifyCode, issueToken } = vi.hoisted(() => ({ listEvents: vi.fn(), verifyCode: vi.fn(), issueToken: vi.fn() }));
 vi.mock("@tanstack/react-start", () => ({ useServerFn: (fn: unknown) => fn }));
-vi.mock("qrcode.react", () => ({ QRCodeCanvas: () => <canvas aria-label="Event QR code" /> }));
 vi.mock("@/lib/hungry.functions", () => ({
   listPublishedFacultyEventCards: listEvents,
   verifyFacultyEventAccessCode: verifyCode,
@@ -85,7 +84,8 @@ describe("faculty event access-code gate", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Generate Token" }));
     expect(await screen.findByText("0042")).toBeInTheDocument();
-    expect(dialog.querySelector("canvas")).toBeInTheDocument();
+    expect(screen.getByLabelText("Your event token number")).toHaveTextContent("0042");
+    expect(dialog.querySelector("canvas")).not.toBeInTheDocument();
     expect(issueToken).toHaveBeenCalledWith({ data: { eventId: "event-1", eventCode: "1234567" } });
     await waitFor(() => expect(verifyCode).toHaveBeenCalledTimes(2));
   });

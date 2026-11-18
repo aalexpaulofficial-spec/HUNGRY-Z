@@ -361,7 +361,7 @@ export function EventCapacityPanel({ mode, canteenId, canteenName, userId }: { m
               <button type="button" onClick={() => { setEventLogoFile(null); setEventLogoCrop(null); setError(""); if (eventLogoInput.current) eventLogoInput.current.value = ""; }} className="rounded-full border border-border px-3 py-2 text-xs font-semibold text-muted-foreground">Remove image</button>
             </div>}
             {eventLogoPreview && <>
-              <EventLogoImage src={eventLogoPreview} alt="Event logo preview" className="max-h-56" />
+              <EventLogoImage src={eventLogoPreview} alt="Event logo preview" />
               <EventLogoCropAdjust key={eventLogoFile?.name ?? "event-logo"} src={eventLogoPreview} onCropChange={handleLogoCropChange} />
             </>}
           </div>

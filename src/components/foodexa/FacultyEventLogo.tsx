@@ -1,16 +1,16 @@
 import { useEffect, useState, type PointerEvent } from "react";
 
-type LogoCrop = { zoom: number; x: number; y: number; aspect: "original" | "square" | "wide" };
+type LogoCrop = { zoom: number; x: number; y: number };
 
 export function EventLogoImage({ src, alt, className = "" }: { src: string; alt: string; className?: string }) {
-  return <div className={`flex min-h-28 max-h-56 w-full items-center justify-center overflow-hidden rounded-2xl border border-border bg-ink-soft p-2 sm:min-h-36 sm:p-3 ${className}`}>
-    <img src={src} alt={alt} loading="lazy" className="block max-h-52 max-w-full rounded-xl object-contain" />
+  return <div className={`relative aspect-[16/10] w-full overflow-hidden rounded-2xl border border-border bg-ink-soft ${className}`}>
+    <img src={src} alt={alt} loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
   </div>;
 }
 
 export function EventLogoCropAdjust({ src, onCropChange }: { src: string; onCropChange: (crop: LogoCrop | null) => void }) {
-  const [enabled, setEnabled] = useState(false);
-  const [crop, setCrop] = useState<LogoCrop>({ zoom: 1, x: 0.5, y: 0.5, aspect: "original" });
+  const [enabled, setEnabled] = useState(true);
+  const [crop, setCrop] = useState<LogoCrop>({ zoom: 1, x: 0.5, y: 0.5 });
   const [drag, setDrag] = useState<{ pointerId: number; x: number; y: number } | null>(null);
 
   useEffect(() => onCropChange(enabled ? crop : null), [crop, enabled, onCropChange]);
@@ -33,12 +33,12 @@ export function EventLogoCropAdjust({ src, onCropChange }: { src: string; onCrop
   return <section className="space-y-3 rounded-xl border border-border bg-background/70 p-3" aria-label="Crop or adjust event logo">
     <label className="flex min-h-11 items-center gap-2 text-sm font-medium text-foreground">
       <input type="checkbox" checked={enabled} onChange={(event) => setEnabled(event.currentTarget.checked)} className="h-4 w-4 accent-primary" />
-      Crop / Adjust Image (optional)
+      Adjust event image
     </label>
     {enabled && <>
-      <p className="text-xs text-muted-foreground">Drag the image to reposition it. The original upload is kept unchanged.</p>
+      <p className="text-xs text-muted-foreground">Drag to reposition the image or use the controls. The preview uses the same 16:10 frame as menu photos.</p>
       <div
-        className={`relative mx-auto w-full max-w-xl touch-none overflow-hidden rounded-xl border border-primary/40 bg-ink-soft ${crop.aspect === "square" ? "aspect-square max-h-72" : "aspect-video max-h-64"}`}
+        className="relative mx-auto aspect-[16/10] w-full max-w-xl touch-none overflow-hidden rounded-xl border border-border bg-ink-soft"
         onPointerDown={(event) => { event.currentTarget.setPointerCapture(event.pointerId); setDrag({ pointerId: event.pointerId, x: event.clientX, y: event.clientY }); }}
         onPointerMove={move}
         onPointerUp={() => setDrag(null)}
@@ -55,24 +55,32 @@ export function EventLogoCropAdjust({ src, onCropChange }: { src: string; onCrop
         />
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
-        <label className="space-y-1 text-xs text-muted-foreground">Crop shape
-          <select value={crop.aspect} onChange={(event) => update({ aspect: event.currentTarget.value as LogoCrop["aspect"] })} aria-label="Logo crop shape" className="min-h-10 w-full rounded-lg border border-input bg-card px-3 text-sm text-foreground">
-            <option value="original">Original proportions</option><option value="wide">Wide (16:9)</option><option value="square">Square (1:1)</option>
-          </select>
-        </label>
-        <label className="space-y-1 text-xs text-muted-foreground">Zoom: {crop.zoom.toFixed(1)}×
-          <input type="range" min={1} max={3} step={0.1} value={crop.zoom} onChange={(event) => update({ zoom: Number(event.currentTarget.value) })} aria-label="Logo zoom" className="block min-h-10 w-full accent-primary" />
-        </label>
+        <div className="space-y-1 text-xs text-muted-foreground">
+          <label htmlFor="event-image-horizontal-position" className="font-medium text-foreground">Move left or right</label>
+          <div className="flex items-center gap-2">
+            <button type="button" aria-label="Move event image left" onClick={() => update({ x: clamp(crop.x - 0.08, 0, 1) })} className="min-h-10 shrink-0 rounded-lg border border-border bg-card px-3 text-xs font-semibold text-foreground">Left</button>
+            <input id="event-image-horizontal-position" type="range" min={0} max={1} step={0.01} value={crop.x} onChange={(event) => update({ x: Number(event.currentTarget.value) })} aria-label="Event image horizontal position" className="min-h-10 w-full accent-primary" />
+            <button type="button" aria-label="Move event image right" onClick={() => update({ x: clamp(crop.x + 0.08, 0, 1) })} className="min-h-10 shrink-0 rounded-lg border border-border bg-card px-3 text-xs font-semibold text-foreground">Right</button>
+          </div>
+        </div>
+        <div className="space-y-1 text-xs text-muted-foreground">
+          <label htmlFor="event-image-zoom" className="font-medium text-foreground">Zoom: {crop.zoom.toFixed(1)}x</label>
+          <div className="flex items-center gap-2">
+            <button type="button" aria-label="Zoom event image out" disabled={crop.zoom <= 1} onClick={() => update({ zoom: Math.max(1, Math.round((crop.zoom - 0.1) * 10) / 10) })} className="min-h-10 shrink-0 rounded-lg border border-border bg-card px-3 text-sm font-semibold text-foreground disabled:opacity-40">-</button>
+            <input id="event-image-zoom" type="range" min={1} max={3} step={0.1} value={crop.zoom} onChange={(event) => update({ zoom: Number(event.currentTarget.value) })} aria-label="Event image zoom" className="min-h-10 w-full accent-primary" />
+            <button type="button" aria-label="Zoom event image in" disabled={crop.zoom >= 3} onClick={() => update({ zoom: Math.min(3, Math.round((crop.zoom + 0.1) * 10) / 10) })} className="min-h-10 shrink-0 rounded-lg border border-border bg-card px-3 text-sm font-semibold text-foreground disabled:opacity-40">+</button>
+          </div>
+        </div>
       </div>
     </>}
   </section>;
 }
 
-export type EventLogoCrop = { zoom: number; x: number; y: number; aspect: "original" | "square" | "wide" };
+export type EventLogoCrop = { zoom: number; x: number; y: number };
 
 export async function createCroppedEventLogoFile(file: File, crop: EventLogoCrop) {
   const bitmap = await createImageBitmap(file);
-  const targetRatio = crop.aspect === "square" ? 1 : crop.aspect === "wide" ? 16 / 9 : bitmap.width / bitmap.height;
+  const targetRatio = 16 / 10;
   let cropWidth = bitmap.width;
   let cropHeight = bitmap.height;
   if (cropWidth / cropHeight > targetRatio) cropWidth = cropHeight * targetRatio;
