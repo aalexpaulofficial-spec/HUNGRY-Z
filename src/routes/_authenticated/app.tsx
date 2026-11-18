@@ -12,6 +12,7 @@ import { BackButton, useBackStep } from "@/lib/back-nav";
 import { supabase } from "@/integrations/supabase/client";
 import { foodImage } from "@/lib/foodexa-images";
 import { ORDER_LABELS, ORDER_STATUSES, canAcceptOrders, type MenuItem } from "@/lib/access";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { ScannerTab } from "@/components/foodexa/ScannerTab";
 import { canUseHungryAi } from "@/lib/scanner";
 import { SocialThankYouDialog } from "@/components/foodexa/SocialThankYouDialog";
@@ -442,6 +443,7 @@ function OrderingApp() {
             </div>
           </div>
           <div className="flex min-w-0 flex-1 items-center justify-end gap-2 sm:flex-initial">
+            <ThemeToggle />
             <button onClick={() => setSwitching(true)} className="hz-campus-switch glass flex min-w-0 flex-1 items-center gap-2 rounded-2xl px-3 py-2 sm:max-w-[55%] sm:flex-initial">
               <MapPin className="h-3.5 w-3.5 shrink-0 text-primary-bright" />
               <span className="min-w-0 truncate text-left"><span data-no-translate className="block truncate">{canteen.name}</span><span className={cn("mt-0.5 block text-[9px] font-bold", ordering ? "text-emerald-500" : "text-red-500")}>{ordering ? "OPEN — Accepting Orders" : "CLOSED — Not Accepting Orders"}</span></span>
@@ -698,7 +700,7 @@ export function HomeTab({ menu, canteen, template, onOpen, onAdd, goMenu }: { me
   if (!menu.length) return <div className="space-y-8 pt-2">{templateBanner}<Empty title="Your canteen is getting ready" text={`${canteen.name} hasn't published its menu yet. It will appear here live as soon as it does.`} /></div>;
   const featured = menu.filter((m) => m.tag);
   const quick = menu.filter((m) => m.prep_minutes <= 8);
-  const categories = Array.from(new Set(menu.map((item) => item.category))).slice(0, 7);
+  const categories = Array.from(new Set(menu.map((item) => item.category))).slice(0, 4);
   const categoryEmoji = (category: string) => /drink|beverage|juice|coffee/i.test(category) ? "🥤" : /dessert|sweet|cake|ice.?cream/i.test(category) ? "🍰" : /snack|starter|side/i.test(category) ? "🥪" : /breakfast/i.test(category) ? "🍳" : /meal|lunch|dinner|main/i.test(category) ? "🍛" : "🍽️";
   return (
       <div className="hz-home-page pt-2">
@@ -747,7 +749,7 @@ function MenuTab({ menu, onOpen, onAdd, selectedCategory, onCategoryChange }: { 
         ))}
       </div>
       <p className="mt-5 text-xs font-semibold text-muted-foreground">{list.length} {list.length === 1 ? "dish" : "dishes"}</p>
-      {list.length ? <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+      {list.length ? <div className="hz-menu-grid mt-3">
         {list.map((m) => <FoodCard key={m.id} item={m} onOpen={onOpen} onAdd={onAdd} />)}
       </div> : <Empty title="No dishes found" text="Try another search or choose a different category." />}
     </div>
