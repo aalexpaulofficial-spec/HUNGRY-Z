@@ -1,5 +1,5 @@
 const CACHE_PREFIX = "hungry-public-";
-const CACHE_NAME = `${CACHE_PREFIX}v13`;
+const CACHE_NAME = `${CACHE_PREFIX}v14`;
 const PRECACHE_URLS = [
   "/offline.html",
   "/manifest-student.webmanifest",
@@ -7,9 +7,9 @@ const PRECACHE_URLS = [
   "/pwa-install-capture.js",
   "/HUNGRY%20Z%20Q%20LOGO.png",
   "/HUNGRY%20Z%20CANTEEN%20DAHSBOARD%20LOGO.png",
-  "/social-instagram-email.png",
-  "/social-whatsapp-email.png?v=2",
-  "/social-linkedin-email.png",
+  "/social-instagram-email.png?v=3",
+  "/social-whatsapp-email.png?v=3",
+  "/social-linkedin-email.png?v=3",
   "/icons/canteen-192.png",
   "/icons/canteen-512.png",
   "/icons/student-192.png",
