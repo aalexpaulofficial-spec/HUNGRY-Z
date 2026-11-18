@@ -4,7 +4,6 @@ import {
   Link,
   useLocation,
   createRootRouteWithContext,
-  useRouter,
   HeadContent,
   Scripts,
   useRouterState,
@@ -42,7 +41,6 @@ function NotFoundComponent() {
 
 function ErrorComponent({ error, reset }: ErrorComponentProps) {
   console.error(error);
-  const router = useRouter();
   useEffect(() => {
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
   }, [error]);
@@ -59,8 +57,8 @@ function ErrorComponent({ error, reset }: ErrorComponentProps) {
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
             onClick={() => {
-              router.invalidate();
               reset();
+              window.location.reload();
             }}
             className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
@@ -133,6 +131,8 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
+let bundleReloadAttempted = false;
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const { pathname, searchStr } = useLocation();
@@ -141,6 +141,25 @@ function RootComponent() {
   const appFromUrl = new URLSearchParams(searchStr).get("hungry_app");
   const hasAppLaunchMarker = appFromUrl === "student" || appFromUrl === "canteen";
   const [standaloneApp, setStandaloneApp] = useState(hasAppLaunchMarker);
+
+  useEffect(() => {
+    const recoverFromStaleBundle = (event: Event) => {
+      event.preventDefault();
+      if (bundleReloadAttempted) return;
+      bundleReloadAttempted = true;
+      try {
+        const key = "hungry:last-bundle-reload";
+        const lastAttempt = Number(window.sessionStorage.getItem(key) ?? 0);
+        if (Date.now() - lastAttempt < 30_000) return;
+        window.sessionStorage.setItem(key, String(Date.now()));
+      } catch {
+        // Reload recovery should still work if storage is disabled.
+      }
+      window.location.reload();
+    };
+    window.addEventListener("vite:preloadError", recoverFromStaleBundle);
+    return () => window.removeEventListener("vite:preloadError", recoverFromStaleBundle);
+  }, []);
 
   useEffect(() => {
     if ("serviceWorker" in navigator) {
