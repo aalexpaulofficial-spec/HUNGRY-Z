@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { BackButton } from "@/lib/back-nav";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 export type LegalSection = { title: string; paragraphs: string[] };
 
@@ -13,6 +14,7 @@ export function LegalPage({ title, intro, sections }: { title: string; intro: st
           <BackButton inline />
           <span className="pr-1 text-xs font-semibold text-muted-foreground">Back</span>
         </div>
+        <ThemeToggle />
       </header>
       <section className="glass-red mt-10 rounded-[2rem] p-6 sm:mt-14 sm:p-10">
         <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary-bright">HUNGRY Z · Legal</p>

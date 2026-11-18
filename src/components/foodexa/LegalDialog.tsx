@@ -1,11 +1,13 @@
 import { useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import type { LegalSection } from "@/content/legal";
 import { useModalDismiss } from "@/lib/use-modal-dismiss";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 type LegalDocument = { title: string; intro: string; sections: LegalSection[] };
 
-export function LegalDialog({ legalDocument, onClose }: { legalDocument: LegalDocument; onClose: () => void }) {
+export function LegalDialog({ legalDocument, onClose, themeScope = "site" }: { legalDocument: LegalDocument; onClose: () => void; themeScope?: "site" | "canteen" }) {
   const closeButton = useRef<HTMLButtonElement>(null);
   const close = useModalDismiss(onClose);
 
@@ -23,7 +25,7 @@ export function LegalDialog({ legalDocument, onClose }: { legalDocument: LegalDo
     };
   }, [close]);
 
-  return (
+  return createPortal((
     <div
       className="fixed inset-0 z-[90] grid place-items-center bg-background/80 px-3 py-3 backdrop-blur-md sm:px-6 sm:py-6"
       role="presentation"
@@ -37,19 +39,22 @@ export function LegalDialog({ legalDocument, onClose }: { legalDocument: LegalDo
         aria-labelledby="hungry-legal-dialog-title"
         className="glass-red relative flex max-h-[calc(100dvh-1.5rem)] w-full max-w-3xl flex-col overflow-hidden rounded-[1.5rem] shadow-[var(--shadow-cinema)] sm:max-h-[calc(100dvh-3rem)] sm:rounded-[2rem]"
       >
-        <header className="relative shrink-0 border-b border-border px-5 pb-4 pr-16 pt-5 sm:px-8 sm:pb-5 sm:pr-20 sm:pt-7">
+        <header className="relative shrink-0 border-b border-border px-5 pb-4 pr-24 pt-5 sm:px-8 sm:pb-5 sm:pr-28 sm:pt-7">
           <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary-bright">HUNGRY Z · Legal</p>
-          <h2 id="hungry-legal-dialog-title" className="display mt-2 text-2xl sm:text-3xl">{legalDocument.title}</h2>
+          <h2 id="hungry-legal-dialog-title" className="display mt-2 text-xl sm:text-3xl">{legalDocument.title}</h2>
           <p className="mt-2 text-xs text-muted-foreground">Last updated: November 5, 2026</p>
-          <button
-            ref={closeButton}
-            type="button"
-            onClick={close}
-            aria-label="Close legal information"
-            className="absolute right-4 top-4 grid h-10 w-10 place-items-center rounded-full border border-border bg-card/70 text-muted-foreground transition hover:border-primary/50 hover:text-foreground sm:right-6 sm:top-6"
-          >
-            <X className="h-4 w-4" />
-          </button>
+          <div className="absolute right-3 top-3 z-10 flex items-center gap-2 sm:right-6 sm:top-6">
+            <ThemeToggle scope={themeScope} className="h-9 w-9 sm:h-10 sm:w-10" />
+            <button
+              ref={closeButton}
+              type="button"
+              onClick={close}
+              aria-label="Close legal information"
+              className="grid h-9 w-9 place-items-center rounded-full border border-border bg-card/70 text-muted-foreground transition hover:border-primary/50 hover:text-foreground sm:h-10 sm:w-10"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
         </header>
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5 sm:px-8 sm:py-7">
           <p className="max-w-3xl text-sm leading-relaxed text-foreground/80">{legalDocument.intro}</p>
@@ -69,5 +74,5 @@ export function LegalDialog({ legalDocument, onClose }: { legalDocument: LegalDo
         </div>
       </section>
     </div>
-  );
+  ), document.body);
 }

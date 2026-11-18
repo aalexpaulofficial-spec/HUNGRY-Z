@@ -1485,7 +1485,7 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
       </div>
 
       {ownerFeedbackOpen && <FeedbackDialog mode="canteen-report" onClose={() => setOwnerFeedbackOpen(false)} />}
-      {ownerLegalPage && <LegalDialog legalDocument={ownerLegalPage === "privacy" ? privacyPolicy : termsConditions} onClose={() => setOwnerLegalPage(null)} />}
+      {ownerLegalPage && <LegalDialog legalDocument={ownerLegalPage === "privacy" ? privacyPolicy : termsConditions} onClose={() => setOwnerLegalPage(null)} themeScope="canteen" />}
       {printJob && <ThermalReceipt job={printJob.job} paperWidth={printJob.paperWidth} />}
     </div>
   );
