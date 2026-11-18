@@ -30,15 +30,15 @@ export function EventLogoCropAdjust({ src, onCropChange }: { src: string; onCrop
     setDrag({ pointerId: drag.pointerId, x: event.clientX, y: event.clientY });
   }
 
-  return <section className="space-y-3 rounded-xl border border-border bg-background/70 p-3" aria-label="Crop or adjust event logo">
-    <label className="flex min-h-11 items-center gap-2 text-sm font-medium text-foreground">
+  return <section className="space-y-2 rounded-xl border border-border bg-background/70 p-2.5" aria-label="Crop or adjust event logo">
+    <label className="flex min-h-9 items-center gap-2 text-sm font-medium text-foreground">
       <input type="checkbox" checked={enabled} onChange={(event) => setEnabled(event.currentTarget.checked)} className="h-4 w-4 accent-primary" />
       Adjust event image
     </label>
     {enabled && <>
-      <p className="text-xs text-muted-foreground">Drag to reposition the image or use the controls. The preview uses the same 16:10 frame as menu photos.</p>
+      <p className="text-xs text-muted-foreground">Drag to reposition, or use the controls. Preview uses the 16:10 event image frame.</p>
       <div
-        className="relative mx-auto aspect-[16/10] w-full max-w-xl touch-none overflow-hidden rounded-xl border border-border bg-ink-soft"
+        className="relative mx-auto aspect-[16/10] w-full max-w-sm touch-none overflow-hidden rounded-xl border border-border bg-ink-soft"
         onPointerDown={(event) => { event.currentTarget.setPointerCapture(event.pointerId); setDrag({ pointerId: event.pointerId, x: event.clientX, y: event.clientY }); }}
         onPointerMove={move}
         onPointerUp={() => setDrag(null)}
@@ -58,9 +58,9 @@ export function EventLogoCropAdjust({ src, onCropChange }: { src: string; onCrop
         <div className="space-y-1 text-xs text-muted-foreground">
           <label htmlFor="event-image-horizontal-position" className="font-medium text-foreground">Move left or right</label>
           <div className="flex items-center gap-2">
-            <button type="button" aria-label="Move event image left" onClick={() => update({ x: clamp(crop.x - 0.08, 0, 1) })} className="min-h-10 shrink-0 rounded-lg border border-border bg-card px-3 text-xs font-semibold text-foreground">Left</button>
-            <input id="event-image-horizontal-position" type="range" min={0} max={1} step={0.01} value={crop.x} onChange={(event) => update({ x: Number(event.currentTarget.value) })} aria-label="Event image horizontal position" className="min-h-10 w-full accent-primary" />
-            <button type="button" aria-label="Move event image right" onClick={() => update({ x: clamp(crop.x + 0.08, 0, 1) })} className="min-h-10 shrink-0 rounded-lg border border-border bg-card px-3 text-xs font-semibold text-foreground">Right</button>
+            <button type="button" aria-label="Move event image left" onClick={() => update({ x: clamp(crop.x + 0.08, 0, 1) })} className="min-h-9 shrink-0 rounded-lg border border-border bg-card px-3 text-xs font-semibold text-foreground">Left</button>
+            <input id="event-image-horizontal-position" type="range" min={0} max={1} step={0.01} value={1 - crop.x} onChange={(event) => update({ x: 1 - Number(event.currentTarget.value) })} aria-label="Event image horizontal position" className="min-h-10 w-full accent-primary" />
+            <button type="button" aria-label="Move event image right" onClick={() => update({ x: clamp(crop.x - 0.08, 0, 1) })} className="min-h-9 shrink-0 rounded-lg border border-border bg-card px-3 text-xs font-semibold text-foreground">Right</button>
           </div>
         </div>
         <div className="space-y-1 text-xs text-muted-foreground">

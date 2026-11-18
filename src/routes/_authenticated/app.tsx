@@ -1206,8 +1206,8 @@ function OrderDetail({ order, canteenName, refund, notice, onNotice }: { order: 
       <button type="button" onClick={downloadBill} className="mt-5 w-full rounded-full border border-primary/50 px-5 py-3 text-xs font-semibold text-foreground hover:bg-primary/10"><Download className="mr-2 inline h-4 w-4" />Download Bill</button>
 
       {refund && (
-        <div className="mt-5 rounded-2xl border border-border bg-card p-4 text-sm">
-          <p className="font-semibold">{REFUND_STATUS_LABELS[refund.status] ?? refund.status} · ₹{refund.amount}</p>
+        <div className="mt-5 rounded-2xl border border-primary/45 bg-primary/[0.08] p-4 text-sm shadow-[0_0_20px_hsl(var(--primary)/0.08)]">
+          <p className="font-bold text-primary">{REFUND_STATUS_LABELS[refund.status] ?? refund.status} · ₹{refund.amount}</p>
           {refund.status === "requested" && <p className="mt-2 text-xs text-muted-foreground">Your request is received and awaiting review. A cancellation does not automatically qualify for a refund. We’ll email you when its status changes.</p>}
           {refund.status === "processing" && <p className="mt-2 text-xs text-muted-foreground">Approved and successfully initiated refunds generally take 5–7 business working days to appear in the original payment method. Timing can vary by Razorpay, your bank and payment method. We’ll email you when this status changes.</p>}
           {refund.status === "processed" && <p className="mt-2 text-xs text-muted-foreground">Razorpay has confirmed the refund to your original payment method. Your bank may take additional time to show the credit.</p>}

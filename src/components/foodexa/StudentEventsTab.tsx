@@ -189,7 +189,7 @@ export function StudentEventsTab({ canteenId, canteenName, userId, audience = "s
         {opened.my_tokens.length > 0 ? <div className="mt-5 space-y-3">
           <p className="text-center text-xs font-bold uppercase tracking-[0.18em] text-primary">Your event tokens</p>
           <div className="grid gap-3 sm:grid-cols-2">{opened.my_tokens.map((item) => <div key={item.id} className="rounded-2xl border border-primary/30 bg-card p-3 text-center">
-            <p className="text-[10px] font-black tracking-[0.18em] text-primary">{formatFacultyEventSerial(opened.serial_number)}</p>
+            <p className="mt-2 text-[10px] font-black tracking-[0.18em] text-primary">{formatFacultyEventSerial(opened.serial_number)}</p>
             <p aria-label="Your event token number" className="display mt-1 text-5xl font-black leading-none tracking-[0.16em] text-foreground">{item.token_number}</p>
             <p className="mt-2 text-[10px] font-black tracking-[0.2em] text-primary">FOLLOW US</p>
             <SocialIconLinks className="mt-1 gap-2" />

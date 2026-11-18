@@ -344,7 +344,7 @@ export function EventCapacityPanel({ mode, canteenId, canteenName, userId }: { m
             <span className="block text-xs font-bold tracking-[0.14em] text-primary">ABOUT YOUR EVENT (OPTIONAL)</span>
             <textarea id="faculty-event-details" maxLength={1000} value={description} onChange={(event) => setDescription(event.currentTarget.value)} placeholder="What is the event for? Add any details the canteen should know." aria-label="About your event (optional)" className="min-h-20 w-full resize-y rounded-xl border border-primary/25 bg-background/75 px-4 py-3 text-sm leading-relaxed text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" rows={2} />
           </label>
-          <div className="space-y-3 rounded-2xl border border-border bg-card/70 p-3" aria-label="Event logo upload">
+          <div className="space-y-2 rounded-2xl border border-border bg-card/70 p-3" aria-label="Event logo upload">
             <label className="block space-y-2 text-xs text-muted-foreground">
               <span className="block font-bold uppercase tracking-wider text-primary">EVENT LOGO (OPTIONAL)</span>
               <input ref={eventLogoInput} type="file" accept="image/png,image/jpeg,.png,.jpg,.jpeg" aria-label="Upload event logo" onChange={(event) => {
@@ -361,10 +361,9 @@ export function EventCapacityPanel({ mode, canteenId, canteenName, userId }: { m
               <button type="button" onClick={() => { if (eventLogoInput.current) { eventLogoInput.current.value = ""; eventLogoInput.current.click(); } }} className="rounded-full border border-primary/40 px-3 py-2 text-xs font-semibold text-primary">Replace image</button>
               <button type="button" onClick={() => { setEventLogoFile(null); setEventLogoCrop(null); setError(""); if (eventLogoInput.current) eventLogoInput.current.value = ""; }} className="rounded-full border border-border px-3 py-2 text-xs font-semibold text-muted-foreground">Remove image</button>
             </div>}
-            {eventLogoPreview && <>
-              <EventLogoImage src={eventLogoPreview} alt="Event logo preview" />
-              <EventLogoCropAdjust key={eventLogoFile?.name ?? "event-logo"} src={eventLogoPreview} onCropChange={handleLogoCropChange} />
-            </>}
+            {eventLogoPreview
+              ? <EventLogoCropAdjust key={eventLogoFile?.name ?? "event-logo"} src={eventLogoPreview} onCropChange={handleLogoCropChange} />
+              : <div className="mx-auto grid aspect-[16/10] w-full max-w-sm place-items-center rounded-xl border border-dashed border-border bg-ink-soft px-4 text-center text-xs text-muted-foreground" aria-label="Event image preview frame">Your event image preview · 16:10</div>}
           </div>
           <div className="grid gap-2 sm:grid-cols-2">
             <label className="block text-xs text-muted-foreground">Event date<input required type="date" value={eventDate} onChange={(event) => setEventDate(event.currentTarget.value)} aria-label="Event date" className="mt-1 w-full rounded-xl border border-input bg-ink-soft px-3 py-3 text-sm text-foreground" /></label>
