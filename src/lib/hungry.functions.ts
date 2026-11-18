@@ -1451,7 +1451,7 @@ export const placeOrder = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    if (!isPaymentAllowed(data.orderType, data.paymentMethod)) throw new Error("Parcel orders are paid at the counter.");
+    if (!isPaymentAllowed(data.orderType, data.paymentMethod)) throw new Error("Choose a valid payment method for this order.");
     const db = await admin();
     const { razorpayKeys } = await import("@/lib/razorpay.server");
     if (data.eventId && data.paymentMethod !== "counter") throw new Error("Event tokens require Pay at Counter.");

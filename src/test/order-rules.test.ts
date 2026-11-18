@@ -2,9 +2,9 @@ import { describe, it, expect } from "vitest";
 import { allowedPaymentMethods, canOwnerMove, canRequestRefund, friendlyOrderError, isPaymentAllowed, mergeLines, rupeesToPaise } from "@/lib/order-rules";
 
 describe("order & payment rules", () => {
-  it("parcel orders can only be paid at the counter", () => {
-    expect(allowedPaymentMethods("parcel")).toEqual(["counter"]);
-    expect(isPaymentAllowed("parcel", "razorpay")).toBe(false);
+  it("parcel orders can pay online with Razorpay or at the counter", () => {
+    expect(allowedPaymentMethods("parcel")).toEqual(["razorpay", "counter"]);
+    expect(isPaymentAllowed("parcel", "razorpay")).toBe(true);
     expect(isPaymentAllowed("parcel", "counter")).toBe(true);
   });
   it("dine-in orders can pay online with Razorpay or at the counter", () => {

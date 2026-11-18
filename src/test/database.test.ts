@@ -56,6 +56,7 @@ CREATE PUBLICATION supabase_realtime;`);
     await db.exec(readFileSync(path.join(root, "drizzle/migrations/0018_event_serial_and_order_based_ai_usage.sql"), "utf8"));
     await db.exec(readFileSync(path.join(root, "drizzle/migrations/0019_faculty_event_access_code_gate.sql"), "utf8"));
     await db.exec(readFileSync(path.join(root, "drizzle/migrations/0020_hungry_ai_all_user_roles.sql"), "utf8"));
+    await db.exec(readFileSync(path.join(root, "drizzle/migrations/0023_parcel_online_payments.sql"), "utf8"));
 
     const failures: string[] = [];
     const ok = (c: boolean | undefined, m: string) => { if (!c) failures.push(m); };
@@ -297,10 +298,12 @@ CREATE PUBLICATION supabase_realtime;`);
 
     await q(`UPDATE canteens SET availability_mode='open' WHERE id=$1`, [c.id]);
 
-    ok((await err(`SELECT * FROM hungry_place_order($1,$2,'X',$3::jsonb,'parcel','razorpay',20,null,0,'key-parcel-01','HG-P1','1')`, [a.id, c.id, JSON.stringify([{ id: m2.id, qty: 1 }])]))?.includes("parcel_counter_only"), "parcel + razorpay rejected");
+    const [parcelOnline] = await place(a.id, [{ id: m2.id, qty: 1 }], "parcel", "razorpay", 20, null, 0, "key-parcel-01", "HG-P1");
+    const parcelOnlineRow = (await q(`SELECT status,payment_status,payment_method,order_type FROM orders WHERE id=$1`, [parcelOnline.order_id]))[0];
+    ok(!!parcelOnline.order_id && parcelOnlineRow.status === "pending_payment" && parcelOnlineRow.payment_status === "pending" && parcelOnlineRow.payment_method === "razorpay" && parcelOnlineRow.order_type === "parcel", "parcel + razorpay creates a pending online payment order");
     const [op] = await place(a.id, [{ id: m2.id, qty: 1 }], "parcel", "counter", 20, null, 0, "key-parcel-02", "HG-P2");
     ok(!!op.order_id, "parcel + counter allowed");
-    ok((await err(`INSERT INTO orders (order_number, canteen_id, user_id, customer_name, lines, total, subtotal, payment, pickup_code, counter, prep_minutes, order_type, payment_method) VALUES ('HG-Z',$1,$2,'x','[]',0,0,'x','1','c',1,'parcel','razorpay')`, [c.id, a.id]))?.includes("orders_parcel_counter_only"), "table constraint blocks parcel online too");
+    ok((await q(`SELECT 1 FROM pg_constraint WHERE conname='orders_parcel_counter_only'`)).length === 0, "orders table no longer blocks parcel online payments");
 
     ok((await err(`SELECT * FROM hungry_place_order($1,$2,'X',$3::jsonb,'dine_in','counter',100,null,0,'key-stock-001','HG-S1','1')`, [b.id, c.id, JSON.stringify([{ id: m1.id, qty: 2 }])]))?.includes("out_of_stock"), "out of stock blocked");
     ok((await err(`SELECT * FROM hungry_place_order($1,$2,'X',$3::jsonb,'dine_in','counter',999,null,0,'key-price-001','HG-S2','1')`, [b.id, c.id, JSON.stringify([{ id: m2.id, qty: 1 }])]))?.includes("prices_changed"), "subtotal mismatch blocked");

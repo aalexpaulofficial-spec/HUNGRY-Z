@@ -29,9 +29,9 @@ export function orderPaymentStatusLabel(status: string): string {
   return "Pending";
 }
 
-/** Parcel orders are always paid at the counter; dine-in can pay online or at the counter. */
-export function allowedPaymentMethods(orderType: OrderType): PaymentMethod[] {
-  return orderType === "parcel" ? ["counter"] : ["razorpay", "counter"];
+/** Dine-in and parcel orders can both use online payment or pay at the counter. */
+export function allowedPaymentMethods(_orderType: OrderType): PaymentMethod[] {
+  return ["razorpay", "counter"];
 }
 
 export function isPaymentAllowed(orderType: OrderType, method: PaymentMethod): boolean {

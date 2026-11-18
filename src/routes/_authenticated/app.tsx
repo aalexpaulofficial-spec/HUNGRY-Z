@@ -856,7 +856,7 @@ function Checkout({ cart, subtotal, ordering, closedMessage, onAdd, onPlaced }: 
       .catch(() => setCfg({ onlineEnabled: false, testMode: false }));
   }, [cfgFn]);
 
-  // Parcel orders are always paid at the counter.
+  // Keep the selected payment method when switching between dine-in and parcel.
   useEffect(() => {
     if (!isPaymentAllowed(orderType, method)) setMethod("counter");
   }, [orderType, method]);
@@ -942,7 +942,7 @@ function Checkout({ cart, subtotal, ordering, closedMessage, onAdd, onPlaced }: 
           </button>
         ))}
       </div>
-      {orderType === "parcel" && <p className="mt-2 text-xs text-muted-foreground">Parcel orders are paid at the counter.</p>}
+      {orderType === "parcel" && <p className="mt-2 text-xs text-muted-foreground">Choose UPI / online payment now or pay at the counter.</p>}
 
       <h4 className="mt-7 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">
         Payment {cfg?.testMode && method === "razorpay" && <span className="rounded-full border border-primary/60 px-2 py-0.5 text-[9px] text-primary-bright">TEST MODE</span>}
@@ -954,7 +954,7 @@ function Checkout({ cart, subtotal, ordering, closedMessage, onAdd, onPlaced }: 
             <span className="flex-1 text-sm font-semibold">{PAYMENT_METHOD_LABELS[m]}</span>
           </button>
         ))}
-        {cfg && !cfg.onlineEnabled && orderType === "dine_in" && <p className="text-xs text-muted-foreground">Online payment isn't available at the moment.</p>}
+        {cfg && !cfg.onlineEnabled && <p className="text-xs text-muted-foreground">Online payment isn't available at the moment.</p>}
       </div>
 
       <h4 className="mt-7 text-xs font-bold uppercase tracking-widest text-muted-foreground">Coupon</h4>

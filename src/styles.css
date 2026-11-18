@@ -1980,6 +1980,8 @@ html[data-theme="dark"] .hz-customer-app {
   background: radial-gradient(ellipse at 50% -12%, rgb(230 0 18 / 9%), transparent 48%), var(--background);
 }
 html[data-theme="dark"] .hz-customer-app .hz-customer-header { border-bottom-color: rgb(255 255 255 / 8%); background: rgb(16 16 18 / 92%); }
+html[data-theme="dark"] .hz-customer-app .hz-campus-switch { border-color: #34343a; background: #19191c; color: #f3f3f5; box-shadow: 0 5px 20px rgb(0 0 0 / 22%); }
+html[data-theme="dark"] .hz-customer-app .hz-campus-switch .text-muted-foreground { color: #b7b7bf; }
 html[data-theme="dark"] .hz-customer-app .hz-hours-banner { border-color: #303035; background: rgb(28 28 32 / 90%); color: #c4c4ca; }
 html[data-theme="dark"] .hz-customer-app .hz-bottom-nav { border-color: #34343a; background: rgb(24 24 28 / 94%); }
 html[data-theme="dark"] .hz-customer-app .hz-discover-search,
