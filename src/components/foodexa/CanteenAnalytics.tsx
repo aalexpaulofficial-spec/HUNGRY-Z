@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { useSessionState } from "@/lib/session-state";
 
 type OrderLine = { id?: string; name: string; price?: number; qty: number };
-type AnalyticsOrder = {
+export type AnalyticsOrder = {
   id: string;
   order_number: string;
   created_at: string;
@@ -339,9 +339,11 @@ function displayBucket(key: string, grain: Grain) {
 export function CanteenAnalytics({
   canteenId,
   canteenName,
+  liveOrders,
 }: {
   canteenId: string;
   canteenName: string;
+  liveOrders: AnalyticsOrder[];
 }) {
   const [orders, setOrders] = useState<AnalyticsOrder[]>([]);
   const [menu, setMenu] = useState<MenuRow[]>([]);
@@ -354,6 +356,10 @@ export function CanteenAnalytics({
   const [itemSearch, setItemSearch] = useSessionState(`hungry-canteen-analytics-${canteenId}-item-search`, "");
   const [reportMenu, setReportMenu] = useState(false);
   const [exportError, setExportError] = useState("");
+
+  useEffect(() => {
+    setOrders((current) => Array.from(new Map([...current, ...liveOrders].map((order) => [order.id, order])).values()).sort((a, b) => b.created_at.localeCompare(a.created_at)));
+  }, [liveOrders]);
 
   const loadData = useCallback(async () => {
     setError("");

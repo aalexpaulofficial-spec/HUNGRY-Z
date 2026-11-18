@@ -989,6 +989,8 @@ html[data-theme="dark"] .hz-orders-keyboard .hz-pos-key-cancel { border-color: #
 .hz-owner-settings-profile > button { grid-column: 1 / -1; display: inline-flex; min-height: 2.5rem; align-items: center; justify-content: center; gap: .45rem; border: 1px solid var(--border); border-radius: 999px; background: var(--card); color: var(--foreground); font-size: .68rem; font-weight: 700; }
 .hz-owner-settings-profile > button:hover { background: var(--ink-soft); }
 .hz-owner-settings-profile > button svg { width: .9rem; height: .9rem; }
+.hz-owner-settings-profile > button.is-logout { border-color: color-mix(in srgb, var(--primary) 35%, var(--border)); color: var(--primary); }
+.hz-owner-settings-profile > button.is-logout:hover { background: color-mix(in srgb, var(--primary) 8%, var(--card)); }
 .hz-analytics-revenue { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .7rem; margin-bottom: .85rem; }
 .hz-analytics-revenue article { display: flex; min-width: 0; align-items: center; gap: .75rem; border: 1px solid var(--border); border-radius: 1.15rem; background: var(--card); padding: .85rem; box-shadow: var(--hz-shadow-card); }
 .hz-analytics-revenue article.is-total { background: linear-gradient(125deg, var(--card), var(--ink-soft)); }
