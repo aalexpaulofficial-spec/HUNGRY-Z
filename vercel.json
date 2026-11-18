@@ -1,0 +1,23 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "hungryz.vercel.app" }],
+      "destination": "https://www.hungryz.in/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "hungry-campus-canteens-(?<deployment>.*)\\.vercel\\.app" }],
+      "destination": "https://www.hungryz.in/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "hungryz.in" }],
+      "destination": "https://www.hungryz.in/:path*",
+      "permanent": true
+    }
+  ]
+}
