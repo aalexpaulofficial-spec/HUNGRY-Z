@@ -1121,6 +1121,10 @@ html[data-theme="dark"] .hz-order-detail-action.is-primary { border-color: #f4f4
 .hz-global-loading-track { stroke: #dedede; }
 .hz-global-loading-progress { stroke: currentColor; stroke-dasharray: 470 622; stroke-linecap: round; transform-origin: 102px 102px; animation: hz-global-loading-spin 1.25s linear infinite; }
 .hz-global-loading-logo { width: 3.5rem; height: 3.5rem; aspect-ratio: 1; border-radius: 50%; object-fit: contain; }
+html[data-theme="light"] .hz-global-loading { background: #fff; color: #e60012; }
+html[data-theme="light"] .hz-global-loading-track { stroke: #f1c9cc; }
+html[data-theme="dark"] .hz-global-loading { background: #0f0f10; color: #ff1a1a; }
+html[data-theme="dark"] .hz-global-loading-track { stroke: #34343a; }
 @keyframes hz-global-loading-spin { to { transform: rotate(360deg); } }
 @keyframes hz-global-loading-enter { from { opacity: 0; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .hz-global-loading-progress { animation-duration: 6s; } .hz-global-loading.is-overlay { animation: none; } }
