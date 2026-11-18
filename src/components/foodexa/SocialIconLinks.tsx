@@ -8,7 +8,7 @@ const socialLinks = [
 
 export function SocialIconLinks({ className = "" }: { className?: string }) {
   return (
-    <div className={`flex items-center justify-center gap-3 ${className}`}>
+    <div className={`flex w-full items-center justify-center gap-3 ${className}`}>
       {socialLinks.map(({ label, href, src }) => (
         <a
           key={label}
