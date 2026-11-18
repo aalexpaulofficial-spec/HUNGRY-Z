@@ -88,9 +88,9 @@ describe("HUNGRY Z order email content", () => {
       expect(email.html).toContain('aria-label="Instagram"');
       expect(email.html).toContain('aria-label="WhatsApp Community"');
       expect(email.html).toContain('aria-label="LinkedIn"');
-      expect(email.html).toContain("https://www.hungryz.in/INSTAGRAM%201.png");
-      expect(email.html).toContain("https://www.hungryz.in/WHATSAPP%202.png");
-      expect(email.html).toContain("https://www.hungryz.in/LINKEDIN%203.png");
+      expect(email.html).toContain("https://www.hungryz.in/social-instagram-email.png");
+      expect(email.html).toContain("https://www.hungryz.in/social-whatsapp-email.png");
+      expect(email.html).toContain("https://www.hungryz.in/social-linkedin-email.png");
       expect(email.html).not.toContain("background-image");
       expect(email.html).toContain('width="32" height="32"');
       expect(email.html).toContain('width="64" height="64"');

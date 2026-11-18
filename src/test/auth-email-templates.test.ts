@@ -20,9 +20,9 @@ describe("branded Supabase Auth email templates", () => {
     expect(html).toContain("https://www.hungryz.in/HUNGRY%20Z%20Q%20LOGO.png");
     expect(html).toContain("HUNGRY Z</p>");
     expect(html).toContain("— Team HUNGRY Z");
-    expect(html).toContain("https://www.hungryz.in/INSTAGRAM%201.png");
-    expect(html).toContain("https://www.hungryz.in/WHATSAPP%202.png");
-    expect(html).toContain("https://www.hungryz.in/LINKEDIN%203.png");
+    expect(html).toContain("https://www.hungryz.in/social-instagram-email.png");
+    expect(html).toContain("https://www.hungryz.in/social-whatsapp-email.png");
+    expect(html).toContain("https://www.hungryz.in/social-linkedin-email.png");
     expect(html).toContain('href="https://www.hungryz.in/privacy" style="color:#555;text-decoration:underline">Privacy Policy</a>');
     expect(html).toContain('href="https://www.hungryz.in/" style="color:#555;text-decoration:underline">Terms &amp; Conditions</a>');
     expect(html).toContain('href="https://whatsapp.com/channel/0029Vb9EpYJ0G0XmfZmSme1H" aria-label="WhatsApp Community"');
