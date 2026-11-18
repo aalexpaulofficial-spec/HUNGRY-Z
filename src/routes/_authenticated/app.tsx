@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { QRCodeCanvas } from "qrcode.react";
 import { useServerFn } from "@tanstack/react-start";
-import { Home, UtensilsCrossed, Receipt, User, ScanLine, Plus, Minus, ShoppingBag, Clock, X, Check, LogOut, Repeat, MapPin, Store, Download, Ticket, ChevronRight } from "lucide-react";
+import { Home, UtensilsCrossed, Receipt, User, ScanLine, Plus, Minus, ShoppingBag, Clock, X, Check, LogOut, Repeat, MapPin, Store, Download, Ticket, ChevronDown, ChevronRight } from "lucide-react";
 import { CanteenTemplateBanner } from "@/components/foodexa/CanteenTemplateBanner";
 import { GlobalLoadingScreen } from "@/components/foodexa/GlobalLoadingScreen";
 import { FeedbackDialog } from "@/components/foodexa/FeedbackDialog";
@@ -439,17 +439,18 @@ function OrderingApp() {
               <p className="display truncate whitespace-nowrap text-lg tracking-[0.18em]">HUNGRY Z</p>
             </div>
           </div>
-          <div className="flex min-w-0 flex-1 items-center justify-end gap-2 sm:flex-initial">
+          <div className="hz-customer-header-actions flex min-w-0 flex-1 items-center justify-start gap-2 sm:flex-initial">
             <ThemeToggle />
             <button onClick={() => setSwitching(true)} className="hz-campus-switch glass flex min-w-0 flex-1 items-center gap-2 rounded-2xl px-3 py-2 sm:max-w-[55%] sm:flex-initial">
               <MapPin className="h-3.5 w-3.5 shrink-0 text-primary-bright" />
               <span className="min-w-0 truncate text-left"><span data-no-translate className="block truncate">{canteen.name}</span><span className={cn("mt-0.5 block text-[9px] font-bold", ordering ? "text-emerald-500" : "text-red-500")}>{ordering ? "OPEN — Accepting Orders" : "CLOSED — Not Accepting Orders"}</span></span>
+              <ChevronDown aria-hidden="true" className="h-4 w-4 shrink-0 text-muted-foreground" />
             </button>
           </div>
         </header>
 
         <div className={cn("hz-hours-banner mx-4 mb-5 rounded-2xl border px-4 py-3 text-xs sm:mx-7", ordering ? "border-border bg-card text-muted-foreground" : "border-red-500/30 bg-red-500/10 text-red-500")}>
-          <p>{ordering ? `Today's operating hours: ${describeTodayHours(canteen, availabilityNow)}` : canteen.availability_mode === "closed" ? "The owner has temporarily closed the canteen." : canteen.visibility === "maintenance" ? "The canteen is under maintenance." : nextOpen ? `Next opening: ${formatCanteenTime(nextOpen)}` : "The canteen is outside its operating hours."}</p>
+          <p className="text-left leading-relaxed">{ordering ? `Today's operating hours: ${describeTodayHours(canteen, availabilityNow)}` : canteen.availability_mode === "closed" ? "The owner has temporarily closed the canteen." : canteen.visibility === "maintenance" ? "The canteen is under maintenance." : nextOpen ? `Next opening: ${formatCanteenTime(nextOpen)}` : "The canteen is outside its operating hours."}</p>
         </div>
 
           <main key={tab} className="hz-customer-content px-4 sm:px-7">

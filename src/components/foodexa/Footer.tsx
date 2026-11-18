@@ -2,7 +2,8 @@ import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { LogoMark } from "@/components/foodexa/LogoMark";
 import { LegalDialog } from "@/components/foodexa/LegalDialog";
-import { privacyPolicy, termsConditions } from "@/content/legal";
+import { SocialIconLinks } from "@/components/foodexa/SocialIconLinks";
+import { privacyPolicy } from "@/content/legal";
 
 const groups = [
   ["Platform", ["For Students", "For Faculty", "Institutions", "Analytics"]],
@@ -16,14 +17,15 @@ const hrefMap: Record<string, string> = {
   Institutions: "#institutions",
   Analytics: "#analytics",
   Pricing: "#pricing",
-  FAQ: "#faq",
+  FAQ: "https://www.hungryz.in/#faq",
+  "Terms & Conditions": "https://www.hungryz.in/#faq",
   Login: "/auth?mode=login",
   Contact: "#start",
 };
 
 export function Footer() {
   const navigate = useNavigate();
-  const [legalPage, setLegalPage] = useState<"privacy" | "terms" | null>(null);
+  const [legalPage, setLegalPage] = useState<"privacy" | null>(null);
   const logoClicks = useRef(0);
   const clickReset = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -72,6 +74,7 @@ export function Footer() {
             SMART CAMPUS FOOD ORDERING
           </p>
           <p className="mt-8 display text-2xl text-primary-bright">₹0 platform fee. Always.</p>
+          <SocialIconLinks className="mt-5 justify-start" />
         </div>
 
         {groups.map(([title, items]) => (
@@ -82,10 +85,10 @@ export function Footer() {
             <ul className="mt-5 flex flex-col gap-3">
               {items.map((item) => (
                 <li key={item}>
-                  {item === "Privacy Policy" || item === "Terms & Conditions" ? (
+                  {item === "Privacy Policy" ? (
                     <button
                       type="button"
-                      onClick={() => setLegalPage(item === "Privacy Policy" ? "privacy" : "terms")}
+                      onClick={() => setLegalPage("privacy")}
                       className="text-left text-[13px] text-foreground/70 transition-colors duration-300 hover:text-primary-bright"
                     >
                       {item}
@@ -110,7 +113,7 @@ export function Footer() {
       </div>
       {legalPage && (
         <LegalDialog
-          legalDocument={legalPage === "privacy" ? privacyPolicy : termsConditions}
+          legalDocument={privacyPolicy}
           onClose={() => setLegalPage(null)}
         />
       )}

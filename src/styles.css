@@ -1939,6 +1939,8 @@ html[data-theme="light"] .hz-customer-app {
   .hz-customer-app .hz-customer-shell { padding-bottom: calc(6rem + env(safe-area-inset-bottom)); }
   .hz-customer-app .hz-customer-header { padding-inline: .9rem; }
   .hz-customer-app .hz-customer-header > div:first-child { min-height: 2.8rem; }
+  .hz-customer-app .hz-customer-header-actions { flex: 1 1 100%; justify-content: flex-start; }
+  .hz-customer-app .hz-campus-switch { flex: 0 1 auto; max-width: min(70%, 18rem); }
   .hz-customer-app .hz-customer-content { padding-inline: .8rem; }
   .hz-customer-app .hz-hours-banner { margin-inline: .8rem; }
   .hz-customer-app .hz-bottom-nav { inset-inline: .5rem; }
