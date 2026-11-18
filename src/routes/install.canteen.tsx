@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { ArrowDown, ArrowLeft, ChartNoAxesColumnIncreasing, ClipboardList, Utensils } from "lucide-react";
 import {
@@ -184,9 +184,9 @@ export function CanteenInstallPage() {
       </svg>
       <div className="relative mx-auto w-full max-w-5xl">
         <nav className="mb-5 sm:mb-7">
-          <a className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/25 px-4 py-2.5 text-sm font-medium text-white/70 transition hover:border-primary/45 hover:text-white" href="/">
+          <Link className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/25 px-4 py-2.5 text-sm font-medium text-white/70 transition hover:border-primary/45 hover:text-white" to="/">
             <ArrowLeft aria-hidden="true" className="h-4 w-4" /> Back to HUNGRY Z Website
-          </a>
+          </Link>
         </nav>
         <section className="hungry-install-card relative overflow-hidden rounded-[1.6rem] border border-primary/35 bg-[linear-gradient(140deg,rgba(25,10,11,0.95),rgba(7,7,7,0.98)_54%,rgba(18,7,8,0.96))] px-5 py-7 shadow-[0_24px_90px_rgba(0,0,0,0.5),0_0_55px_rgba(230,0,18,0.13)] sm:rounded-[2rem] sm:px-10 sm:py-10 lg:px-14 lg:py-12">
           <div aria-hidden="true" className="pointer-events-none absolute -right-24 -top-28 h-72 w-72 rounded-full bg-primary/10 blur-[90px]" />

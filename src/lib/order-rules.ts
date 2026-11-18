@@ -12,7 +12,7 @@ export const ORDER_TYPE_LABELS: Record<OrderType, string> = {
 };
 
 export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
-  razorpay: "UPI / Online Payment (Razorpay)",
+  razorpay: "UPI / Online Payment",
   counter: "Pay at counter",
 };
 

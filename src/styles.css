@@ -301,6 +301,10 @@ html[data-theme="light"] .hungry-install-page .hungry-install-card {
   background: linear-gradient(140deg, #fff, #fffafa 54%, #fff 100%) !important;
   box-shadow: 0 24px 70px rgb(0 0 0 / 10%), 0 0 45px rgb(230 0 18 / 7%);
 }
+html[data-theme="light"] .hungry-install-page .hungry-install-card h1 > span:last-child {
+  background-image: linear-gradient(90deg, var(--foreground), var(--primary)) !important;
+  -webkit-text-fill-color: transparent;
+}
 html[data-theme="light"] .hungry-install-page [class*="text-white"] { color: var(--foreground) !important; }
 html[data-theme="light"] .hungry-install-page button[class*="bg-primary"] { color: var(--primary-foreground) !important; }
 html[data-theme="light"] .hungry-install-page [class*="border-white"] { border-color: var(--border) !important; }
