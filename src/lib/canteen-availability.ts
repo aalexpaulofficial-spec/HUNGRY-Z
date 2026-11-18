@@ -48,7 +48,7 @@ function localParts(date: Date, timezone: string) {
 }
 
 function isWithinHours(hours: DayHours, minute: number) {
-  if (!hours) return false;
+  if (!hours || typeof hours.open !== "string" || typeof hours.close !== "string") return false;
   const [openHour, openMinute] = hours.open.split(":").map(Number);
   const [closeHour, closeMinute] = hours.close.split(":").map(Number);
   const opening = openHour! * 60 + openMinute!;
@@ -61,7 +61,7 @@ export function isCanteenAcceptingOrders(canteen: AvailabilitySettings | null | 
   if (canteen.availability_mode === "open") return true;
   if (canteen.availability_mode === "closed") return false;
   const parts = localParts(now, CANTEEN_TIMEZONE);
-  return isWithinHours(canteen.operating_hours[parts.weekday], parts.minute);
+  return isWithinHours(canteen.operating_hours?.[parts.weekday] ?? null, parts.minute);
 }
 
 function localDateToUtc(year: number, month: number, day: number, hour: number, minute: number, timezone: string) {
@@ -83,7 +83,7 @@ export function nextScheduledOpening(canteen: AvailabilitySettings, now = new Da
   const todayIndex = WEEKDAYS.findIndex(({ key }) => key === today.weekday);
   for (let offset = 0; offset <= 7; offset++) {
     const dayIndex = (todayIndex + offset) % 7;
-    const hours = canteen.operating_hours[WEEKDAYS[dayIndex]!.key];
+    const hours = canteen.operating_hours?.[WEEKDAYS[dayIndex]!.key];
     if (!hours) continue;
     const [hour, minute] = hours.open.split(":").map(Number);
     const date = new Date(Date.UTC(today.year, today.month - 1, today.day + offset, 12));
@@ -117,7 +117,7 @@ export function formatOperatingTime(value: string) {
 
 export function describeTodayHours(canteen: AvailabilitySettings, now = new Date()) {
   const { weekday } = localParts(now, CANTEEN_TIMEZONE);
-  const hours = canteen.operating_hours[weekday];
+  const hours = canteen.operating_hours?.[weekday];
   if (!hours) return "Closed today";
   if (hours.open === "00:00" && hours.close === "24:00") return "Open all day";
   return `${formatOperatingTime(hours.open)} – ${formatOperatingTime(hours.close)}`;

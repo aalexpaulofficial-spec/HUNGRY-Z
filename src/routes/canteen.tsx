@@ -218,12 +218,14 @@ function readOfflineMenu(canteenId: string): MenuItem[] {
 function readOfflinePOS(canteenId: string): OfflinePOSState {
   try {
     const saved = JSON.parse(localStorage.getItem(offlinePOSStorageKey(canteenId)) ?? "null") as Partial<OfflinePOSState> | null;
-    const validLine = (line: POSLine) => typeof line.id === "string" && typeof line.name === "string" && Number.isInteger(line.price) && line.price >= 0 && Number.isInteger(line.qty) && line.qty > 0;
+    const validLine = (line: unknown): line is POSLine => !!line && typeof line === "object" &&
+      "id" in line && typeof line.id === "string" && "name" in line && typeof line.name === "string" &&
+      "price" in line && Number.isInteger(line.price) && line.price >= 0 && "qty" in line && Number.isInteger(line.qty) && line.qty > 0;
     const paymentMethod = saved?.paymentMethod === "upi" || saved?.paymentMethod === "card" ? saved.paymentMethod : "cash";
     return {
       current: Array.isArray(saved?.current) ? saved.current.filter(validLine) : [],
-      held: Array.isArray(saved?.held) ? saved.held.filter((order) => typeof order.id === "string" && Array.isArray(order.lines) && order.lines.length > 0 && order.lines.every(validLine)) : [],
-      completed: Array.isArray(saved?.completed) ? saved.completed.filter((sale) => typeof sale.id === "string" && typeof sale.createdAt === "string" && Array.isArray(sale.lines) && sale.lines.every(validLine) && Number.isFinite(sale.total) && (sale.paymentMethod === "cash" || sale.paymentMethod === "upi" || sale.paymentMethod === "card") && (sale.paymentStatus === "paid" || sale.paymentStatus === "unpaid")) : [],
+      held: Array.isArray(saved?.held) ? saved.held.filter((order) => !!order && typeof order === "object" && typeof order.id === "string" && Array.isArray(order.lines) && order.lines.length > 0 && order.lines.every(validLine)) : [],
+      completed: Array.isArray(saved?.completed) ? saved.completed.filter((sale) => !!sale && typeof sale === "object" && typeof sale.id === "string" && typeof sale.createdAt === "string" && Array.isArray(sale.lines) && sale.lines.every(validLine) && Number.isFinite(sale.total) && (sale.paymentMethod === "cash" || sale.paymentMethod === "upi" || sale.paymentMethod === "card") && (sale.paymentStatus === "paid" || sale.paymentStatus === "unpaid")) : [],
       paymentMethod,
       paymentStatus: saved?.paymentStatus === "paid" ? "paid" : "unpaid",
     };

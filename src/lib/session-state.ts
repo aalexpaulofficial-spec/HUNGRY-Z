@@ -1,12 +1,14 @@
 import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
 
 /** Small route UI snapshots survive dashboard → secondary page → Back and refresh. */
-export function useSessionState<T>(key: string, initialValue: T): [T, Dispatch<SetStateAction<T>>] {
+export function useSessionState<T>(key: string, initialValue: T, isValid?: (value: unknown) => value is T): [T, Dispatch<SetStateAction<T>>] {
   const [value, setValue] = useState<T>(() => {
     if (typeof window === "undefined") return initialValue;
     try {
       const saved = window.sessionStorage.getItem(key);
-      return saved == null ? initialValue : (JSON.parse(saved) as T);
+      if (saved == null) return initialValue;
+      const parsed: unknown = JSON.parse(saved);
+      return !isValid || isValid(parsed) ? parsed : initialValue;
     } catch {
       return initialValue;
     }

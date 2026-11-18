@@ -82,6 +82,21 @@ type Profile = { id: string; full_name: string; role: string; registration_numbe
 type Canteen = { id: string; name: string; university_name: string; campus_location: string; visibility: string; is_active: boolean; availability_mode: "schedule" | "open" | "closed"; operating_hours: WeeklyHours; timezone: string };
 type CanteenTemplate = { canteen_id: string; banner_image_url: string | null; heading: string; description: string; banner_crop_x: number; banner_crop_y: number; banner_crop_zoom: number; updated_at?: string };
 type CartLine = { item: MenuItem; qty: number };
+function isSavedCart(value: unknown): value is CartLine[] {
+  return Array.isArray(value) && value.every((line) => {
+    if (!line || typeof line !== "object") return false;
+    const record = line as Record<string, unknown>;
+    const item = record.item;
+    if (!item || typeof item !== "object") return false;
+    const savedItem = item as Record<string, unknown>;
+    return typeof savedItem.id === "string" && typeof savedItem.canteen_id === "string" &&
+      typeof savedItem.name === "string" && typeof savedItem.description === "string" && typeof savedItem.image === "string" &&
+      typeof savedItem.price === "number" && Number.isFinite(savedItem.price) && savedItem.price >= 0 && typeof savedItem.category === "string" && typeof savedItem.veg === "boolean" &&
+      typeof savedItem.prep_minutes === "number" && Number.isFinite(savedItem.prep_minutes) && typeof savedItem.counter === "string" && (typeof savedItem.tag === "string" || savedItem.tag === null) &&
+      typeof savedItem.available === "boolean" && (savedItem.stock === null || (typeof savedItem.stock === "number" && Number.isFinite(savedItem.stock))) &&
+      typeof record.qty === "number" && Number.isInteger(record.qty) && record.qty > 0;
+  });
+}
 type Order = {
   id: string; user_id: string; order_number: string; pickup_code: string; customer_name: string; canteen_name?: string; lines: { name: string; qty: number; price: number }[];
   subtotal: number; discount: number; total: number; coupon_code: string | null; payment: string; payment_method: string; payment_status: string;
@@ -104,7 +119,7 @@ function OrderingApp() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [tab, setTab] = useSessionState<Tab>("hungry-student-dashboard-tab", "home");
   const [menuCategory, setMenuCategory] = useState("All");
-  const [cart, setCart] = useSessionState<CartLine[]>("hungry-student-dashboard-cart", []);
+  const [cart, setCart] = useSessionState<CartLine[]>("hungry-student-dashboard-cart", [], isSavedCart);
   const [detail, setDetail] = useState<MenuItem | null>(null);
   const [checkout, setCheckout] = useState(false);
   const [openOrderId, setOpenOrderId] = useSessionState<string | null>("hungry-student-dashboard-order", null);
