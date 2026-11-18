@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { BackButton, useBackNavigationEnabled, useBackStep } from "@/lib/back-nav";
 import { GlobalLoadingScreen } from "@/components/foodexa/GlobalLoadingScreen";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { flushSync } from "react-dom";
 import { z } from "zod";
@@ -442,8 +442,11 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
   const [activeOrderCount, setActiveOrderCount] = useState(0);
   const [eventUpdateNotice, setEventUpdateNotice] = useState(false);
   const [menu, setMenu] = useState<MenuItem[]>(() => readOfflineMenu(canteen.id));
+  const [menuActionError, setMenuActionError] = useState("");
+  const [menuSaving, setMenuSaving] = useState(false);
+  const [pendingMenuMutations, setPendingMenuMutations] = useState<Set<string>>(() => new Set());
   const [orders, setOrders] = useState<Order[]>([]);
-  const [todayOnlineSales, setTodayOnlineSales] = useState<{ created_at: string; total: number; status: string; payment_status: string }[] | null>(null);
+  const [todayOnlineSales, setTodayOnlineSales] = useState<{ id: string; created_at: string; total: number; status: string; payment_status: string }[] | null>(null);
   const [todayOnlineSalesError, setTodayOnlineSalesError] = useState(false);
   const [posState, setPOSState] = useState(() => readOfflinePOS(canteen.id));
   const offlineSyncLock = useRef(false);
@@ -482,22 +485,24 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
   const [canteenCodeCopied, setCanteenCodeCopied] = useState(false);
   const [printJob, setPrintJob] = useState<ActiveReceiptPrint | null>(null);
 
-  const orderStatusCounts = {
+  const orderStatusCounts = useMemo(() => ({
     all: orders.length,
     placed: orders.filter((order) => order.status === "placed").length,
     preparing: orders.filter((order) => order.status === "preparing").length,
     ready: orders.filter((order) => order.status === "ready").length,
     completed: orders.filter((order) => order.status === "collected").length,
     cancelled: orders.filter((order) => order.status === "cancelled").length,
-  };
-  const filteredOrders = orders.filter((order) => {
-    const statusMatches = orderStatusFilter === "all"
-      || (orderStatusFilter === "completed" ? order.status === "collected" : order.status === orderStatusFilter);
+  }), [orders]);
+  const filteredOrders = useMemo(() => {
     const query = orderSearch.trim().toLocaleLowerCase();
-    const searchMatches = !query || [order.order_number, order.customer_name, order.pickup_code, order.payment_method, order.payment_status, ...order.lines.map((line) => line.name)]
-      .some((value) => value.toLocaleLowerCase().includes(query));
-    return statusMatches && searchMatches;
-  });
+    return orders.filter((order) => {
+      const statusMatches = orderStatusFilter === "all"
+        || (orderStatusFilter === "completed" ? order.status === "collected" : order.status === orderStatusFilter);
+      const searchMatches = !query || [order.order_number, order.customer_name, order.pickup_code, order.payment_method, order.payment_status, ...order.lines.map((line) => line.name)]
+        .some((value) => value.toLocaleLowerCase().includes(query));
+      return statusMatches && searchMatches;
+    });
+  }, [orders, orderStatusFilter, orderSearch]);
   const selectedOrder = selectedOrderId === "" ? null : filteredOrders.find((order) => order.id === selectedOrderId) ?? (selectedOrderId === null ? filteredOrders[0] ?? null : null);
   const [printing, setPrinting] = useState(false);
   const printLock = useRef(false);
@@ -550,11 +555,10 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
   }, [canteen.id, posState]);
 
   useEffect(() => {
-    if (menu.length) {
-      try { localStorage.setItem(offlineMenuStorageKey(canteen.id), JSON.stringify(menu)); }
-      catch { setPOSMessage("The menu could not be saved for offline POS on this device."); }
-    }
-  }, [canteen.id, menu]);
+    if (menuSaving || pendingMenuMutations.size > 0) return;
+    try { localStorage.setItem(offlineMenuStorageKey(canteen.id), JSON.stringify(menu)); }
+    catch { setPOSMessage("The menu could not be saved for offline POS on this device."); }
+  }, [canteen.id, menu, menuSaving, pendingMenuMutations]);
 
   useEffect(() => {
     const syncPending = async () => {
@@ -641,7 +645,7 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
       .on("postgres_changes", { event: "*", schema: "public", table: "faculty_event_capacity_requests" }, () => { void refreshPendingEventRequests(); })
       .on("postgres_changes", { event: "*", schema: "public", table: "faculty_events", filter: `canteen_id=eq.${canteen.id}` }, () => { setEventUpdateNotice(true); void refreshPendingEventRequests(); })
       .subscribe();
-    const retry = window.setInterval(() => void refreshPendingEventRequests(), 15000);
+    const retry = window.setInterval(() => void refreshPendingEventRequests(), 60000);
     return () => { window.clearInterval(retry); void supabase.removeChannel(channel); };
   }, [canteen.id, refreshPendingEventRequests]);
 
@@ -901,14 +905,40 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
     loadMenu();
     loadOrders();
     loadTemplate();
+    let hasConnected = false;
     const ch = supabase
       .channel(`canteen-${canteen.id}-${uid()}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "menu_items", filter: `canteen_id=eq.${canteen.id}` }, loadMenu)
-      .on("postgres_changes", { event: "*", schema: "public", table: "orders", filter: `canteen_id=eq.${canteen.id}` }, loadOrders)
+      .on("postgres_changes", { event: "*", schema: "public", table: "menu_items", filter: `canteen_id=eq.${canteen.id}` }, (payload) => {
+        const id = String((payload.eventType === "DELETE" ? payload.old : payload.new)?.id ?? "");
+        if (!id) return;
+        if (payload.eventType === "DELETE") setMenu((current) => current.filter((item) => item.id !== id));
+        else {
+          const changed = payload.new as MenuItem;
+          setMenu((current) => [...current.filter((item) => item.id !== changed.id), changed].sort((a, b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name)));
+        }
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "orders", filter: `canteen_id=eq.${canteen.id}` }, (payload) => {
+        const id = String((payload.eventType === "DELETE" ? payload.old : payload.new)?.id ?? "");
+        if (!id) return;
+        if (payload.eventType === "DELETE") setOrders((current) => current.filter((order) => order.id !== id));
+        else {
+          const changed = payload.new as Order;
+          setOrders((current) => [changed, ...current.filter((order) => order.id !== changed.id)].sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 100));
+        }
+        void refreshActiveOrderCount();
+      })
       .on("postgres_changes", { event: "*", schema: "public", table: "canteen_templates", filter: `canteen_id=eq.${canteen.id}` }, loadTemplate)
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "canteens", filter: `id=eq.${canteen.id}` }, (payload) => setAvailability(payload.new as Canteen))
-      .subscribe();
-    const orderCountRetry = window.setInterval(() => void refreshActiveOrderCount(), 15000);
+      .subscribe((status) => {
+        if (status !== "SUBSCRIBED") return;
+        if (hasConnected) {
+          void loadMenu();
+          void loadOrders();
+          void loadTemplate();
+        }
+        hasConnected = true;
+      });
+    const orderCountRetry = window.setInterval(() => void refreshActiveOrderCount(), 60000);
     return () => {
       window.clearInterval(orderCountRetry);
       supabase.removeChannel(ch);
@@ -918,18 +948,18 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
   useEffect(() => {
     if (tab !== "overview") return;
     let active = true;
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 1);
     setTodayOnlineSales(null);
     setTodayOnlineSalesError(false);
     const loadTodaySales = async () => {
-      const start = new Date();
-      start.setHours(0, 0, 0, 0);
-      const end = new Date(start);
-      end.setDate(end.getDate() + 1);
-      const rows: { created_at: string; total: number; status: string; payment_status: string }[] = [];
+      const rows: { id: string; created_at: string; total: number; status: string; payment_status: string }[] = [];
       try {
         for (let offset = 0; ; offset += 1000) {
           const { data, error } = await supabase.from("orders")
-            .select("created_at,total,status,payment_status")
+            .select("id,created_at,total,status,payment_status")
             .eq("canteen_id", canteen.id)
             .gte("created_at", start.toISOString())
             .lt("created_at", end.toISOString())
@@ -946,17 +976,37 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
       }
     };
     void loadTodaySales();
+    let hasConnected = false;
     const channel = supabase.channel(`canteen-overview-sales-${canteen.id}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "orders", filter: `canteen_id=eq.${canteen.id}` }, () => { void loadTodaySales(); })
-      .subscribe();
+      .on("postgres_changes", { event: "*", schema: "public", table: "orders", filter: `canteen_id=eq.${canteen.id}` }, (payload) => {
+        const row = payload.new as { id: string; created_at: string; total: number; status: string; payment_status: string };
+        const rowId = String((payload.eventType === "DELETE" ? payload.old : payload.new)?.id ?? "");
+        if (!rowId) return;
+        setTodayOnlineSales((current) => {
+          if (!current) return current;
+          const inToday = payload.eventType !== "DELETE" && new Date(row.created_at) >= start && new Date(row.created_at) < end;
+          const remaining = current.filter((order) => order.id !== rowId);
+          return inToday ? [...remaining, row].sort((a, b) => a.created_at.localeCompare(b.created_at)) : remaining;
+        });
+      })
+      .subscribe((status) => {
+        if (status !== "SUBSCRIBED") return;
+        if (hasConnected) void loadTodaySales();
+        hasConnected = true;
+      });
     return () => { active = false; void supabase.removeChannel(channel); };
   }, [canteen.id, tab]);
 
   async function updateAvailability(settings: AvailabilitySettings) {
+    const previous = availability;
+    setAvailability((current) => ({ ...current, availability_mode: settings.availability_mode, operating_hours: settings.operating_hours }));
     setAvailabilitySaving(true);
     try {
       const saved = await saveAvailability({ data: { availabilityMode: settings.availability_mode, operatingHours: settings.operating_hours } });
       setAvailability((current) => ({ ...current, ...saved, availability_mode: saved.availability_mode as Canteen["availability_mode"], operating_hours: saved.operating_hours as unknown as Canteen["operating_hours"] }));
+    } catch (error) {
+      setAvailability(previous);
+      throw error;
     } finally {
       setAvailabilitySaving(false);
     }
@@ -1020,6 +1070,7 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
 
   async function save(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (menuSaving) return;
     setErr("");
     const fd = new FormData(e.currentTarget);
     const row = {
@@ -1038,6 +1089,12 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
     };
     if (!row.name || !Number.isFinite(row.price) || row.price < 0) return setErr("Enter a name and a valid price.");
     if (row.stock !== null && !Number.isFinite(row.stock)) return setErr("Stock must be a number, or empty for unlimited.");
+    const previous = editing?.id ? menu.find((item) => item.id === editing.id) : undefined;
+    const optimisticId = editing?.id ?? `pending-${uid()}`;
+    const optimisticItem = { ...row, id: optimisticId, image: foodImagePreview ?? row.image } as MenuItem;
+    setMenu((current) => [...current.filter((item) => item.id !== optimisticId), optimisticItem].sort((a, b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name)));
+    setMenuActionError("");
+    setMenuSaving(true);
     let uploadedPath: string | null = null;
     try {
       if (foodImageFile) {
@@ -1048,8 +1105,8 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
           "image/avif": "avif",
         };
         const extension = mimeToExtension[foodImageFile.type];
-        if (!extension) return setErr("Choose a JPG, PNG, WEBP, or AVIF food image.");
-        if (foodImageFile.size > 8 * 1024 * 1024) return setErr("Food images must be 8 MB or smaller.");
+        if (!extension) throw new Error("Choose a JPG, PNG, WEBP, or AVIF food image.");
+        if (foodImageFile.size > 8 * 1024 * 1024) throw new Error("Food images must be 8 MB or smaller.");
         const uploadTarget = await prepareMenuImageUpload({
           data: {
             canteenId: canteen.id,
@@ -1070,16 +1127,54 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
         : await supabase.from("menu_items").insert(row).select().single();
       if (result.error) throw new Error(`Could not save the menu item: ${result.error.message}`);
       const savedItem = result.data as MenuItem;
-      setMenu((current) => editing?.id
-        ? current.map((item) => item.id === savedItem.id ? savedItem : item)
-        : [...current, savedItem]);
+      setMenu((current) => [...current.filter((item) => item.id !== optimisticId && item.id !== savedItem.id), savedItem].sort((a, b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name)));
     } catch (e) {
       if (uploadedPath) await supabase.storage.from("canteen-menu-images").remove([uploadedPath]);
+      setMenu((current) => editing?.id
+        ? [...current.filter((item) => item.id !== editing.id), ...(previous ? [previous] : [])].sort((a, b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name))
+        : current.filter((item) => item.id !== optimisticId));
+      setMenuActionError(e instanceof Error ? e.message : "Could not save the menu item. Please try again.");
       return setErr(e instanceof Error ? e.message : "Could not save the menu item. Please try again.");
+    } finally {
+      setMenuSaving(false);
     }
     setEditing(null);
     setFoodImageFile(null);
     setFoodImagePreview(null);
+  }
+
+  async function toggleMenuAvailability(item: MenuItem) {
+    if (pendingMenuMutations.has(item.id)) return;
+    const nextAvailable = !item.available;
+    setPendingMenuMutations((current) => new Set(current).add(item.id));
+    setMenuActionError("");
+    setMenu((current) => current.map((entry) => entry.id === item.id ? { ...entry, available: nextAvailable } : entry));
+    try {
+      const { error } = await supabase.from("menu_items").update({ available: nextAvailable }).eq("id", item.id).select("id").single();
+      if (error) throw error;
+    } catch (error) {
+      setMenu((current) => current.map((entry) => entry.id === item.id ? { ...entry, available: item.available } : entry));
+      setMenuActionError(`Could not update ${item.name}: ${error instanceof Error ? error.message : "Please try again."}`);
+    } finally {
+      setPendingMenuMutations((current) => { const next = new Set(current); next.delete(item.id); return next; });
+    }
+  }
+
+  async function deleteMenuItem(item: MenuItem) {
+    if (!window.confirm(`Remove ${item.name}?`)) return;
+    if (pendingMenuMutations.has(item.id)) return;
+    setPendingMenuMutations((current) => new Set(current).add(item.id));
+    setMenuActionError("");
+    setMenu((current) => current.filter((entry) => entry.id !== item.id));
+    try {
+      const { error } = await supabase.from("menu_items").delete().eq("id", item.id).select("id").single();
+      if (error) throw error;
+    } catch (error) {
+      setMenu((current) => [...current.filter((entry) => entry.id !== item.id), item].sort((a, b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name)));
+      setMenuActionError(`Could not remove ${item.name}: ${error instanceof Error ? error.message : "Please try again."}`);
+    } finally {
+      setPendingMenuMutations((current) => { const next = new Set(current); next.delete(item.id); return next; });
+    }
   }
 
   return (
@@ -1299,7 +1394,7 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
           <div className="mt-6"><EventCapacityPanel mode="canteen" canteenId={canteen.id} canteenName={canteen.name} /></div>
         ) : tab === "menu" ? (
           <div className="mt-6">
-            <button onClick={() => { setFoodImageFile(null); setFoodImagePreview(null); setEditing({ veg: true, available: true }); }} className="flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-xs font-semibold text-primary-foreground"><Plus className="h-4 w-4" /> Add item</button>
+            <button disabled={menuSaving} onClick={() => { setErr(""); setFoodImageFile(null); setFoodImagePreview(null); setEditing({ veg: true, available: true }); }} className="flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-xs font-semibold text-primary-foreground disabled:opacity-60"><Plus className="h-4 w-4" /> Add item</button>
             {editing && (
               <form key={editing.id ?? "new"} onSubmit={save} className="glass-red mt-4 grid gap-3 rounded-3xl p-5 sm:grid-cols-2">
                 <input name="name" defaultValue={editing.name} placeholder="Item name" className={field} />
@@ -1334,11 +1429,12 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
                 </div>
                 {err && <p className="text-xs text-primary-bright sm:col-span-2">{err}</p>}
                 <div className="flex gap-2 sm:col-span-2">
-                  <button className="rounded-full bg-primary px-6 py-2.5 text-xs font-semibold text-primary-foreground">Save</button>
-                  <button type="button" onClick={() => { setEditing(null); setFoodImageFile(null); setFoodImagePreview(null); }} className="rounded-full border border-border px-6 py-2.5 text-xs text-muted-foreground">Cancel</button>
+                  <button disabled={menuSaving} className="rounded-full bg-primary px-6 py-2.5 text-xs font-semibold text-primary-foreground disabled:opacity-60">{menuSaving ? "Saving…" : "Save"}</button>
+                  <button type="button" disabled={menuSaving} onClick={() => { setEditing(null); setFoodImageFile(null); setFoodImagePreview(null); }} className="rounded-full border border-border px-6 py-2.5 text-xs text-muted-foreground disabled:opacity-60">Cancel</button>
                 </div>
               </form>
             )}
+            {menuActionError && <p role="alert" className="mt-3 rounded-xl border border-primary/30 bg-primary/10 p-3 text-xs text-primary-bright">{menuActionError}</p>}
             <div className="mt-5 space-y-3">
               {!menu.length && <p className="rounded-3xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">Your menu is empty. Add your first item — it goes live for customers instantly.</p>}
               {menu.map((m) => (
@@ -1348,9 +1444,9 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
                     <p className="truncate text-sm font-semibold">{m.name}</p>
                     <p className="text-xs text-muted-foreground"><span>{m.category}</span> · ₹{m.price} · {m.prep_minutes}m{m.stock != null && <> · {m.stock} <span>in stock</span></>}</p>
                   </div>
-                  <button onClick={() => supabase.from("menu_items").update({ available: !m.available }).eq("id", m.id).then(() => {})} className={cn("rounded-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest", m.available ? "bg-chart-4/20 text-chart-4" : "bg-muted text-muted-foreground")}>{m.available ? "Available" : "Sold out"}</button>
-                  <button aria-label="Edit" onClick={() => { setFoodImageFile(null); setFoodImagePreview(null); setEditing(m); }} className="grid h-8 w-8 place-items-center rounded-full border border-border"><Pencil className="h-3.5 w-3.5" /></button>
-                  <button aria-label="Delete" onClick={() => { if (confirm(`Remove ${m.name}?`)) void supabase.from("menu_items").delete().eq("id", m.id).then(() => {}); }} className="grid h-8 w-8 place-items-center rounded-full border border-border"><Trash2 className="h-3.5 w-3.5" /></button>
+                  <button disabled={pendingMenuMutations.has(m.id)} onClick={() => void toggleMenuAvailability(m)} className={cn("rounded-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest disabled:opacity-60", m.available ? "bg-chart-4/20 text-chart-4" : "bg-muted text-muted-foreground")}>{m.available ? "Available" : "Sold out"}</button>
+                  <button disabled={menuSaving} aria-label={`Edit ${m.name}`} onClick={() => { setFoodImageFile(null); setFoodImagePreview(null); setEditing(m); }} className="grid h-8 w-8 place-items-center rounded-full border border-border disabled:opacity-50"><Pencil className="h-3.5 w-3.5" /></button>
+                  <button disabled={pendingMenuMutations.has(m.id)} aria-label={`Delete ${m.name}`} onClick={() => void deleteMenuItem(m)} className="grid h-8 w-8 place-items-center rounded-full border border-border disabled:opacity-50"><Trash2 className="h-3.5 w-3.5" /></button>
                 </div>
               ))}
             </div>

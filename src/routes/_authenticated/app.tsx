@@ -199,12 +199,28 @@ function OrderingApp() {
     };
     loadMenu();
     loadTemplate();
+    let hasConnected = false;
     const ch = supabase
       .channel(`menu-${canteenId}-${uid()}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "menu_items", filter: `canteen_id=eq.${canteenId}` }, loadMenu)
+      .on("postgres_changes", { event: "*", schema: "public", table: "menu_items", filter: `canteen_id=eq.${canteenId}` }, (payload) => {
+        const id = String((payload.eventType === "DELETE" ? payload.old : payload.new)?.id ?? "");
+        if (!id) return;
+        if (payload.eventType === "DELETE") setMenu((current) => current.filter((item) => item.id !== id));
+        else {
+          const changed = payload.new as MenuItem;
+          setMenu((current) => [...current.filter((item) => item.id !== changed.id), changed].sort((a, b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name)));
+        }
+      })
       .on("postgres_changes", { event: "*", schema: "public", table: "canteen_templates", filter: `canteen_id=eq.${canteenId}` }, loadTemplate)
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "canteens", filter: `id=eq.${canteenId}` }, (p) => setCanteen((c) => (c ? { ...c, ...(p.new as Canteen) } : c)))
-      .subscribe();
+      .subscribe((status) => {
+        if (status !== "SUBSCRIBED") return;
+        if (hasConnected) {
+          void loadMenu();
+          void loadTemplate();
+        }
+        hasConnected = true;
+      });
     return () => {
       alive = false;
       supabase.removeChannel(ch);
@@ -226,7 +242,7 @@ function OrderingApp() {
     const channel = supabase.channel(`published-event-count-${canteenId}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "faculty_events", filter: `canteen_id=eq.${canteenId}` }, loadPublishedEvents)
       .subscribe();
-    const retry = window.setInterval(() => void loadPublishedEvents(), 15000);
+    const retry = window.setInterval(() => void loadPublishedEvents(), 60000);
     return () => { alive = false; window.clearInterval(retry); void supabase.removeChannel(channel); };
   }, [canteenId, getPublishedEventCount]);
 
@@ -272,19 +288,41 @@ function OrderingApp() {
     };
     load();
     loadRefunds();
+    let hasConnected = false;
     const ch = supabase
       .channel(`my-orders-${uid()}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "orders", filter: `user_id=eq.${userId}` }, (payload) => {
-        const updatedOrder = payload.new as Order;
-        if (payload.eventType === "UPDATE" && updatedOrder.user_id === userId) {
-          queueThankYou([updatedOrder]);
-          queueFoodReceipt([updatedOrder]);
+        const changed = payload.new as Order;
+        const changedId = String((payload.eventType === "DELETE" ? payload.old : payload.new)?.id ?? "");
+        if (!changedId) return;
+        if (payload.eventType === "UPDATE" && changed.user_id === userId) {
+          queueThankYou([changed]);
+          queueFoodReceipt([changed]);
         }
-        if (payload.eventType === "UPDATE") setQrOrder((current) => current?.id === updatedOrder.id ? { ...current, ...updatedOrder } : current);
-        void load();
+        if (payload.eventType === "DELETE") {
+          setOrders((current) => current.filter((order) => order.id !== changedId));
+          return;
+        }
+        setOrders((current) => [changed, ...current.filter((order) => order.id !== changed.id)].sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 50));
+        if (payload.eventType === "UPDATE") setQrOrder((current) => current?.id === changed.id ? { ...current, ...changed } : current);
       })
-      .on("postgres_changes", { event: "*", schema: "public", table: "refunds", filter: `user_id=eq.${userId}` }, loadRefunds)
-      .subscribe();
+      .on("postgres_changes", { event: "*", schema: "public", table: "refunds", filter: `user_id=eq.${userId}` }, (payload) => {
+        const changedId = String((payload.eventType === "DELETE" ? payload.old : payload.new)?.id ?? "");
+        if (!changedId) return;
+        if (payload.eventType === "DELETE") setRefunds((current) => current.filter((refund) => refund.id !== changedId));
+        else {
+          const changed = payload.new as Refund;
+          setRefunds((current) => [changed, ...current.filter((refund) => refund.id !== changed.id)].sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 50));
+        }
+      })
+      .subscribe((status) => {
+        if (status !== "SUBSCRIBED") return;
+        if (hasConnected) {
+          void load();
+          void loadRefunds();
+        }
+        hasConnected = true;
+      });
     return () => {
       supabase.removeChannel(ch);
     };
@@ -416,8 +454,7 @@ function OrderingApp() {
           <p>{ordering ? `Today's operating hours: ${describeTodayHours(canteen, availabilityNow)}` : canteen.availability_mode === "closed" ? "The owner has temporarily closed the canteen." : canteen.visibility === "maintenance" ? "The canteen is under maintenance." : nextOpen ? `Next opening: ${formatCanteenTime(nextOpen)}` : "The canteen is outside its operating hours."}</p>
         </div>
 
-        <AnimatePresence mode="wait">
-          <motion.main key={tab} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.25 }} className="hz-customer-content px-4 sm:px-7">
+          <main key={tab} className="hz-customer-content px-4 sm:px-7">
             {tab === "home" && <HomeTab menu={liveMenu} canteen={canteen} template={canteenTemplate} onOpen={setDetail} onAdd={add} goMenu={(category) => { if (category) setMenuCategory(category); setTab("menu"); }} />}
             {tab === "menu" && <MenuTab menu={liveMenu} onOpen={setDetail} onAdd={add} selectedCategory={menuCategory} onCategoryChange={setMenuCategory} />}
             {tab === "events" && (profile.role === "faculty"
@@ -426,8 +463,7 @@ function OrderingApp() {
             {tab === "orders" && <OrdersTab orders={orders} onOpen={(o) => setOpenOrderId(o.id)} />}
             {tab === "scan" && canUseHungryAi(profile.role) && <ScannerTab userId={profile.id} />}
             {tab === "you" && <YouTab profile={profile} canteen={canteen} onSwitch={() => setSwitching(true)} onSignOut={signOut} />}
-          </motion.main>
-        </AnimatePresence>
+          </main>
 
         {count > 0 && !checkout && (
           <motion.button initial={{ y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }} onClick={() => setCheckout(true)} className="fixed inset-x-4 bottom-24 z-40 mx-auto flex max-w-[calc(48rem-2rem)] min-w-0 items-center justify-between gap-3 rounded-full bg-primary px-4 py-4 text-primary-foreground shadow-[var(--shadow-cinema)] sm:px-6">

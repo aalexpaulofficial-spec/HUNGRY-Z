@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Camera, Check, ChevronDown, ImageUp, Loader2, Lock, ScanLine, Sparkles, SwitchCamera, Upload, X } from "lucide-react";
-import { GlobalLoadingScreen } from "@/components/foodexa/GlobalLoadingScreen";
 import { getScannerAccess, scanFood, updateFoodScan } from "@/lib/scanner.functions";
 import { STUDENT_SCANNER_PLANS } from "@/lib/scanner";
 import { cn } from "@/lib/utils";
@@ -65,7 +64,7 @@ export function ScannerTab({ userId }: { userId?: string }) {
     const channel = supabase.channel(`hungry-ai-usage-${userId}`)
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "orders", filter: `user_id=eq.${userId}` }, refreshAccess)
       .subscribe();
-    const retry = window.setInterval(() => void refreshAccess(), 15000);
+    const retry = window.setInterval(() => void refreshAccess(), 60000);
     return () => { window.clearInterval(retry); void supabase.removeChannel(channel); };
   }, [refreshAccess, userId]);
   useEffect(() => () => { streamRef.current?.getTracks().forEach((track) => track.stop()); }, []);
@@ -119,7 +118,7 @@ export function ScannerTab({ userId }: { userId?: string }) {
     finally { setCorrectionBusy(null); }
   }
 
-  if (!access) return <GlobalLoadingScreen tone="student" />;
+  if (!access) return <div role="status" aria-busy="true" className="scanner-card mx-auto w-full max-w-3xl p-6 text-center text-sm text-muted-foreground">Checking HUNGRY AI access…</div>;
   if (!access.ok) return <div className="scanner-card p-6 text-center text-sm text-muted-foreground">{access.message}</div>;
   const livePlan = STUDENT_SCANNER_PLANS.find((plan) => plan.status === "live")!;
   return <div className="scanner-shell mx-auto flex w-full max-w-3xl flex-col gap-5 pb-6">
