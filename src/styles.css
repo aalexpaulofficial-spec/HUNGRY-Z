@@ -1911,8 +1911,10 @@ html[data-theme="dark"] .hz-printer-test:hover:not(:disabled) { background: #ddd
   width: 2.15rem;
   box-shadow: 0 4px 12px rgb(230 0 18 / 20%);
 }
-.hz-menu-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: stretch; gap: .75rem; }
-@media (min-width: 640px) { .hz-menu-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; } }
+.hz-menu-page { min-width: 0; }
+.hz-menu-grid { display: grid; width: 100%; min-width: 0; box-sizing: border-box; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: stretch; gap: 1rem; padding-inline: .2rem; }
+.hz-menu-grid > .hz-food-card { width: 100%; min-width: 0; }
+@media (min-width: 640px) { .hz-menu-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (min-width: 1024px) { .hz-menu-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 .hz-customer-app .hz-menu-page > div:first-child h1 { font-size: clamp(1.85rem, 7vw, 2.35rem); }
 .hz-customer-app .hz-menu-page > input { border-radius: 999px; background: #fff; }

@@ -11,7 +11,7 @@ import { CanteenTemplatePreview } from "@/components/foodexa/CanteenTemplatePrev
 import { CanteenTemplateBanner } from "@/components/foodexa/CanteenTemplateBanner";
 import { OrderStatusBadge, orderStatusBorderClass } from "@/components/foodexa/OrderStatusBadge";
 import { DEFAULT_BANNER_CROP, normalizeBannerCrop } from "@/lib/banner-crop";
-import { createCanteenMenuImageUpload, getCanteenOwnerAccess, ownerRecordConfirmedBillPrint, ownerUpdateOrderStatus, saveCanteenAvailability } from "@/lib/hungry.functions";
+import { createCanteenBannerUpload, createCanteenMenuImageUpload, getCanteenOwnerAccess, ownerRecordConfirmedBillPrint, ownerUpdateOrderStatus, saveCanteenAvailability } from "@/lib/hungry.functions";
 import { ORDER_TYPE_LABELS, orderPaymentMethodLabel, orderPaymentStatusLabel, type OrderType } from "@/lib/order-rules";
 import { ORDER_LABELS, type MenuItem } from "@/lib/access";
 import { foodImage } from "@/lib/foodexa-images";
@@ -511,6 +511,7 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
   const [availability, setAvailability] = useState(canteen);
   const [availabilitySaving, setAvailabilitySaving] = useState(false);
   const prepareMenuImageUpload = useServerFn(createCanteenMenuImageUpload);
+  const prepareBannerImageUpload = useServerFn(createCanteenBannerUpload);
   const move = useServerFn(ownerUpdateOrderStatus);
   const recordConfirmedPrint = useServerFn(ownerRecordConfirmedBillPrint);
   const saveAvailability = useServerFn(saveCanteenAvailability);
@@ -1028,17 +1029,20 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
         const extension = BANNER_IMAGE_TYPES[templateImage.type];
         if (!extension) throw new Error("Choose a JPG, PNG, WebP, or AVIF banner image.");
         if (templateImage.size > 8 * 1024 * 1024) throw new Error("Banner images must be 8 MB or smaller.");
-        const { data: userData, error: userError } = await supabase.auth.getUser();
-        if (userError || !userData.user) throw new Error("Sign in again before changing your canteen template.");
-        uploadedPath = `${canteen.id}/${crypto.randomUUID()}.${extension}`;
+        const uploadTarget = await prepareBannerImageUpload({
+          data: {
+            canteenId: canteen.id,
+            contentType: templateImage.type as "image/jpeg" | "image/png" | "image/webp" | "image/avif",
+          },
+        });
+        uploadedPath = uploadTarget.path;
         const storage = supabase.storage.from("canteen-home-banners");
-        const { error: uploadError } = await storage.upload(uploadedPath, templateImage, {
+        const { error: uploadError } = await storage.uploadToSignedUrl(uploadedPath, uploadTarget.token, templateImage, {
           cacheControl: "3600",
           contentType: templateImage.type,
-          upsert: false,
         });
         if (uploadError) throw new Error(`Could not upload the banner image: ${uploadError.message}`);
-        bannerImageUrl = storage.getPublicUrl(uploadedPath).data.publicUrl;
+        bannerImageUrl = uploadTarget.publicUrl;
       }
       const { data, error } = await supabase
         .from("canteen_templates")

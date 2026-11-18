@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { QRCodeCanvas } from "qrcode.react";
 import { useServerFn } from "@tanstack/react-start";
-import { Home, UtensilsCrossed, Receipt, User, ScanLine, Plus, Minus, ShoppingBag, Clock, X, Check, LogOut, Repeat, MapPin, Store, Download, Ticket, Search, SlidersHorizontal, ChevronRight } from "lucide-react";
+import { Home, UtensilsCrossed, Receipt, User, ScanLine, Plus, Minus, ShoppingBag, Clock, X, Check, LogOut, Repeat, MapPin, Store, Download, Ticket, ChevronRight } from "lucide-react";
 import { CanteenTemplateBanner } from "@/components/foodexa/CanteenTemplateBanner";
 import { GlobalLoadingScreen } from "@/components/foodexa/GlobalLoadingScreen";
 import { FeedbackDialog } from "@/components/foodexa/FeedbackDialog";
@@ -50,7 +50,6 @@ import {
 } from "@/lib/order-rules";
 import { openRazorpay, type CheckoutParams } from "@/lib/razorpay-checkout";
 import { cn } from "@/lib/utils";
-import { LanguageSelect, localizeDashboard, useDashboardLanguage } from "@/lib/dashboard-language";
 import { clearSessionState, useSessionState } from "@/lib/session-state";
 import { privacyPolicy, termsConditions } from "@/content/legal";
 import { downloadOrderBillPdf } from "@/lib/order-bill-pdf";
@@ -98,8 +97,6 @@ function OrderingApp() {
   const navigate = useNavigate();
   const { orderId: qrOrderId } = Route.useSearch();
   const [profile, setProfile] = useState<Profile | null | undefined>(undefined);
-  const { language, saveLanguage } = useDashboardLanguage(profile?.id);
-  useEffect(() => localizeDashboard(document.body, language), [language]);
   const [canteen, setCanteen] = useState<Canteen | null>(null);
   const [menuLoadedFor, setMenuLoadedFor] = useState<string | null>(null);
   const [canteenTemplate, setCanteenTemplate] = useState<CanteenTemplate | null>(null);
@@ -448,7 +445,6 @@ function OrderingApp() {
               <MapPin className="h-3.5 w-3.5 shrink-0 text-primary-bright" />
               <span className="min-w-0 truncate text-left"><span data-no-translate className="block truncate">{canteen.name}</span><span className={cn("mt-0.5 block text-[9px] font-bold", ordering ? "text-emerald-500" : "text-red-500")}>{ordering ? "OPEN — Accepting Orders" : "CLOSED — Not Accepting Orders"}</span></span>
             </button>
-            <LanguageSelect language={language} onChange={saveLanguage} />
           </div>
         </header>
 
@@ -700,20 +696,8 @@ export function HomeTab({ menu, canteen, template, onOpen, onAdd, goMenu }: { me
   if (!menu.length) return <div className="space-y-8 pt-2">{templateBanner}<Empty title="Your canteen is getting ready" text={`${canteen.name} hasn't published its menu yet. It will appear here live as soon as it does.`} /></div>;
   const featured = menu.filter((m) => m.tag);
   const quick = menu.filter((m) => m.prep_minutes <= 8);
-  const categories = Array.from(new Set(menu.map((item) => item.category))).slice(0, 4);
-  const categoryEmoji = (category: string) => /drink|beverage|juice|coffee/i.test(category) ? "🥤" : /dessert|sweet|cake|ice.?cream/i.test(category) ? "🍰" : /snack|starter|side/i.test(category) ? "🥪" : /breakfast/i.test(category) ? "🍳" : /meal|lunch|dinner|main/i.test(category) ? "🍛" : "🍽️";
   return (
       <div className="hz-home-page pt-2">
-      <div className="hz-discover-search-row">
-        <button type="button" onClick={() => goMenu()} className="hz-discover-search" aria-label="Search dishes">
-          <Search className="h-4 w-4 shrink-0" />
-          <span>Search dishes</span>
-          <span className="hz-discover-search-filter"><SlidersHorizontal className="h-4 w-4" /></span>
-        </button>
-      </div>
-      <nav className="hz-category-rail" aria-label="Menu categories">
-        {categories.map((category) => <button key={category} type="button" onClick={() => goMenu(category)} className="hz-category-chip"><span aria-hidden="true">{categoryEmoji(category)}</span><span data-no-translate>{category}</span></button>)}
-      </nav>
       {templateBanner}
       <section className="hz-home-section">
         <div className="hz-home-section-heading"><h2>{featured.length ? "Today's picks" : "On the menu"}</h2><button type="button" onClick={() => goMenu()} aria-label="See all dishes">See all <ChevronRight className="h-3.5 w-3.5" /></button></div>
