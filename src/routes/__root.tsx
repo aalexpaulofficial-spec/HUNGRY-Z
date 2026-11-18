@@ -119,7 +119,7 @@ function RootShell({ children }: { children: ReactNode }) {
     <html lang="en" data-theme="dark" suppressHydrationWarning>
       <head>
         <HeadContent />
-        <script>{`try { var hungryPath = location.pathname; var hungryCanteenApp = /^\\/canteen(?:\\/|$)/.test(hungryPath); var hungryInstallPage = hungryPath === "/install/canteen"; var hungryThemeKey = hungryCanteenApp ? "hungry-canteen-theme" : "hungry-theme"; if (hungryInstallPage) { document.documentElement.dataset.theme = "dark"; localStorage.setItem("hungry-theme", "dark"); } else { var hungryTheme = localStorage.getItem(hungryThemeKey); if (hungryTheme === "light" || hungryTheme === "dark") document.documentElement.dataset.theme = hungryTheme; else if (/^\\/(?:app|canteen)(?:\\/|$)/.test(hungryPath)) document.documentElement.dataset.theme = "light"; } } catch {}`}</script>
+        <script>{`try { var hungryPath = location.pathname; var hungryCanteenApp = /^\\/canteen(?:\\/|$)/.test(hungryPath); var hungryInstallPage = hungryPath === "/install/canteen"; var hungryCanteenLaunch = hungryCanteenApp && new URLSearchParams(location.search).get("hungry_app") === "canteen"; var hungryStandalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true; var hungryThemeKey = hungryCanteenApp ? "hungry-canteen-theme" : "hungry-theme"; if (hungryInstallPage) { document.documentElement.dataset.theme = "dark"; localStorage.setItem("hungry-theme", "dark"); } else if (hungryCanteenLaunch || (hungryStandalone && hungryCanteenApp)) { document.documentElement.dataset.theme = "light"; localStorage.setItem("hungry-canteen-theme", "light"); document.querySelector('meta[name="theme-color"]')?.setAttribute("content", "#ffffff"); } else { var hungryTheme = localStorage.getItem(hungryThemeKey); if (hungryTheme === "light" || hungryTheme === "dark") document.documentElement.dataset.theme = hungryTheme; else if (/^\\/(?:app|canteen)(?:\\/|$)/.test(hungryPath)) document.documentElement.dataset.theme = "light"; } } catch {}`}</script>
         {/* Capture Chrome's one-shot install event before the hydrated app bundle loads. */}
         <script src="/pwa-install-capture.js" />
       </head>
@@ -173,7 +173,11 @@ function RootComponent() {
     const app = appFromUrl;
     if (standalone && (app === "student" || app === "canteen")) {
       markAppInstalled(app, true);
-      const themeColor = app === "student" ? "#e60012" : "#050505";
+      if (app === "canteen") {
+        document.documentElement.dataset.theme = "light";
+        try { window.localStorage.setItem("hungry-canteen-theme", "light"); } catch { /* Use the boot-time white theme if storage is unavailable. */ }
+      }
+      const themeColor = app === "student" ? "#e60012" : "#ffffff";
       document.querySelector('meta[name="theme-color"]')?.setAttribute("content", themeColor);
     }
   }, [appFromUrl, hasAppLaunchMarker]);

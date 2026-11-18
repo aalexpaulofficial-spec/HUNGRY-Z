@@ -119,7 +119,11 @@ export function CanteenInstallPage() {
   }, []);
 
   async function handleInstall() {
-    if (installed || installInProgress.current) return;
+    if (installed) {
+      window.location.assign("/canteen?hungry_app=canteen");
+      return;
+    }
+    if (installInProgress.current) return;
     const promptEvent = getDeferredInstallPrompt("canteen");
     if (!promptEvent) {
       if (installAvailability === "checking") return;
@@ -216,12 +220,12 @@ export function CanteenInstallPage() {
 
             <button
               className="mt-6 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-full bg-primary px-6 py-4 text-sm font-bold text-white shadow-[0_8px_26px_rgba(230,0,18,0.28)] transition hover:bg-primary-bright disabled:cursor-default disabled:opacity-80 sm:mt-8 sm:text-base"
-              disabled={installed || installing || installAvailability === "checking"}
+              disabled={installing || (!installed && installAvailability === "checking")}
               onClick={() => void handleInstall()}
               type="button"
             >
-              {installed ? "Already Installed" : installing ? "Opening install prompt…" : installAvailability === "checking" ? "Preparing install prompt…" : "Install Canteen Dashboard"}
-              {!installed && <ArrowDown aria-hidden="true" className="h-5 w-5" />}
+              {installed ? "Open Canteen Dashboard" : installing ? "Opening install prompt…" : installAvailability === "checking" ? "Preparing install prompt…" : "Install Canteen Dashboard"}
+              {installed ? <ArrowLeft aria-hidden="true" className="h-5 w-5 rotate-180" /> : <ArrowDown aria-hidden="true" className="h-5 w-5" />}
             </button>
             {status && <p className="mt-4 text-center text-sm leading-relaxed text-white/60" role="status">{status}</p>}
             <p className="mt-5 text-center text-xs leading-relaxed text-white/45">After installation, open HUNGRY Z Canteen Dashboard from your home screen and sign in with your owner ID and password code.</p>

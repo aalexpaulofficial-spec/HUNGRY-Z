@@ -145,7 +145,13 @@ export function BackButton({ inline = false }: { inline?: boolean }) {
   }, [inline, setInline, enabled]);
   if (ctx?.enabled === false || pathname === "/") return null;
   if (!inline && (ctx?.inline ?? 0) > 0) return null;
-  const goBack = () => { void navigateBack(router, pathname, ctx?.stack.current ?? []); };
+  const goBack = () => {
+    if (pathname === "/install/canteen") {
+      void router.navigate({ to: "/", replace: true });
+      return;
+    }
+    void navigateBack(router, pathname, ctx?.stack.current ?? []);
+  };
   return (
     <button type="button" onClick={goBack} aria-label="Go back" className={inline ? "back-btn back-btn-inline" : "back-btn back-btn-float"}>
       <ArrowLeft className="h-5 w-5" strokeWidth={2.5} />

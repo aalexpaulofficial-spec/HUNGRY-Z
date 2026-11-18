@@ -93,6 +93,12 @@ function CanteenPage() {
       const access = await ownerAccess({ data: {} });
       if (access.status !== "approved") {
         setCanteen(null);
+        if (access.status === "missing") {
+          await supabase.auth.signOut();
+          setOwnerUserId(null);
+          setState("auth");
+          return;
+        }
         setState(access.status);
         return;
       }
@@ -105,7 +111,13 @@ function CanteenPage() {
       const c = (rows?.[0] as Canteen | undefined) ?? null;
       setCanteen(c);
       if (c) localStorage.setItem(`hungry:offline-canteen:${sessionUser.id}`, JSON.stringify({ ownerUserId: sessionUser.id, canteen: c }));
-      setState(c ? "ok" : "missing");
+      if (!c) {
+        await supabase.auth.signOut();
+        setOwnerUserId(null);
+        setState("auth");
+        return;
+      }
+      setState("ok");
     } catch (e) {
       try {
         const { data } = await supabase.auth.getSession();
@@ -157,30 +169,27 @@ function CanteenPage() {
         ) : (
           <span className="mb-8 flex items-center justify-center gap-2 display text-[15px] tracking-[0.3em]" aria-label="HUNGRY Z"><img src="/HUNGRY%20Z%20Q%20LOGO.png" alt="" className="h-10 w-10 rounded-full object-contain" />HUNGRY Z</span>
         )}
-        {state !== "ok" && state !== "error" && <div className="mb-5 flex justify-center"><HeroInstallButton app="canteen" /></div>}
+        {!isStandaloneApp() && state !== "ok" && state !== "error" && <div className="mb-5 flex justify-center"><HeroInstallButton app="canteen" /></div>}
         <div className="glass-red anim-rise rounded-[2rem] p-6 sm:p-8">
           <p className="text-xs font-semibold uppercase tracking-widest text-primary-bright">Canteen Dashboard</p>
-          {state === "auth" ? (
+          {state === "auth" || state === "missing" ? (
             <div className="mt-4 space-y-4">
               <h1 className="display text-2xl">Canteen Owner Login</h1>
               <CanteenOwnerLoginForm initialError={err} onRegister={() => {
                 window.location.href = isStandaloneApp() ? "/register-canteen?hungry_app=canteen" : "/register-canteen";
               }} />
             </div>
-          ) : state === "pending" || state === "rejected" || state === "missing" ? (
+          ) : state === "pending" || state === "rejected" ? (
             <div className="mt-4 space-y-4">
               <h1 className="display text-2xl">
-                {state === "pending" ? "Application under review" : state === "rejected" ? "Application rejected" : "Application not found"}
+                {state === "pending" ? "Application under review" : "Application rejected"}
               </h1>
               <p className="text-sm text-muted-foreground">
                 {state === "pending"
                   ? "Your canteen application is under review. We'll email you when it has been reviewed."
-                  : state === "rejected"
-                    ? "Your canteen application was rejected. No rejection reason is available here; contact HUNGRY Z support for details."
-                    : "No approved canteen is linked to this account. Sign in with your 7-character Canteen Owner ID and Owner Password Code."}
+                  : "Your canteen application was rejected. No rejection reason is available here; contact HUNGRY Z support for details."}
               </p>
-              {state === "missing" && <a href="/register-canteen" className="block text-xs font-semibold text-primary-bright underline">Register your canteen</a>}
-              <button type="button" onClick={signOut} className="w-full rounded-full border border-border py-3 text-sm text-muted-foreground hover:text-foreground">Use another account</button>
+              <button type="button" onClick={signOut} className="w-full rounded-full border border-border py-3 text-sm text-muted-foreground hover:text-foreground">Return to owner login</button>
             </div>
           ) : state === "error" ? (
             <div className="mt-4 space-y-4">

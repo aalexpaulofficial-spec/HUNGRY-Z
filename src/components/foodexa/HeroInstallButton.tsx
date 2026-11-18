@@ -110,7 +110,10 @@ export function HeroInstallButton({ app }: { app: HungryApp; dedicatedInstallPag
   async function handleDownload(event: MouseEvent<HTMLButtonElement>) {
     event.preventDefault();
     if (app === "canteen") {
-      if (installed) return;
+      if (installed) {
+        window.location.assign("/canteen?hungry_app=canteen");
+        return;
+      }
       window.location.assign("/install/canteen");
       return;
     }
@@ -170,13 +173,13 @@ export function HeroInstallButton({ app }: { app: HungryApp; dedicatedInstallPag
       ) : (
         <button
           type="button"
-          aria-label={installed ? "Already Installed" : app === "student" && installAvailability === "checking" ? "Checking HUNGRY Z install availability" : app === "student" && installAvailability === "guide" ? "Show the HUNGRY Z installation guide" : label.ariaLabel}
-          disabled={(app === "student" && !installed && installAvailability === "checking") || (app === "canteen" && installed)}
+          aria-label={installed ? app === "canteen" ? "Open Canteen Dashboard" : "Already Installed" : app === "student" && installAvailability === "checking" ? "Checking HUNGRY Z install availability" : app === "student" && installAvailability === "guide" ? "Show the HUNGRY Z installation guide" : label.ariaLabel}
+          disabled={app === "student" && !installed && installAvailability === "checking"}
           onClick={(event) => void handleDownload(event)}
           className="group inline-flex min-w-0 max-w-full shrink items-center justify-center gap-2 whitespace-normal rounded-full border border-primary/60 bg-background px-4 py-3.5 text-center text-[13px] font-semibold leading-tight text-foreground transition-all duration-300 hover:scale-[1.03] hover:border-primary hover:shadow-[0_0_30px_-4px_var(--primary-bright)] disabled:cursor-default disabled:opacity-80 sm:whitespace-nowrap sm:px-6 sm:text-sm"
         >
           {installed ? <ArrowRight aria-hidden="true" className="h-4 w-4" /> : <Download aria-hidden="true" className="h-4 w-4" />}
-          {installed ? "Already Installed" : app === "student" && installAvailability === "checking" ? "Preparing HUNGRY Z install…" : app === "student" && installAvailability === "guide" ? "Install HUNGRY Z" : label.download}
+          {installed ? app === "canteen" ? "Open Dashboard" : "Already Installed" : app === "student" && installAvailability === "checking" ? "Preparing HUNGRY Z install…" : app === "student" && installAvailability === "guide" ? "Install HUNGRY Z" : label.download}
         </button>
       )}
       {app === "student" && showInstalledDialog && <AlreadyInstalledDialog onClose={() => setShowInstalledDialog(false)} />}
