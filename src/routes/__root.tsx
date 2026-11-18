@@ -121,7 +121,7 @@ function RootShell({ children }: { children: ReactNode }) {
     <html lang="en" data-theme="dark" suppressHydrationWarning>
       <head>
         <HeadContent />
-        <script>{`try { var hungryTheme = localStorage.getItem("hungry-theme"); if (hungryTheme === "light" || hungryTheme === "dark") document.documentElement.dataset.theme = hungryTheme; else if (/^\\/(?:app|canteen)(?:\\/|$)/.test(location.pathname)) document.documentElement.dataset.theme = "light"; } catch {}`}</script>
+        <script>{`try { if (/^\\/app(?:\\/|$)/.test(location.pathname)) document.documentElement.dataset.theme = "light"; else { var hungryTheme = localStorage.getItem("hungry-theme"); if (hungryTheme === "light" || hungryTheme === "dark") document.documentElement.dataset.theme = hungryTheme; else if (/^\\/canteen(?:\\/|$)/.test(location.pathname)) document.documentElement.dataset.theme = "light"; } } catch {}`}</script>
         {/* Capture Chrome's one-shot install event before the hydrated app bundle loads. */}
         <script src="/pwa-install-capture.js" />
       </head>

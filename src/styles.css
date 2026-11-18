@@ -1811,8 +1811,8 @@ html[data-theme="dark"] .hz-printer-test:hover:not(:disabled) { background: #ddd
 }
 .hz-category-chip:active > span:first-child { border-color: #ffb39f; background: #fff0e9; }
 .hz-customer-app .hz-customer-template-banner > [data-testid="canteen-template-banner"] {
-  aspect-ratio: 1.55 / 1;
-  min-height: 16.5rem;
+  aspect-ratio: 1.8 / 1;
+  min-height: 15.5rem;
   max-height: min(27rem, 48svh);
   border: 0;
   border-radius: 1.4rem;
@@ -1933,7 +1933,7 @@ html[data-theme="light"] .hz-customer-app {
   .hz-customer-app .hz-bottom-nav { inset-inline: .5rem; }
   .hz-customer-app .hz-bottom-nav button { font-size: 7.3px; }
   .hz-customer-app .hz-food-card-feature { width: min(79vw, 20rem); }
-  .hz-customer-app .hz-customer-template-banner > [data-testid="canteen-template-banner"] { aspect-ratio: 1.27 / 1; min-height: 16rem; max-height: min(24rem, 47svh); }
+  .hz-customer-app .hz-customer-template-banner > [data-testid="canteen-template-banner"] { aspect-ratio: 1.5 / 1; min-height: 15rem; max-height: min(24rem, 47svh); }
   .hz-customer-app .hz-customer-template-banner .hz-template-dashboard-copy { width: 93%; padding: 1.1rem; }
   .hz-customer-app .hz-customer-content .grid.grid-cols-2 { gap: .68rem; }
 }
