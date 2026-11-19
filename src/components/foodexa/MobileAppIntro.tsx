@@ -50,9 +50,8 @@ export function MobileAppIntro({ onContinue }: { onContinue: () => void }) {
   useEffect(() => {
     if (!segmentLoaded || animationError || navigationStartedRef.current) return;
     const timer = window.setTimeout(() => {
-      if (segmentIndex >= INTRO_SEGMENTS.length - 1) return;
       setSegmentLoaded(false);
-      setSegmentIndex((index) => index + 1);
+      setSegmentIndex((index) => (index + 1) % INTRO_SEGMENTS.length);
     }, segment.frames * INTRO_FRAME_DURATION_MS);
     return () => window.clearTimeout(timer);
   }, [animationError, segment.frames, segmentIndex, segmentLoaded]);
@@ -89,6 +88,11 @@ export function MobileAppIntro({ onContinue }: { onContinue: () => void }) {
 
   return (
     <main className="fixed inset-0 z-[100] min-h-[100dvh] overflow-hidden bg-black text-white">
+      <header className="pointer-events-none absolute inset-x-0 top-0 z-20 flex justify-center px-4 pt-[max(1.25rem,env(safe-area-inset-top))]">
+        <span className="rounded-full border border-white/15 bg-black/55 px-5 py-2 text-sm font-extrabold tracking-[0.32em] text-white shadow-lg backdrop-blur-sm">
+          HUNGRY Z
+        </span>
+      </header>
       <img
         key={`${segmentIndex}-${animationAttempt}`}
         alt="HUNGRY Z introduction"

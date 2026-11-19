@@ -144,6 +144,8 @@ function RootComponent() {
   const appFromUrl = new URLSearchParams(searchStr).get("hungry_app");
   const hasAppLaunchMarker = appFromUrl === "student" || appFromUrl === "canteen";
   const [standaloneApp, setStandaloneApp] = useState(false);
+  const studentAppContext = pathname === "/app" || pathname.startsWith("/app/") || (pathname === "/auth" && isInstalledMobileStudentApp());
+  const loadingTone = studentAppContext ? "student" : pathname === "/canteen" || pathname.startsWith("/canteen/") ? "canteen" : "website";
 
   useEffect(() => {
     const recoverFromStaleBundle = (event: Event) => {
@@ -222,7 +224,7 @@ function RootComponent() {
       <BackProvider disabled={standaloneApp && pathname !== "/privacy" && pathname !== "/terms"}>
         {pathname !== "/canteen" && <BackButton />}
         <Outlet />
-        <GlobalLoadingScreen overlay tone={pathname === "/app" || pathname.startsWith("/app/") ? "student" : pathname === "/canteen" || pathname.startsWith("/canteen/") ? "canteen" : "website"} visible={showRouteLoader} />
+        <GlobalLoadingScreen overlay tone={loadingTone} visible={showRouteLoader} />
         {showStudentIntro && <MobileAppIntro onContinue={() => {
           studentIntroDismissedRef.current = true;
           setShowStudentIntro(false);

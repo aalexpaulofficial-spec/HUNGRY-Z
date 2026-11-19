@@ -55,6 +55,10 @@ function AuthPage() {
   }, []);
 
   useEffect(() => {
+    setMode(initial ?? "signup");
+  }, [initial]);
+
+  useEffect(() => {
     if (!backendConfigured) return;
     supabase.auth.getUser().then(({ data }) => {
       if (data.user) navigate({ to: "/app", search: orderId ? { orderId } : {}, replace: true });
