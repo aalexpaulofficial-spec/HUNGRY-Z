@@ -107,6 +107,28 @@ type Order = {
 type Refund = { id: string; order_id: string; amount: number; status: string; admin_note: string | null; created_at: string };
 type Tab = "home" | "menu" | "events" | "orders" | "you" | "scan";
 const uid = () => Math.random().toString(36).slice(2);
+const pendingPaymentOrderKey = (userId: string) => `hungry:pending-payment-order:${userId}`;
+const PENDING_PAYMENT_ORDER_TTL = 24 * 60 * 60 * 1000;
+
+function savePendingPaymentOrder(userId: string, orderId: string) {
+  try { localStorage.setItem(pendingPaymentOrderKey(userId), JSON.stringify({ orderId, createdAt: Date.now() })); }
+  catch { /* The live checkout still works if browser storage is unavailable. */ }
+}
+
+function readPendingPaymentOrder(userId: string) {
+  try {
+    const key = pendingPaymentOrderKey(userId);
+    const value = JSON.parse(localStorage.getItem(key) ?? "null") as { orderId?: unknown; createdAt?: unknown } | null;
+    if (typeof value?.orderId === "string" && typeof value.createdAt === "number" && Date.now() - value.createdAt >= 0 && Date.now() - value.createdAt < PENDING_PAYMENT_ORDER_TTL) return value.orderId;
+    if (value) localStorage.removeItem(key);
+  } catch { /* Storage is optional; normal order history remains available. */ }
+  return null;
+}
+
+function clearPendingPaymentOrder(userId: string) {
+  try { localStorage.removeItem(pendingPaymentOrderKey(userId)); }
+  catch { /* Storage is optional. */ }
+}
 
 function OrderingApp() {
   const navigate = useNavigate();
@@ -260,6 +282,49 @@ function OrderingApp() {
   }, [canteenId, getPublishedEventCount]);
 
   const userId = profile?.id;
+  const refreshOwnOrder = useCallback(async (orderId: string) => {
+    if (!userId) throw new Error("Please sign in again to view this order.");
+    const { order } = await getOwnOrder({ data: { orderId } });
+    if (order.user_id !== userId) throw new Error("Order not found or unavailable for this account.");
+    const freshOrder = order as Order;
+    setQrOrder(freshOrder);
+    setOrders((current) => [freshOrder, ...current.filter((existing) => existing.id !== freshOrder.id)].sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 50));
+    if (freshOrder.status !== "pending_payment") clearPendingPaymentOrder(userId);
+    return freshOrder;
+  }, [getOwnOrder, userId]);
+
+  useEffect(() => {
+    if (!userId || qrOrderId) return;
+    const orderId = readPendingPaymentOrder(userId);
+    if (!orderId) return;
+    let active = true;
+    let loading = false;
+    const recoverOrder = async () => {
+      if (!active || loading || document.visibilityState === "hidden") return;
+      loading = true;
+      setTab("orders");
+      setOpenOrderId(orderId);
+      setQrOrderMessage("Checking your payment and loading live order tracking…");
+      try {
+        await refreshOwnOrder(orderId);
+        if (active) setQrOrderMessage("");
+      } catch {
+        if (active) setQrOrderMessage("We couldn't load the latest order status. Check your connection and try again from Orders.");
+      } finally {
+        loading = false;
+      }
+    };
+    const onResume = () => { if (document.visibilityState !== "hidden") void recoverOrder(); };
+    void recoverOrder();
+    window.addEventListener("focus", onResume);
+    document.addEventListener("visibilitychange", onResume);
+    return () => {
+      active = false;
+      window.removeEventListener("focus", onResume);
+      document.removeEventListener("visibilitychange", onResume);
+    };
+  }, [qrOrderId, refreshOwnOrder, setOpenOrderId, setTab, userId]);
+
   useEffect(() => {
     setThankYouQueue([]);
     dismissedThankYouOrderIds.current.clear();
@@ -506,17 +571,25 @@ function OrderingApp() {
           ordering={ordering}
           closedMessage={canteen.availability_mode === "closed" ? "The owner has temporarily closed this canteen." : canteen.visibility === "maintenance" ? "The canteen is under maintenance." : `The canteen is outside its operating hours (${describeTodayHours(canteen, availabilityNow)} IST).`}
           onAdd={add}
+          onPaymentStarting={(id) => { if (userId) savePendingPaymentOrder(userId, id); }}
           onPlaced={(id, msg) => {
             setCart([]);
             setCheckout(false);
             setNotice(msg ?? "");
             setTab("orders");
+            setQrOrder(null);
+            setQrOrderMessage("Loading live order tracking…");
             setOpenOrderId(id);
+            void refreshOwnOrder(id).then(() => setQrOrderMessage("")).catch(() => setQrOrderMessage("The order was placed, but its latest status could not be loaded. Check your connection and open it again from Orders."));
           }}
         />
       </Sheet>
       <Sheet open={!!openOrderId} onClose={closeOrderDetails}>
-        {openOrder ? <OrderDetail order={openOrder} canteenName={openOrder.canteen_name ?? (openOrder.canteen_id === canteen.id ? canteen.name : "Canteen")} refund={refunds.find((r) => r.order_id === openOrder.id) ?? null} notice={notice} onNotice={setNotice} /> : (
+        {openOrder ? <OrderDetail order={openOrder} canteenName={openOrder.canteen_name ?? (openOrder.canteen_id === canteen.id ? canteen.name : "Canteen")} refund={refunds.find((r) => r.order_id === openOrder.id) ?? null} notice={notice} onNotice={setNotice} onOrderUpdated={(updated) => {
+          setOrders((current) => [updated, ...current.filter((existing) => existing.id !== updated.id)].sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 50));
+          setQrOrder(updated);
+          if (userId && updated.status !== "pending_payment") clearPendingPaymentOrder(userId);
+        }} /> : (
           <div className="p-8 text-center text-sm text-muted-foreground" role="status">{qrOrderMessage || "Loading order details…"}</div>
         )}
       </Sheet>
@@ -843,7 +916,7 @@ function useRazorpayPay() {
   );
 }
 
-function Checkout({ cart, subtotal, ordering, closedMessage, onAdd, onPlaced }: { cart: CartLine[]; subtotal: number; ordering: boolean; closedMessage: string; onAdd: (i: MenuItem, d: number) => void; onPlaced: (id: string, message?: string) => void }) {
+function Checkout({ cart, subtotal, ordering, closedMessage, onAdd, onPlaced, onPaymentStarting }: { cart: CartLine[]; subtotal: number; ordering: boolean; closedMessage: string; onAdd: (i: MenuItem, d: number) => void; onPlaced: (id: string, message?: string) => void; onPaymentStarting: (id: string) => void }) {
   const place = useServerFn(placeOrder);
   const quote = useServerFn(quoteOrder);
   const cfgFn = useServerFn(getPaymentConfig);
@@ -927,6 +1000,7 @@ function Checkout({ cart, subtotal, ordering, closedMessage, onAdd, onPlaced }: 
       const r = await place({ data: { lines, orderType, paymentMethod: method, couponCode: applied?.code ?? null, idempotencyKey: idemKey } });
       const emailNotice = r.emailSent === false ? " The email update could not be delivered yet; contact hungryofficialx@gmail.com if you need help." : "";
       if (!r.payment) return onPlaced(r.orderId, `Order placed. Pay at the counter when you pick it up.${emailNotice}`);
+      onPaymentStarting(r.orderId);
       const res = await pay(r.payment);
       onPlaced(r.orderId, `${res.message}${emailNotice}`);
     } catch (e) {
@@ -1086,7 +1160,7 @@ function QrOrderPage({ orderId, order, message }: { orderId: string; order: Orde
         </header>
         <div className="overflow-hidden rounded-3xl border border-border bg-card shadow-[var(--shadow-cinema)]">
           {currentOrder ? (
-            <OrderDetail order={currentOrder} canteenName={currentOrder.canteen_name ?? "Canteen"} refund={null} notice={notice} onNotice={setNotice} />
+            <OrderDetail order={currentOrder} canteenName={currentOrder.canteen_name ?? "Canteen"} refund={null} notice={notice} onNotice={setNotice} onOrderUpdated={setCurrentOrder} />
           ) : (
             <p className="p-8 text-center text-sm text-muted-foreground" role="status">{message || "Loading secure order details…"}</p>
           )}
@@ -1096,8 +1170,9 @@ function QrOrderPage({ orderId, order, message }: { orderId: string; order: Orde
   );
 }
 
-function OrderDetail({ order, canteenName, refund, notice, onNotice }: { order: Order; canteenName: string; refund: Refund | null; notice: string; onNotice: (m: string) => void }) {
+function OrderDetail({ order, canteenName, refund, notice, onNotice, onOrderUpdated }: { order: Order; canteenName: string; refund: Refund | null; notice: string; onNotice: (m: string) => void; onOrderUpdated?: (order: Order) => void }) {
   const resume = useServerFn(resumePayment);
+  const reloadOrder = useServerFn(getOwnOrderDetails);
   const cancel = useServerFn(cancelPendingOrder);
   const askRefund = useServerFn(requestRefund);
   const pay = useRazorpayPay();
@@ -1141,6 +1216,16 @@ function OrderDetail({ order, canteenName, refund, notice, onNotice }: { order: 
     }
   }
 
+  async function payPendingOrder() {
+    const result = await pay(await resume({ data: { orderId: order.id } }));
+    onNotice(result.message);
+    try {
+      const { order: freshOrder } = await reloadOrder({ data: { orderId: order.id } });
+      onOrderUpdated?.(freshOrder as Order);
+    } catch { /* Keep the visible status; realtime updates can still refresh it. */ }
+    return result.message;
+  }
+
   return (
     <div className="p-4 sm:p-6">
       <div className="flex items-end justify-between gap-3">
@@ -1168,7 +1253,7 @@ function OrderDetail({ order, canteenName, refund, notice, onNotice }: { order: 
           <p className="mt-1 text-xs text-muted-foreground">The kitchen starts once Razorpay confirms your payment. Unpaid orders are cancelled after 30 minutes.</p>
           <p className="mt-2 text-xs text-muted-foreground">If money was deducted but this order is still not confirmed, do not pay again. Email <a href="mailto:hungryofficialx@gmail.com" className="text-primary-bright underline">hungryofficialx@gmail.com</a> with your Order ID and payment reference or UPI transaction ID.</p>
           <div className="mt-4 flex flex-wrap gap-2">
-            <button disabled={busy} onClick={() => run(async () => (await pay(await resume({ data: { orderId: order.id } }))).message)} className="rounded-full bg-primary px-5 py-2.5 text-xs font-semibold text-primary-foreground disabled:opacity-50">Pay ₹{order.total} now</button>
+            <button disabled={busy} onClick={() => run(payPendingOrder)} className="rounded-full bg-primary px-5 py-2.5 text-xs font-semibold text-primary-foreground disabled:opacity-50">Pay ₹{order.total} now</button>
             <button disabled={busy} onClick={() => run(async () => { const result = await cancel({ data: { orderId: order.id } }); return result.notificationsSent === false ? "Order cancelled. Nothing was charged, but an email update could not be delivered." : "Order cancelled. Nothing was charged."; })} className="rounded-full border border-border px-5 py-2.5 text-xs text-muted-foreground disabled:opacity-50">Cancel order</button>
           </div>
         </div>

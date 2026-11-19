@@ -1535,7 +1535,7 @@ export const getOwnOrderDetails = createServerFn({ method: "POST" })
     const db = await admin();
     const { data: order } = await db
       .from("orders")
-      .select("id,user_id,order_number,pickup_code,customer_name,lines,subtotal,discount,total,coupon_code,payment,payment_method,payment_status,order_type,created_at,prep_minutes,counter,status,canteen_id")
+      .select("id,user_id,order_number,pickup_code,customer_name,lines,subtotal,discount,total,coupon_code,payment,payment_method,payment_status,order_type,created_at,prep_minutes,counter,status,canteen_id,bill_print_confirmed_at,bill_print_thank_you_seen_at,completion_workflow,food_received_confirmed_at,collection_thank_you_seen_at")
       .eq("id", data.orderId)
       .eq("user_id", context.userId)
       .maybeSingle();
