@@ -1,9 +1,9 @@
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 
-// v2 deliberately resets completion saved by the old video intro so existing installs
-// see the newly supplied frame animation once after updating.
-export const STUDENT_INTRO_COMPLETED_KEY = "hungry:student-intro:completed:v2";
+// v3 discards prior CTA-based completion flags. Completion now means successful
+// signup/login only, so pending installs must see the intro again after updating.
+export const STUDENT_INTRO_COMPLETED_KEY = "hungry:student-intro:completed:v3";
 const INTRO_ANIMATION_SRC = "/HUNGRYZ%20INTRO%20ANIMATION.webp";
 const INTRO_FRAME_COUNT = 155;
 const INTRO_FRAME_DURATION_MS = 40;
@@ -30,6 +30,7 @@ export function markStudentIntroCompleted() {
 export function resetStudentIntro() {
   try {
     window.localStorage.removeItem(STUDENT_INTRO_COMPLETED_KEY);
+    window.localStorage.removeItem("hungry:student-intro:completed:v2");
     window.localStorage.removeItem("hungry:student-intro:completed:v1");
   } catch {
     // The app still signs out if device storage is unavailable.
