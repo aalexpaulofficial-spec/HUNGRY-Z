@@ -9,7 +9,7 @@ import {
   useRouterState,
   type ErrorComponentProps,
 } from "@tanstack/react-router";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { BackProvider, BackButton } from "../lib/back-nav";
@@ -140,6 +140,7 @@ function RootComponent() {
   const routerLoading = useRouterState({ select: (state) => state.isLoading });
   const [showRouteLoader, setShowRouteLoader] = useState(false);
   const [showStudentIntro, setShowStudentIntro] = useState(false);
+  const studentIntroDismissedRef = useRef(false);
   const appFromUrl = new URLSearchParams(searchStr).get("hungry_app");
   const hasAppLaunchMarker = appFromUrl === "student" || appFromUrl === "canteen";
   const [standaloneApp, setStandaloneApp] = useState(false);
@@ -190,11 +191,21 @@ function RootComponent() {
       pathname === "/auth" &&
       studentPwaLaunch &&
       isInstalledMobileStudentApp() &&
+      !studentIntroDismissedRef.current &&
       !hasCompletedStudentIntro()
     ) {
       setShowStudentIntro(true);
     }
   }, [appFromUrl, pathname]);
+
+  useEffect(() => {
+    const replayIntroAfterLogout = () => {
+      studentIntroDismissedRef.current = false;
+      if (isInstalledMobileStudentApp()) setShowStudentIntro(true);
+    };
+    window.addEventListener("hungry:student-intro:reset", replayIntroAfterLogout);
+    return () => window.removeEventListener("hungry:student-intro:reset", replayIntroAfterLogout);
+  }, []);
 
   useEffect(() => {
     if (!routerLoading) {
@@ -212,7 +223,10 @@ function RootComponent() {
         {pathname !== "/canteen" && <BackButton />}
         <Outlet />
         <GlobalLoadingScreen overlay tone={pathname === "/app" || pathname.startsWith("/app/") ? "student" : pathname === "/canteen" || pathname.startsWith("/canteen/") ? "canteen" : "website"} visible={showRouteLoader} />
-        {showStudentIntro && <MobileAppIntro onContinue={() => setShowStudentIntro(false)} />}
+        {showStudentIntro && <MobileAppIntro onContinue={() => {
+          studentIntroDismissedRef.current = true;
+          setShowStudentIntro(false);
+        }} />}
       </BackProvider>
     </QueryClientProvider>
   );

@@ -16,6 +16,7 @@ import { SocialIconLinks } from "@/components/foodexa/SocialIconLinks";
 import { readStoredDashboardLanguage, translateDashboardText } from "@/lib/dashboard-language";
 import { LegalDialog } from "@/components/foodexa/LegalDialog";
 import { privacyPolicy, termsConditions } from "@/content/legal";
+import { markStudentIntroCompleted } from "@/components/foodexa/MobileAppIntro";
 
 export const PASSWORD_RESET_REDIRECT_URL = "https://hungryz.in/reset-password";
 
@@ -164,6 +165,7 @@ export function SignupForm({ onDone, orderId, language }: { onDone: () => void; 
       setBusy(false);
       return setFormError(error.message);
     }
+    if (signed.user?.id) markStudentIntroCompleted();
     // The profile is created by the auth.users trigger. Send a registration receipt
     // only after Supabase has accepted the account creation.
     let confirmationSent: boolean | undefined;
@@ -295,6 +297,7 @@ export function LoginForm({ orderId, language }: { orderId?: string; language: "
     const { error } = await supabase.auth.signInWithPassword(parsed.data);
     setBusy(false);
     if (error) return setFormError(error.message === "Email not confirmed" ? "Please confirm your email first." : "Wrong email or password.");
+    markStudentIntroCompleted();
     navigate({ to: "/app", search: orderId ? { orderId } : {}, replace: true });
   }
 

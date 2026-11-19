@@ -19,7 +19,7 @@ export function hasCompletedStudentIntro() {
   }
 }
 
-function saveIntroCompleted() {
+export function markStudentIntroCompleted() {
   try {
     window.localStorage.setItem(STUDENT_INTRO_COMPLETED_KEY, "true");
   } catch {
@@ -34,6 +34,7 @@ export function resetStudentIntro() {
   } catch {
     // The app still signs out if device storage is unavailable.
   }
+  window.dispatchEvent(new Event("hungry:student-intro:reset"));
 }
 
 export function MobileAppIntro({ onContinue }: { onContinue: () => void }) {
@@ -47,7 +48,6 @@ export function MobileAppIntro({ onContinue }: { onContinue: () => void }) {
     if (!animationLoaded || phase !== "playing") return;
     const timer = window.setTimeout(() => {
       if (navigationStartedRef.current) return;
-      saveIntroCompleted();
       setPhase("completed");
     }, INTRO_ANIMATION_DURATION_MS);
     return () => window.clearTimeout(timer);
@@ -62,7 +62,6 @@ export function MobileAppIntro({ onContinue }: { onContinue: () => void }) {
   function openAccountSelection() {
     if (navigationStartedRef.current) return;
     navigationStartedRef.current = true;
-    saveIntroCompleted();
     onContinue();
     void navigate({ to: "/auth" });
   }
@@ -74,8 +73,7 @@ export function MobileAppIntro({ onContinue }: { onContinue: () => void }) {
           key={animationAttempt}
           alt="HUNGRY Z introduction animation"
           src={`${INTRO_ANIMATION_SRC}?attempt=${animationAttempt}`}
-          className="h-full max-h-full max-w-full object-contain"
-          style={{ width: "auto" }}
+          className="absolute inset-0 h-full w-full object-cover"
           onLoad={() => {
             setAnimationLoaded(true);
             setPhase("playing");
