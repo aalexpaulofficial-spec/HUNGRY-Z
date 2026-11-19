@@ -6,9 +6,9 @@ const socialLinks = [
   { label: "LinkedIn", href: HUNGRY_SOCIAL_LINKS.linkedin, src: "/social-linkedin-email.png?v=3" },
 ] as const;
 
-export function SocialIconLinks({ className = "" }: { className?: string }) {
+export function SocialIconLinks({ className = "", align = "center" }: { className?: string; align?: "start" | "center" }) {
   return (
-    <div className={`flex w-full items-center justify-center gap-3 ${className}`}>
+    <div className={`flex w-full items-center ${align === "start" ? "justify-start" : "justify-center"} gap-3 ${className}`}>
       {socialLinks.map(({ label, href, src }) => (
         <a
           key={label}

@@ -84,7 +84,7 @@ describe("HUNGRY Z order email content", () => {
       expect(email.html).toContain('href="https://whatsapp.com/channel/0029Vb9EpYJ0G0XmfZmSme1H"');
       expect(email.html).toContain('href="https://www.linkedin.com/company/hungryz/"');
       expect(email.html).toContain('href="https://www.hungryz.in/privacy" style="color:#555;text-decoration:underline">Privacy Policy</a>');
-      expect(email.html).toContain('href="https://www.hungryz.in/" style="color:#555;text-decoration:underline">Terms &amp; Conditions</a>');
+      expect(email.html).toContain('href="https://www.hungryz.in/#faq" style="color:#555;text-decoration:underline">Terms &amp; Conditions</a>');
       expect(email.html).toContain('aria-label="Instagram"');
       expect(email.html).toContain('aria-label="WhatsApp Community"');
       expect(email.html).toContain('aria-label="LinkedIn"');
@@ -92,7 +92,7 @@ describe("HUNGRY Z order email content", () => {
       expect(email.html).toContain("https://www.hungryz.in/social-whatsapp-email.png");
       expect(email.html).toContain("https://www.hungryz.in/social-linkedin-email.png");
       expect(email.html).not.toContain("background-image");
-      expect(email.html).toContain('width="32" height="32"');
+      expect(email.html).toContain('width="40" height="40"');
       expect(email.html).toContain('width="64" height="64"');
       expect(email.html).toContain('width="42" height="42"');
     }

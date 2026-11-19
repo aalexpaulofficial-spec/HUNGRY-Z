@@ -7,13 +7,15 @@
 <p align="center"><strong>Campus food ordering, canteen operations, and faculty events in one platform.</strong></p>
 
 <p align="center">
-  <a href="https://www.hungryz.in/">Product</a> ·
+  <a href="https://www.hungryz.in/">Live product</a> ·
+  <a href="CHANGELOG.md">Version 1.0.0</a> ·
   <a href="docs/SETUP.md">Setup</a> ·
   <a href="docs/ARCHITECTURE.md">Architecture</a> ·
   <a href="LICENSE">License</a>
 </p>
 
 <p align="center">
+  <img alt="HUNGRY Z version 1.0.0" src="https://img.shields.io/badge/HUNGRY%20Z-v1.0.0-c8101e">
   <a href="LICENSE"><img alt="Proprietary license" src="https://img.shields.io/badge/License-PROPRIETARY-red"></a>
   <img alt="React 19" src="https://img.shields.io/badge/React-19-149eca?logo=react&logoColor=white">
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5-3178c6?logo=typescript&logoColor=white">
@@ -22,6 +24,10 @@
 </p>
 
 HUNGRY Z brings students, faculty and campus canteens into one coordinated web experience. Students browse participating canteens, place pickup orders and follow order status. Faculty coordinate event food with canteens, while owners manage menus, orders, quotations and event serving from their dashboard.
+
+## Version 1.0.0
+
+The first official release brings together student and faculty ordering, canteen operations, live order updates, event quotations and participation, verified online payments, transactional email, and HUNGRY AI Scan. See the [release notes](CHANGELOG.md) for the v1 feature summary.
 
 ## Product overview
 

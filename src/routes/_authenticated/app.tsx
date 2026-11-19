@@ -515,8 +515,8 @@ function OrderingApp() {
             <BackButton inline />
             <img src="/HUNGRY%20Z%20Q%20LOGO.png" alt="HUNGRY Z" className="h-8 w-8 shrink-0 rounded-full object-contain" />
             <div className="min-w-0 flex-1">
-              <p className="truncate whitespace-nowrap text-xs font-medium text-muted-foreground">{`Good food, ${profile.full_name.split(" ")[0]}`}</p>
-              <p className="display truncate whitespace-nowrap text-lg tracking-[0.18em]">HUNGRY Z</p>
+              <p className="truncate whitespace-nowrap text-xs font-medium text-muted-foreground">{`Welcome, ${profile.full_name.trim().split(/\s+/)[0]}`}</p>
+              <p className="display truncate whitespace-nowrap text-lg tracking-[0.18em]">HUNGRY?</p>
             </div>
           </div>
           <div className="hz-customer-header-actions flex min-w-0 flex-1 items-center justify-start gap-2 sm:flex-initial">
@@ -545,7 +545,7 @@ function OrderingApp() {
           </main>
 
         {count > 0 && !checkout && (
-          <motion.button initial={{ y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }} onClick={() => setCheckout(true)} className="fixed inset-x-4 bottom-24 z-40 mx-auto flex max-w-[calc(48rem-2rem)] min-w-0 items-center justify-between gap-3 rounded-full bg-primary px-4 py-4 text-primary-foreground shadow-[var(--shadow-cinema)] sm:px-6">
+          <motion.button initial={{ y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }} onClick={() => setCheckout(true)} className="hz-cart-float fixed inset-x-4 bottom-24 z-40 mx-auto flex max-w-[calc(48rem-2rem)] min-w-0 items-center justify-between gap-3 rounded-full bg-primary px-4 py-4 text-primary-foreground shadow-[var(--shadow-cinema)] sm:px-6">
             <span className="flex shrink-0 items-center gap-2 text-xs font-semibold sm:text-sm"><ShoppingBag className="h-4 w-4" /> {`${count} ${count === 1 ? "item" : "items"}`}</span>
             <span className="min-w-0 break-words text-right text-xs font-bold sm:text-sm">View cart · ₹{subtotal}</span>
           </motion.button>
@@ -797,7 +797,7 @@ export function HomeTab({ menu, canteen, template, onOpen, onAdd, goMenu }: { me
       {quick.length > 0 && (
         <section className="hz-home-section">
           <div className="hz-home-section-heading"><h2>Quick bites</h2><button type="button" onClick={() => goMenu()} aria-label="See all dishes">See all <ChevronRight className="h-3.5 w-3.5" /></button></div>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4">
             {quick.map((m) => <FoodCard key={m.id} item={m} onOpen={onOpen} onAdd={onAdd} />)}
           </div>
         </section>

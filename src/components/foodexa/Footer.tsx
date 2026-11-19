@@ -74,7 +74,7 @@ export function Footer() {
             SMART CAMPUS FOOD ORDERING
           </p>
           <p className="mt-8 display text-2xl text-primary-bright">₹0 platform fee. Always.</p>
-          <SocialIconLinks className="mt-5" />
+          <SocialIconLinks className="mt-5" align="start" />
         </div>
 
         {groups.map(([title, items]) => (

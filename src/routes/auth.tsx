@@ -63,10 +63,10 @@ function AuthPage() {
   if (!backendConfigured) return <SetupNotice />;
 
   const brand = (
-    <>
+    <div className="flex items-center justify-center gap-2.5">
       <img src="/HUNGRY%20Z%20Q%20LOGO.png" alt="" className="h-8 w-8 rounded-lg object-contain" />
-      <span className="display text-[15px] tracking-[0.3em]">HUNGRY Z</span>
-    </>
+      <span className="display text-[15px] tracking-[0.3em]">HUNGRY?</span>
+    </div>
   );
 
   return (
@@ -75,9 +75,9 @@ function AuthPage() {
       <div className="ember anim-pulse-glow pointer-events-none absolute -top-40 left-1/2 h-[520px] w-[520px] -translate-x-1/2" />
       <div className="relative mx-auto w-full max-w-md">
         {standaloneApp ? (
-          <div aria-label="HUNGRY Z" className="mb-8 flex items-center justify-center gap-2.5">{brand}</div>
+          <div aria-label="HUNGRY?" className="mb-8 flex flex-col items-center gap-2">{brand}<p className="text-center text-xs tracking-wide text-muted-foreground">No Queues. Save Time. Save Food.</p></div>
         ) : (
-          <a href="/" className="mb-8 flex items-center justify-center gap-2.5">{brand}</a>
+          <a href="/" className="mb-8 flex flex-col items-center gap-2">{brand}<p className="text-center text-xs tracking-wide text-muted-foreground">No Queues. Save Time. Save Food.</p></a>
         )}
 
         <div className="hz-auth-panel glass-red anim-rise rounded-[2rem] p-6 sm:p-8">

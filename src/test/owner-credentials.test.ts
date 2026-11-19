@@ -1,4 +1,4 @@
-﻿import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { canteenDecisionEmail } from "@/lib/email-templates";
 import { generateCanteenCode } from "@/lib/access";
 import {
@@ -71,7 +71,7 @@ describe("canteen owner approval credentials", () => {
     expect(email.text).toContain("Download HUNGRY Z Canteen Dashboard: https://app.example/install/canteen");
     expect(email.html).toContain('href="https://app.example/install/canteen"');
     expect(email.html).toContain("Download HUNGRY Z Canteen Dashboard");
-    expect(email.html).toContain("HUNGRY%20Z%20Q%20LOGO.png");
+    expect(email.html).toContain("hungryz-email-logo.png");
     expect(email.text).not.toContain("sent to that registered email");
   });
 });

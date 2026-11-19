@@ -207,6 +207,22 @@ function CanteenPage() {
 }
 
 type Order = { id: string; order_number: string; customer_name: string; lines: { name: string; qty: number; price: number }[]; subtotal: number; total: number; discount: number; pickup_code: string; counter: string; status: string; created_at: string; order_type: string; payment_method: string; payment_status: string; bill_print_confirmed_at: string | null; completion_workflow: string | null; food_received_confirmed_at: string | null };
+
+function isPrintedOrderComplete(order: Order) {
+  return order.status !== "cancelled" && order.completion_workflow === "printed" && Boolean(order.food_received_confirmed_at);
+}
+
+function CanteenOrderStatusBadge({ order, className }: { order: Order; className?: string }) {
+  if (order.completion_workflow !== "printed" || order.status === "cancelled") return <OrderStatusBadge status={order.status} className={className} />;
+  const completed = isPrintedOrderComplete(order);
+  return <OrderStatusBadge status={completed ? "collected" : order.status} label={completed ? "COMPLETED · BILL PRINTED" : "BILL PRINTED · AWAITING RECEIPT"} className={className} />;
+}
+
+function OrderTypeBadge({ orderType }: { orderType: string }) {
+  const isParcel = orderType === "parcel";
+  const Icon = isParcel ? ShoppingBag : UtensilsCrossed;
+  return <span className={cn("hz-order-type-badge", isParcel ? "is-parcel" : "is-dine-in")}><Icon aria-hidden="true" />{isParcel ? "Parcel" : "Dine In"}</span>;
+}
 type ReceiptPaperWidth = "auto" | "58" | "80";
 type POSLine = Pick<MenuItem, "id" | "name" | "price" | "image" | "category" | "stock"> & { qty: number };
 type OfflinePaymentMethod = "cash" | "upi" | "card";
@@ -499,17 +515,17 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
 
   const orderStatusCounts = useMemo(() => ({
     all: orders.length,
-    placed: orders.filter((order) => order.status === "placed").length,
-    preparing: orders.filter((order) => order.status === "preparing").length,
-    ready: orders.filter((order) => order.status === "ready").length,
-    completed: orders.filter((order) => order.status === "collected").length,
+    placed: orders.filter((order) => order.status === "placed" && order.completion_workflow !== "printed").length,
+    preparing: orders.filter((order) => order.status === "preparing" && order.completion_workflow !== "printed").length,
+    ready: orders.filter((order) => order.status === "ready" && order.completion_workflow !== "printed").length,
+    completed: orders.filter((order) => order.status === "collected" || isPrintedOrderComplete(order)).length,
     cancelled: orders.filter((order) => order.status === "cancelled").length,
   }), [orders]);
   const filteredOrders = useMemo(() => {
     const query = orderSearch.trim().toLocaleLowerCase();
     return orders.filter((order) => {
       const statusMatches = orderStatusFilter === "all"
-        || (orderStatusFilter === "completed" ? order.status === "collected" : order.status === orderStatusFilter);
+        || (orderStatusFilter === "completed" ? order.status === "collected" || isPrintedOrderComplete(order) : order.completion_workflow !== "printed" && order.status === orderStatusFilter);
       const searchMatches = !query || [order.order_number, order.customer_name, order.pickup_code, order.payment_method, order.payment_status, ...order.lines.map((line) => line.name)]
         .some((value) => value.toLocaleLowerCase().includes(query));
       return statusMatches && searchMatches;
@@ -1223,7 +1239,7 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
           </div>
         </aside>
         <main className="hz-canteen-main"><div className="hz-canteen-content">
-        {tab === "overview" && <header className="hz-canteen-header grid grid-cols-1 gap-4 rounded-3xl border border-border bg-card p-4 sm:p-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center lg:gap-6">
+        <header className="hz-canteen-header grid grid-cols-1 gap-4 rounded-3xl border border-border bg-card p-4 sm:p-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center lg:gap-6">
           <div className="hz-canteen-brand flex min-w-0 items-start gap-3 sm:gap-4">
             <BackButton inline />
             <div className="hz-canteen-brand-copy min-w-0 flex-1">
@@ -1238,7 +1254,7 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
             <LanguageSelect language={language} onChange={onLanguageChange} className="hz-canteen-header-control" />
             <button onClick={onSignOut} className="hz-canteen-header-control flex min-h-10 shrink-0 items-center gap-2 rounded-full border border-border px-4 py-2 text-xs text-muted-foreground hover:text-foreground"><LogOut className="h-3.5 w-3.5" /> Log out</button>
           </div>
-        </header>}
+        </header>
         {canteen.visibility === "maintenance" && <p className="mt-4 rounded-2xl border border-primary/40 bg-primary/10 p-3 text-sm text-primary-bright">Your canteen is in maintenance mode — customers can't place orders.</p>}
         {tab === "overview" && <section className="hz-canteen-overview-banner"><CanteenTemplateBanner layout="dashboard" imageUrl={template.banner_image_url} heading={template.heading} description={template.description} canteenName={canteen.name} universityName={canteen.university_name} cropX={template.banner_crop_x} cropY={template.banner_crop_y} cropZoom={template.banner_crop_zoom} /></section>}
         {tab === "overview" && <div id="canteen-availability"><CanteenAvailabilityPanel
@@ -1341,14 +1357,15 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
             {!orders.length ? <div className="hz-canteen-empty hz-orders-empty"><ShoppingBag aria-hidden="true" /><p>No online orders yet.</p><span>New customer orders will appear here.</span></div> : !filteredOrders.length ? <div className="hz-canteen-empty hz-orders-empty"><Search aria-hidden="true" /><p>No matching orders.</p><span>Try another status or search term.</span></div> : (
               <div className={cn("hz-orders-workspace", selectedOrder && "has-selection")}>
                 <section className="hz-orders-table-panel" aria-label="Online order list">
-                  <div className="hz-orders-table-scroll"><table className="hz-orders-table"><thead><tr><th aria-label="Select order"></th><th>Order ID</th><th>Customer</th><th>Items</th><th>Amount</th><th>Status</th><th>Time</th></tr></thead><tbody>
+                  <div className="hz-orders-table-scroll"><table className="hz-orders-table"><thead><tr><th aria-label="Select order"></th><th>Order ID</th><th>Customer</th><th>Type</th><th>Items</th><th>Amount</th><th>Status</th><th>Time</th></tr></thead><tbody>
                     {filteredOrders.map((order) => <tr key={order.id} aria-selected={selectedOrder?.id === order.id} onClick={() => setSelectedOrderId(order.id)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setSelectedOrderId(order.id); } }} tabIndex={0}>
                       <td><input type="checkbox" aria-label={`Show details for order ${order.order_number}`} checked={selectedOrder?.id === order.id} onClick={(event) => event.stopPropagation()} onChange={() => setSelectedOrderId(order.id)} /></td>
                       <td><strong>{order.order_number}</strong></td>
                       <td><span className="hz-orders-table-customer"><UserRound aria-hidden="true" />{order.customer_name}</span></td>
+                      <td><OrderTypeBadge orderType={order.order_type} /></td>
                       <td><span className="hz-orders-table-items" data-no-translate>{order.lines.slice(0, 2).map((line) => `${line.name} ×${line.qty}`).join(", ")}{order.lines.length > 2 ? ` +${order.lines.length - 2}` : ""}</span></td>
                       <td><strong>₹{order.total.toLocaleString("en-IN")}</strong></td>
-                      <td><OrderStatusBadge status={order.status} className="hz-orders-table-status max-w-none text-left text-[9px] tracking-normal" /></td>
+                      <td><CanteenOrderStatusBadge order={order} className="hz-orders-table-status max-w-none text-left text-[9px] tracking-normal" /></td>
                       <td><time dateTime={order.created_at}>{new Date(order.created_at).toLocaleTimeString(language === "hi" ? "hi-IN" : language === "kn" ? "kn-IN" : "en-IN", { hour: "numeric", minute: "2-digit" })}</time></td>
                     </tr>)}
                   </tbody></table></div>
@@ -1356,8 +1373,8 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
                 </section>
                 {selectedOrder && <aside className="hz-order-details" aria-labelledby="order-details-title">
                   <header><h2 id="order-details-title">Order Details</h2><button type="button" aria-label="Close order details" onClick={() => setSelectedOrderId("")}><X aria-hidden="true" /></button></header>
-                  <div className="hz-order-details-id"><strong>{selectedOrder.order_number}</strong><OrderStatusBadge status={selectedOrder.status} className="max-w-none text-left text-[9px] tracking-normal" /></div>
-                  <div className="hz-order-details-meta"><p><UserRound aria-hidden="true" /><span>Customer<strong>{selectedOrder.customer_name}</strong></span></p><p><ShoppingBag aria-hidden="true" /><span>Order type<strong>{selectedOrder.order_type === "parcel" ? "Parcel" : "Dine-in"}</strong></span></p><p><CalendarDays aria-hidden="true" /><span>Order time<strong>{new Date(selectedOrder.created_at).toLocaleString()}</strong></span></p><p><Receipt aria-hidden="true" /><span>Pickup code<strong>{selectedOrder.pickup_code || "—"}</strong></span></p><p><CreditCard aria-hidden="true" /><span>Payment<strong>{orderPaymentMethodLabel(selectedOrder.payment_method)} · {orderPaymentStatusLabel(selectedOrder.payment_status)}{selectedOrder.payment_method === "counter" && selectedOrder.payment_status !== "paid" ? ` · ₹${selectedOrder.total} due` : ""}</strong></span></p></div>
+                  <div className="hz-order-details-id"><strong>{selectedOrder.order_number}</strong><CanteenOrderStatusBadge order={selectedOrder} className="max-w-none text-left text-[9px] tracking-normal" /></div>
+                  <div className="hz-order-details-meta"><p><UserRound aria-hidden="true" /><span>Customer<strong>{selectedOrder.customer_name}</strong></span></p><p><ShoppingBag aria-hidden="true" /><span>Order type<OrderTypeBadge orderType={selectedOrder.order_type} /></span></p><p><CalendarDays aria-hidden="true" /><span>Order time<strong>{new Date(selectedOrder.created_at).toLocaleString()}</strong></span></p><p><Receipt aria-hidden="true" /><span>Pickup code<strong>{selectedOrder.pickup_code || "—"}</strong></span></p><p><CreditCard aria-hidden="true" /><span>Payment<strong>{orderPaymentMethodLabel(selectedOrder.payment_method)} · {orderPaymentStatusLabel(selectedOrder.payment_status)}{selectedOrder.payment_method === "counter" && selectedOrder.payment_status !== "paid" ? ` · ₹${selectedOrder.total} due` : ""}</strong></span></p></div>
                   <section className="hz-order-details-food"><h3><UtensilsCrossed aria-hidden="true" /> Food Items ({selectedOrder.lines.length})</h3>{selectedOrder.lines.map((line, index) => <div key={`${line.name}-${index}`}><span>{line.name} ×{line.qty}</span><small>₹{line.price} each <strong>₹{(line.price * line.qty).toLocaleString("en-IN")}</strong></small></div>)}</section>
                   <div className="hz-order-details-total"><span>Total Amount</span><strong>₹{selectedOrder.total.toLocaleString("en-IN")}</strong></div>
                   {selectedOrder.completion_workflow === "printed" && <p className="hz-order-details-notice">{selectedOrder.food_received_confirmed_at ? "Customer confirmed that food was received." : "Bill printed. Waiting for customer to confirm food receipt."}</p>}

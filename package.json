@@ -1,5 +1,7 @@
 {
-  "name": "tanstack_start_ts",
+  "name": "hungry-z",
+  "version": "1.0.0",
+  "description": "Campus food ordering, canteen operations, and faculty events platform",
   "private": true,
   "sideEffects": false,
   "type": "module",

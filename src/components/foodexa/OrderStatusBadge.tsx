@@ -8,8 +8,8 @@ export function orderStatusBorderClass(status: string) {
   return "order-card-other";
 }
 
-export function OrderStatusBadge({ status, className }: { status: string; className?: string }) {
-  const label = ORDER_LABELS[status] ?? status.replaceAll("_", " ");
+export function OrderStatusBadge({ status, className, label: labelOverride }: { status: string; className?: string; label?: string }) {
+  const label = labelOverride ?? ORDER_LABELS[status] ?? status.replaceAll("_", " ");
   const statusClass = status === "placed" ? "order-status-placed"
     : status === "collected" ? "order-status-collected"
       : status === "cancelled" ? "order-status-cancelled" : "order-status-other";

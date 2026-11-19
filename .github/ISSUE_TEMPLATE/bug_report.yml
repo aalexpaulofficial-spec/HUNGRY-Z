@@ -1,0 +1,41 @@
+name: Bug report
+description: Report a reproducible problem in HUNGRY Z
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not include passwords, API keys, payment details, customer data, or other sensitive information. Use the Security tab for vulnerabilities.
+  - type: input
+    id: version
+    attributes:
+      label: Version or deployment
+      description: Include the app version or the page you were using.
+      placeholder: 1.0.0 / https://www.hungryz.in
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: List the steps that reliably reproduce the problem.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Browser, device, and non-sensitive context
+    validations:
+      required: false

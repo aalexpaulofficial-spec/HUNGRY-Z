@@ -1067,7 +1067,7 @@ html[data-theme="dark"] .hz-orders-keyboard .hz-pos-key-cancel { border-color: #
 .hz-orders-workspace.has-selection { grid-template-columns: minmax(0, 1fr) 18rem; }
 .hz-orders-table-panel { min-width: 0; overflow: hidden; border: 1px solid var(--border); border-radius: 1.25rem; background: var(--card); box-shadow: var(--hz-shadow-card); }
 .hz-orders-table-scroll { width: 100%; overflow-x: auto; }
-.hz-orders-table { width: 100%; min-width: 680px; border-collapse: separate; border-spacing: 0; color: var(--foreground); text-align: left; }
+.hz-orders-table { width: 100%; min-width: 760px; border-collapse: separate; border-spacing: 0; color: var(--foreground); text-align: left; }
 .hz-orders-table thead { background: color-mix(in oklab, var(--ink-soft) 68%, var(--card)); }
 .hz-orders-table th { height: 2.75rem; border-bottom: 1px solid var(--border); padding: .55rem .55rem; color: var(--muted-foreground); font-size: .58rem; font-weight: 750; white-space: nowrap; }
 .hz-orders-table th:first-child, .hz-orders-table td:first-child { width: 2.35rem; padding-left: .8rem; }
@@ -1079,6 +1079,12 @@ html[data-theme="dark"] .hz-orders-keyboard .hz-pos-key-cancel { border-color: #
 .hz-orders-table td > strong { color: var(--foreground); font-size: .68rem; font-weight: 800; }
 .hz-orders-table-customer { display: inline-flex; align-items: center; gap: .4rem; font-weight: 700; }
 .hz-orders-table-customer svg { width: .9rem; height: .9rem; }
+.hz-order-type-badge { display: inline-flex; width: max-content; max-width: 100%; align-items: center; gap: .28rem; border: 1px solid transparent; border-radius: 999px; padding: .28rem .5rem; font-size: .55rem; font-weight: 800; line-height: 1; letter-spacing: .035em; white-space: nowrap; }
+.hz-order-type-badge svg { width: .72rem; height: .72rem; flex: 0 0 auto; }
+.hz-order-type-badge.is-dine-in { border-color: color-mix(in oklab, #2563eb 35%, transparent); background: color-mix(in oklab, #2563eb 9%, var(--card)); color: #1d4ed8; }
+.hz-order-type-badge.is-parcel { border-color: color-mix(in oklab, #c2410c 35%, transparent); background: color-mix(in oklab, #f97316 10%, var(--card)); color: #c2410c; }
+html[data-theme="dark"] .hz-order-type-badge.is-dine-in { color: #93c5fd; }
+html[data-theme="dark"] .hz-order-type-badge.is-parcel { color: #fdba74; }
 .hz-orders-table-items { display: block; max-width: 11rem; overflow: hidden; color: var(--muted-foreground); text-overflow: ellipsis; }
 .hz-orders-table-status { display: inline-flex; align-items: center; gap: .15rem; padding-inline: .45rem !important; white-space: nowrap; }
 .hz-orders-table-status > span { width: .42rem !important; height: .42rem !important; margin-right: .1rem !important; }
@@ -1120,7 +1126,7 @@ html[data-theme="dark"] .hz-orders-keyboard .hz-pos-key-cancel { border-color: #
 .hz-order-detail-action.is-danger { color: var(--muted-foreground); }
 html[data-theme="dark"] .hz-order-detail-action.is-primary { border-color: #f4f4f4; background: #f4f4f4; color: #111; }
 @media (max-width: 1150px) { .hz-orders-summary { grid-template-columns: repeat(3, minmax(0, 1fr)); } .hz-orders-workspace.has-selection { grid-template-columns: minmax(0, 1fr); } .hz-order-details { display: grid; grid-template-columns: minmax(0, 1fr) minmax(13rem, .7fr); gap: 0 .9rem; } .hz-order-details > header, .hz-order-details-id, .hz-order-details-meta, .hz-order-details-food, .hz-order-details-total, .hz-order-details-notice { grid-column: 1; } .hz-order-details-actions { grid-column: 2; grid-row: 1 / span 6; align-self: end; } }
-@media (max-width: 620px) { .hz-orders-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); } .hz-orders-live { font-size: .59rem; } .hz-orders-table { min-width: 650px; } .hz-order-details { display: flex; } .hz-order-details-actions { margin-top: .6rem; } }
+@media (max-width: 620px) { .hz-orders-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); } .hz-orders-live { font-size: .59rem; } .hz-orders-table { min-width: 730px; } .hz-order-details { display: flex; } .hz-order-details-actions { margin-top: .6rem; } }
 
 .hz-global-loading { display: grid; width: 100%; min-height: 100vh; min-height: 100dvh; place-items: center; overflow: hidden; background: #f5f5f7; color: #111; }
 .hz-global-loading.is-overlay { position: fixed; z-index: 10000; inset: 0; min-height: 0; animation: hz-global-loading-enter .12s ease-out both; }
@@ -2026,3 +2032,31 @@ html[data-theme="dark"] .hz-customer-app .hz-customer-content .glass-red { borde
 html[data-theme="dark"] .hz-customer-app .hz-menu-page > input { background: #19191c; }
 html[data-theme="dark"] .hz-customer-app .hz-customer-content button:focus-visible,
 html[data-theme="dark"] .hz-customer-app .hz-bottom-nav button:focus-visible { outline-color: rgb(255 53 63 / 76%); }
+
+/* Give the student dashboard room to use tablet and laptop screens well. */
+@media (min-width: 640px) and (max-width: 1023px) {
+  .hz-customer-app .hz-customer-shell { max-width: 56rem; }
+  .hz-customer-app .hz-customer-content { padding-inline: 1.75rem; }
+  .hz-customer-app .hz-hours-banner { margin-inline: 1.75rem; }
+  .hz-customer-app .hz-bottom-nav { inset-inline: 1rem; max-width: 54rem; }
+}
+
+@media (min-width: 1024px) {
+  .hz-customer-app .hz-customer-shell { max-width: 76rem; }
+  .hz-customer-app .hz-customer-content { padding-inline: 2rem; }
+  .hz-customer-app .hz-hours-banner { margin-inline: 2rem; }
+  .hz-customer-app .hz-bottom-nav {
+    inset-inline: 1.5rem;
+    bottom: .75rem;
+    max-width: 72rem;
+  }
+  .hz-customer-app .hz-bottom-nav button { min-height: 3.7rem; font-size: 10px; }
+  .hz-customer-app .hz-food-card-feature { width: min(34vw, 24rem); }
+  .hz-customer-app .hz-food-rail { gap: 1.25rem; }
+  .hz-customer-app .hz-customer-template-banner > [data-testid="canteen-template-banner"] { max-height: min(24rem, 36svh); }
+  .hz-customer-app .hz-cart-float { max-width: min(calc(72rem - 3rem), calc(100vw - 3rem)); }
+}
+
+@media (min-width: 1280px) {
+  .hz-customer-app .hz-menu-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+}
