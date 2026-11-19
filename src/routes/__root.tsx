@@ -14,8 +14,9 @@ import { useEffect, useState, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { BackProvider, BackButton } from "../lib/back-nav";
 import { reportLovableError } from "../lib/lovable-error-reporting";
-import { isStandaloneApp, markAppInstalled } from "../lib/pwa-install";
+import { isInstalledMobileStudentApp, isStandaloneApp, markAppInstalled } from "../lib/pwa-install";
 import { GlobalLoadingScreen } from "../components/foodexa/GlobalLoadingScreen";
+import { hasCompletedStudentIntro, MobileAppIntro } from "../components/foodexa/MobileAppIntro";
 
 function NotFoundComponent() {
   return (
@@ -138,6 +139,7 @@ function RootComponent() {
   const { pathname, searchStr } = useLocation();
   const routerLoading = useRouterState({ select: (state) => state.isLoading });
   const [showRouteLoader, setShowRouteLoader] = useState(false);
+  const [showStudentIntro, setShowStudentIntro] = useState(false);
   const appFromUrl = new URLSearchParams(searchStr).get("hungry_app");
   const hasAppLaunchMarker = appFromUrl === "student" || appFromUrl === "canteen";
   const [standaloneApp, setStandaloneApp] = useState(false);
@@ -183,6 +185,12 @@ function RootComponent() {
   }, [appFromUrl, hasAppLaunchMarker]);
 
   useEffect(() => {
+    if (appFromUrl === "student" && isInstalledMobileStudentApp() && !hasCompletedStudentIntro()) {
+      setShowStudentIntro(true);
+    }
+  }, [appFromUrl]);
+
+  useEffect(() => {
     if (!routerLoading) {
       setShowRouteLoader(false);
       return;
@@ -198,6 +206,7 @@ function RootComponent() {
         {pathname !== "/canteen" && <BackButton />}
         <Outlet />
         <GlobalLoadingScreen overlay tone={pathname === "/app" || pathname.startsWith("/app/") ? "student" : pathname === "/canteen" || pathname.startsWith("/canteen/") ? "canteen" : "website"} visible={showRouteLoader} />
+        {showStudentIntro && <MobileAppIntro onContinue={() => setShowStudentIntro(false)} />}
       </BackProvider>
     </QueryClientProvider>
   );

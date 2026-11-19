@@ -211,3 +211,18 @@ export function isStandaloneApp() {
     (navigator as Navigator & { standalone?: boolean }).standalone === true
   );
 }
+
+/** True only for an installed student PWA running on a phone-sized mobile platform. */
+export function isInstalledMobileStudentApp() {
+  if (typeof window === "undefined" || !isStandaloneApp()) return false;
+
+  const nav = navigator as Navigator & {
+    userAgentData?: { mobile?: boolean; platform?: string };
+  };
+  const platform = nav.userAgentData?.platform ?? nav.platform ?? "";
+  if (/^android$/i.test(platform)) return nav.userAgentData?.mobile === true;
+  if (/Android/i.test(nav.userAgent)) return /Mobile/i.test(nav.userAgent);
+  // iOS does not expose User-Agent Client Hints. iPhone and iPod identify phones;
+  // iPad is intentionally excluded. Requiring standalone mode prevents browser playback.
+  return /iPhone|iPod/i.test(nav.userAgent);
+}
