@@ -810,7 +810,11 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
           ? `${job.order.order_number} already has a confirmed print. No duplicate record or customer notification was created.`
           : `${job.order.order_number} print confirmed. The customer can see the receipt status and confirm food receipt. Payment status was not changed.`);
         })
-        .catch((cause) => setOrderMsg(cause instanceof Error ? cause.message : "Could not save the bill print record."))
+        .catch((cause) => {
+          const message = cause instanceof Error ? cause.message : "Could not save the bill print record.";
+          setOrderMsg(message);
+          if (message === "You cannot confirm a print for this order.") window.location.reload();
+        })
         .finally(() => setBusyOrder(null));
     };
     const finishWithoutPrintConfirmation = () => {
@@ -888,7 +892,12 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
       if (r.notificationsSent === false) setOrderMsg(`${o.order_number} status updated, but an email notification could not be delivered. Check email configuration and the email log.`);
     } catch (e) {
       setOrders((current) => current.map((order) => order.id === o.id ? { ...order, status: previousStatus } : order));
-      setOrderMsg(e instanceof Error ? e.message : "Could not update order");
+      const message = e instanceof Error ? e.message : "Could not update order";
+      setOrderMsg(message);
+      // Vercel can switch deployments while a dashboard tab is open. A stale
+      // server-function session reports "Forbidden"; reload onto the current
+      // build before asking the owner to retry the status change.
+      if (message === "Forbidden") window.location.reload();
     } finally {
       setBusyOrder(null);
     }
