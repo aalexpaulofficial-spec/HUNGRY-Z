@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 export const STUDENT_INTRO_COMPLETED_KEY = "hungry:student-intro:completed:v3";
 const INTRO_ANIMATION_SRC = "/HUNGRYZ%20INTRO%20ANIMATION.webp";
 const INTRO_FRAME_COUNT = 155;
-const INTRO_FRAME_DURATION_MS = 40;
+const INTRO_FRAME_DURATION_MS = 200;
 const INTRO_ANIMATION_DURATION_MS = INTRO_FRAME_COUNT * INTRO_FRAME_DURATION_MS;
 
 type IntroPhase = "playing" | "completed" | "animation-error";
