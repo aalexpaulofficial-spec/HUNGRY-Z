@@ -162,6 +162,7 @@ function CanteenPage() {
 
   return (
     <div className="hz-canteen-login grain relative min-h-screen overflow-hidden bg-background px-4 py-10">
+      {siteNavigationEnabled && (state === "auth" || state === "missing") && <BackButton />}
       <div className="ember anim-pulse-glow pointer-events-none absolute -top-40 left-1/2 h-[520px] w-[520px] -translate-x-1/2" />
       <div className="relative mx-auto w-full max-w-md">
         {siteNavigationEnabled ? (
