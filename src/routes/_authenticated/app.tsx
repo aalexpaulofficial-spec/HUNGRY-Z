@@ -52,6 +52,8 @@ import {
 import { openRazorpay, type CheckoutParams } from "@/lib/razorpay-checkout";
 import { cn } from "@/lib/utils";
 import { clearSessionState, useSessionState } from "@/lib/session-state";
+import { isInstalledMobileStudentApp } from "@/lib/pwa-install";
+import { resetStudentIntro } from "@/components/foodexa/MobileAppIntro";
 import { privacyPolicy, termsConditions } from "@/content/legal";
 import { downloadOrderBillPdf } from "@/lib/order-bill-pdf";
 import { describeTodayHours, formatCanteenTime, nextScheduledOpening, type WeeklyHours } from "@/lib/canteen-availability";
@@ -488,6 +490,7 @@ function OrderingApp() {
 
   async function signOut() {
     clearSessionState("hungry-student-dashboard-tab", "hungry-student-dashboard-cart", "hungry-student-dashboard-order");
+    if (isInstalledMobileStudentApp()) resetStudentIntro();
     await supabase.auth.signOut();
     navigate({ to: "/auth", replace: true });
   }

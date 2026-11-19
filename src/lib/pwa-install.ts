@@ -42,6 +42,10 @@ function hasConfirmedInstall(app: HungryApp) {
   }
 }
 
+export function isStudentPwaInstalled() {
+  return hasConfirmedInstall("student");
+}
+
 const deferredInstallPrompts = new Map<HungryApp, InstallPromptEvent>();
 let latestDeferredInstallApp: HungryApp | null = null;
 let pendingInstallApp: HungryApp | null = null;

@@ -22,6 +22,14 @@ function saveIntroCompleted() {
   }
 }
 
+export function resetStudentIntro() {
+  try {
+    window.localStorage.removeItem(STUDENT_INTRO_COMPLETED_KEY);
+  } catch {
+    // The app still signs out if device storage is unavailable.
+  }
+}
+
 export function MobileAppIntro({ onContinue }: { onContinue: () => void }) {
   const navigate = useNavigate();
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -113,11 +121,6 @@ export function MobileAppIntro({ onContinue }: { onContinue: () => void }) {
     void navigate({ to: "/auth" });
   }
 
-  function skipIntro() {
-    // Skipping goes directly to account selection and unmounts the video.
-    openAccountSelection();
-  }
-
   return (
     <main className="fixed inset-0 z-[100] flex min-h-[100dvh] flex-col items-center justify-center overflow-hidden bg-black px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-[max(1.25rem,env(safe-area-inset-top))] text-white">
       <div className="relative flex min-h-0 w-full flex-1 items-center justify-center">
@@ -149,16 +152,6 @@ export function MobileAppIntro({ onContinue }: { onContinue: () => void }) {
         >
           <source src={INTRO_VIDEO_SRC} type="video/mp4" />
         </video>
-
-        {phase !== "completed" && (
-          <button
-            type="button"
-            onClick={skipIntro}
-            className="absolute right-3 top-3 rounded-full border border-white/70 bg-black/65 px-4 py-2 text-xs font-semibold tracking-wide text-white shadow-lg backdrop-blur-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-          >
-            SKIP INTRO
-          </button>
-        )}
 
         {isLoading && phase === "playing" && (
           <div aria-live="polite" className="pointer-events-none absolute inset-x-0 bottom-5 flex justify-center">

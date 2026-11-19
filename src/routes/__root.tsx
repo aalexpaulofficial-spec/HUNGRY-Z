@@ -14,7 +14,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { BackProvider, BackButton } from "../lib/back-nav";
 import { reportLovableError } from "../lib/lovable-error-reporting";
-import { isInstalledMobileStudentApp, isStandaloneApp, markAppInstalled } from "../lib/pwa-install";
+import { isInstalledMobileStudentApp, isStandaloneApp, isStudentPwaInstalled, markAppInstalled } from "../lib/pwa-install";
 import { GlobalLoadingScreen } from "../components/foodexa/GlobalLoadingScreen";
 import { hasCompletedStudentIntro, MobileAppIntro } from "../components/foodexa/MobileAppIntro";
 
@@ -185,10 +185,16 @@ function RootComponent() {
   }, [appFromUrl, hasAppLaunchMarker]);
 
   useEffect(() => {
-    if (appFromUrl === "student" && isInstalledMobileStudentApp() && !hasCompletedStudentIntro()) {
+    const studentPwaLaunch = appFromUrl === "student" || (pathname === "/auth" && isStudentPwaInstalled());
+    if (
+      pathname === "/auth" &&
+      studentPwaLaunch &&
+      isInstalledMobileStudentApp() &&
+      !hasCompletedStudentIntro()
+    ) {
       setShowStudentIntro(true);
     }
-  }, [appFromUrl]);
+  }, [appFromUrl, pathname]);
 
   useEffect(() => {
     if (!routerLoading) {
