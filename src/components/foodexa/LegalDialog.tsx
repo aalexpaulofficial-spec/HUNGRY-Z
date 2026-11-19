@@ -42,7 +42,7 @@ export function LegalDialog({ legalDocument, onClose, themeScope = "site" }: { l
         <header className="relative shrink-0 border-b border-border px-5 pb-4 pr-24 pt-5 sm:px-8 sm:pb-5 sm:pr-28 sm:pt-7">
           <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary-bright">HUNGRY Z · Legal</p>
           <h2 id="hungry-legal-dialog-title" className="display mt-2 text-xl sm:text-3xl">{legalDocument.title}</h2>
-          <p className="mt-2 text-xs text-muted-foreground">Last updated: November 5, 2026</p>
+          <p className="mt-2 text-xs text-muted-foreground">Last updated: November 19, 2026</p>
           <div className="absolute right-3 top-3 z-10 flex items-center gap-2 sm:right-6 sm:top-6">
             <ThemeToggle scope={themeScope} className="h-9 w-9 sm:h-10 sm:w-10" />
             <button

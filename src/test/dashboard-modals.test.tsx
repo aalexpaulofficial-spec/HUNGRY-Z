@@ -20,11 +20,11 @@ beforeEach(() => {
 describe("dashboard support and legal dialogs", () => {
   it("shows the complete privacy policy in a scrollable modal and closes in place", () => {
     const onClose = vi.fn();
-    const { container } = render(<LegalDialog legalDocument={privacyPolicy} onClose={onClose} />);
+    render(<LegalDialog legalDocument={privacyPolicy} onClose={onClose} />);
 
     expect(screen.getByRole("dialog", { name: "Privacy Policy" })).toBeInTheDocument();
     expect(screen.getByText("9. Changes and contact")).toBeInTheDocument();
-    expect(container.querySelector("[role='dialog'] .overflow-y-auto")).toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: "Privacy Policy" }).querySelector(".overflow-y-auto")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Close legal information" }));
     expect(onClose).toHaveBeenCalledOnce();
   });

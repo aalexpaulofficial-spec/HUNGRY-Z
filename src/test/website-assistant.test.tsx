@@ -10,6 +10,8 @@ afterEach(() => { cleanup(); localStorage.removeItem("hungry:assistant-language"
 describe("HUNGRY Z website help chat", () => {
   it("answers common questions from the live ordering, event and refund workflows", () => {
     expect(getWebsiteAssistantAnswer("How do I place an order?", "en")).toContain("7-character code");
+    expect(getWebsiteAssistantAnswer("मैं खाना कैसे ऑर्डर करूँ?", "hi")).toContain("UPI / ऑनलाइन भुगतान");
+    expect(getWebsiteAssistantAnswer("ನಾನು ಆಹಾರವನ್ನು ಹೇಗೆ ಆರ್ಡರ್ ಮಾಡಲಿ?", "kn")).toContain("UPI / ಆನ್‌ಲೈನ್");
     expect(getWebsiteAssistantAnswer("How do event tokens work?", "en")).toContain("four-digit token");
     expect(getWebsiteAssistantAnswer("How can I register my canteen?", "en")).toContain("Register Your Canteen");
     expect(getWebsiteAssistantAnswer("How do I track my order?", "en")).toContain("Track the order in Orders");

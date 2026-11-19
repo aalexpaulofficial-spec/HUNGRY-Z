@@ -78,7 +78,7 @@ const answers: Record<Topic, Record<AssistantLanguage, string>> = {
   },
   order: {
     en: "Sign in or create an account, enter your participating canteen's 7-character code, choose available food and quantities, then select Dine In or Parcel. Both order types show currently available payment options, including UPI / online payment or Pay at Counter. Track the order in Orders and show its 4-digit collection code at the listed counter when it is ready.",
-    hi: "साइन इन करें या खाता बनाएँ, अपने कैंटीन का 7-अक्षर वाला कोड डालें, उपलब्ध खाना और मात्रा चुनें, फिर Dine In या Parcel चुनें। Parcel में काउंटर पर भुगतान होता है; Dine In में उपलब्ध भुगतान विकल्प दिखते हैं। ऑर्डर को Orders में देखें और तैयार होने पर बताए गए काउंटर पर 4-अंकों का कलेक्शन कोड दिखाएँ।",
+    hi: "साइन इन करें या खाता बनाएँ, अपनी कैंटीन का 7-अक्षर वाला कोड डालें, उपलब्ध खाना और मात्रा चुनें, फिर Dine In या Parcel चुनें। दोनों ऑर्डर प्रकारों में उपलब्ध भुगतान विकल्प दिखते हैं: काउंटर पर भुगतान या, सक्षम होने पर, UPI / ऑनलाइन भुगतान। ऑर्डर को Orders में देखें और तैयार होने पर बताए गए काउंटर पर 4-अंकों का कलेक्शन कोड दिखाएँ।",
     kn: "ಸೈನ್ ಇನ್ ಮಾಡಿ ಅಥವಾ ಖಾತೆ ತೆರೆಯಿರಿ, ನಿಮ್ಮ ಕ್ಯಾಂಟೀನ್‌ನ 7 ಅಕ್ಷರಗಳ ಕೋಡ್ ನಮೂದಿಸಿ, ಲಭ್ಯವಿರುವ ಆಹಾರ ಮತ್ತು ಪ್ರಮಾಣ ಆಯ್ಕೆಮಾಡಿ, ನಂತರ Dine In ಅಥವಾ Parcel ಆರಿಸಿ. Dine In ಮತ್ತು Parcel ಎರಡಕ್ಕೂ ಲಭ್ಯವಿರುವ UPI / ಆನ್‌ಲೈನ್ ಅಥವಾ ಕೌಂಟರ್ ಪಾವತಿ ಆಯ್ಕೆಗಳು ಕಾಣುತ್ತವೆ. Orders ನಲ್ಲಿ ಸ್ಥಿತಿ ನೋಡಿ, ಸಿದ್ಧವಾದಾಗ ಸೂಚಿಸಿದ ಕೌಂಟರ್‌ನಲ್ಲಿ 4 ಅಂಕಿಯ ಸಂಗ್ರಹ ಕೋಡ್ ತೋರಿಸಿ.",
   },
   payment: {
