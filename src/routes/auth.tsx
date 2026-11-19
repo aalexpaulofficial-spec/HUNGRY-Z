@@ -17,7 +17,7 @@ import { readStoredDashboardLanguage, translateDashboardText } from "@/lib/dashb
 import { LegalDialog } from "@/components/foodexa/LegalDialog";
 import { privacyPolicy, termsConditions } from "@/content/legal";
 
-export const PASSWORD_RESET_REDIRECT_URL = "https://www.hungryz.in/reset-password";
+export const PASSWORD_RESET_REDIRECT_URL = "https://hungryz.in/reset-password";
 
 export const Route = createFileRoute("/auth")({
   validateSearch: z.object({ mode: z.enum(["login", "signup"]).optional(), orderId: z.string().uuid().optional() }),

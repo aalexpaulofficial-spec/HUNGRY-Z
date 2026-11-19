@@ -1,8 +1,8 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { HUNGRY_SOCIAL_LINKS } from "@/lib/social-links";
 
-const { signInWithPassword, resetPasswordForEmail, signUp, signOut, updateUser, getSession, onAuthStateChange } = vi.hoisted(() => ({
+const { signInWithPassword, resetPasswordForEmail, signUp, signOut, updateUser, getSession, onAuthStateChange, verifyOtp, navigate } = vi.hoisted(() => ({
   signInWithPassword: vi.fn(),
   resetPasswordForEmail: vi.fn(),
   signUp: vi.fn(),
@@ -10,12 +10,14 @@ const { signInWithPassword, resetPasswordForEmail, signUp, signOut, updateUser, 
   updateUser: vi.fn(),
   getSession: vi.fn(),
   onAuthStateChange: vi.fn(),
+  verifyOtp: vi.fn(),
+  navigate: vi.fn(),
 }));
 const registrationConfirmation = vi.hoisted(() => vi.fn());
 
 vi.mock("@tanstack/react-router", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@tanstack/react-router")>()),
-  useNavigate: () => vi.fn(),
+  useNavigate: () => navigate,
   Link: ({ children }: { children: React.ReactNode }) => children,
 }));
 vi.mock("@tanstack/react-start", async (importOriginal) => ({
@@ -24,7 +26,7 @@ vi.mock("@tanstack/react-start", async (importOriginal) => ({
 }));
 vi.mock("@/lib/hungry.functions", () => ({ ensureWelcomeEmail: "welcome-email", sendRegistrationConfirmation: "registration-confirmation" }));
 vi.mock("@/integrations/supabase/client", () => ({
-  supabase: { auth: { signInWithPassword, resetPasswordForEmail, signUp, signOut, updateUser, getSession, onAuthStateChange } },
+  supabase: { auth: { signInWithPassword, resetPasswordForEmail, signUp, signOut, updateUser, getSession, onAuthStateChange, verifyOtp } },
 }));
 
 import { LoginForm, SignupForm } from "@/routes/auth";
@@ -34,6 +36,7 @@ import { signupSchema } from "@/lib/access";
 describe("HUNGRY Z authentication", () => {
   beforeEach(() => {
     registrationConfirmation.mockReset().mockResolvedValue({ sent: true });
+    navigate.mockReset();
   });
   it("requests a password reset without revealing whether the email exists", async () => {
     resetPasswordForEmail.mockResolvedValue({ error: null });
@@ -44,7 +47,7 @@ describe("HUNGRY Z authentication", () => {
     fireEvent.change(screen.getByLabelText("Enter your registered email address."), { target: { value: "student@example.com" } });
     fireEvent.click(screen.getByRole("button", { name: "Send reset link" }));
 
-    await waitFor(() => expect(resetPasswordForEmail).toHaveBeenCalledWith("student@example.com", { redirectTo: "https://www.hungryz.in/reset-password" }));
+    await waitFor(() => expect(resetPasswordForEmail).toHaveBeenCalledWith("student@example.com", { redirectTo: "https://hungryz.in/reset-password" }));
     expect(await screen.findByRole("status")).toHaveTextContent("If an account exists for that email, we’ve sent a password reset link.");
     expect(dialog).toBeInTheDocument();
   });
@@ -109,10 +112,18 @@ describe("HUNGRY Z authentication", () => {
 
   it("validates matching passwords and updates the password through Supabase", async () => {
     window.history.replaceState({}, "", "/reset-password#access_token=reset-token&type=recovery");
-    getSession.mockResolvedValue({ data: { session: { user: { id: "user-1" } } } });
-    onAuthStateChange.mockReturnValue({ data: { subscription: { unsubscribe: vi.fn() } } });
+    let authListener: ((event: string, session: { access_token: string; user: { id: string } }) => void) | undefined;
+    getSession.mockResolvedValue({ data: { session: null }, error: null });
+    onAuthStateChange.mockImplementation((listener) => {
+      authListener = listener;
+      return { data: { subscription: { unsubscribe: vi.fn() } } };
+    });
     updateUser.mockResolvedValue({ error: null });
+    signOut.mockReset().mockResolvedValue({ error: null });
     render(<ResetPasswordPage />);
+    await act(async () => {
+      authListener?.("PASSWORD_RECOVERY", { access_token: "reset-token", user: { id: "user-1" } });
+    });
     const newPassword = await screen.findByLabelText("New Password");
     const confirmPassword = screen.getByLabelText("Confirm Password");
     fireEvent.click(screen.getByRole("button", { name: "Show new password" }));
@@ -132,7 +143,21 @@ describe("HUNGRY Z authentication", () => {
     fireEvent.change(confirmPassword, { target: { value: "correct-pass-123" } });
     fireEvent.click(screen.getByRole("button", { name: "Update Password" }));
     await waitFor(() => expect(updateUser).toHaveBeenCalledWith({ password: "correct-pass-123" }));
-    expect(await screen.findByRole("status")).toHaveTextContent("Your password has been updated.");
+    expect(await screen.findByRole("status")).toHaveTextContent("Your password has been updated. Redirecting you to Login");
+    expect(signOut).toHaveBeenCalledWith({ scope: "local" });
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith({ to: "/auth", search: { mode: "login" }, replace: true }), { timeout: 2500 });
+    window.history.replaceState({}, "", "/");
+  });
+
+  it("verifies token-hash recovery links and shows a clear error when already used", async () => {
+    window.history.replaceState({}, "", "/reset-password?token_hash=used-token&type=recovery");
+    onAuthStateChange.mockReturnValue({ data: { subscription: { unsubscribe: vi.fn() } } });
+    verifyOtp.mockResolvedValue({ data: { session: null }, error: { message: "Token has expired or is invalid" } });
+    render(<ResetPasswordPage />);
+
+    expect(verifyOtp).toHaveBeenCalledWith({ token_hash: "used-token", type: "recovery" });
+    expect(await screen.findByRole("alert")).toHaveTextContent("invalid, expired, or has already been used");
+    expect(screen.queryByLabelText("New Password")).not.toBeInTheDocument();
     window.history.replaceState({}, "", "/");
   });
 

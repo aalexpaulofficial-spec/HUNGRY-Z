@@ -6,15 +6,19 @@ These HTML files are the branded templates for Supabase Auth. The hosted project
 
 Set the Site URL to:
 
-`https://www.hungryz.in`
+`https://hungryz.in`
 
-Add this Redirect URL:
+Add these Redirect URLs (the exact reset path and the app-wide redirect pattern):
 
-`https://www.hungryz.in/**`
+`https://hungryz.in/reset-password`
+
+`https://hungryz.in/**`
+
+Keep `https://www.hungryz.in/**` as well while the `www` hostname remains active, because existing signup links may use that origin.
 
 Keep any required local development URLs. Remove obsolete entries for `https://hungryofficial.vercel.app` and `https://hungryzq.vercel.app` after confirming they are no longer in use.
 
-The app's password reset request sends the exact redirect `https://www.hungryz.in/reset-password`. Signup confirmation also uses the production site origin.
+The app's password reset request sends the exact redirect `https://hungryz.in/reset-password`. Signup confirmation also uses the production site origin.
 
 ## Authentication templates
 

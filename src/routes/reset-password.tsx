@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { z } from "zod";
 import { Eye, EyeOff } from "lucide-react";
@@ -18,6 +18,7 @@ export const Route = createFileRoute("/reset-password")({
 const inputClass = "w-full rounded-2xl border border-input bg-ink-soft px-4 py-3.5 text-sm text-foreground outline-none transition focus:border-primary focus:shadow-[0_0_0_3px_color-mix(in_oklab,var(--primary)_25%,transparent)]";
 
 export function ResetPasswordPage() {
+  const navigate = useNavigate();
   const [ready, setReady] = useState(false);
   const [hasSession, setHasSession] = useState(false);
   const [password, setPassword] = useState("");
@@ -30,6 +31,7 @@ export function ResetPasswordPage() {
 
   useEffect(() => {
     let active = true;
+    let recoveryAccepted = false;
     const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
     const query = new URLSearchParams(window.location.search);
     const callbackError = hash.get("error_description") || hash.get("error") || query.get("error_description") || query.get("error");
@@ -39,21 +41,53 @@ export function ResetPasswordPage() {
       setReady(true);
       return () => { active = false; };
     }
-    const finishCheck = window.setTimeout(() => { if (active) setReady(true); }, 1800);
+    const finishCheck = window.setTimeout(() => {
+      if (!active || recoveryAccepted) return;
+      setError("We couldn't verify this reset link. It may be invalid, expired, or already used. Request a new password reset email.");
+      setReady(true);
+    }, 12000);
+    const acceptRecoverySession = () => {
+      recoveryAccepted = true;
+      setError("");
+      setHasSession(true);
+      setReady(true);
+      // Remove one-time tokens from the address bar after Supabase has established
+      // the recovery session, while keeping the reset screen and session intact.
+      window.history.replaceState(window.history.state, "", window.location.pathname);
+    };
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (!active) return;
-      if (session && (event === "PASSWORD_RECOVERY" || (event === "SIGNED_IN" && isRecoveryCallback))) {
-        setHasSession(true);
-        setReady(true);
-      }
+      if (session && (event === "PASSWORD_RECOVERY" || (event === "SIGNED_IN" && isRecoveryCallback))) acceptRecoverySession();
     });
-    void supabase.auth.getSession().then(({ data }) => {
-      if (!active) return;
-      if (data.session && isRecoveryCallback) {
-        setHasSession(true);
+    const tokenHash = query.get("token_hash");
+    if (tokenHash && query.get("type") === "recovery") {
+      void supabase.auth.verifyOtp({ token_hash: tokenHash, type: "recovery" }).then(({ data, error: verifyError }) => {
+        if (!active || recoveryAccepted) return;
+        if (!verifyError && data.session) acceptRecoverySession();
+        else {
+          setError("This reset link is invalid, expired, or has already been used. Request a new password reset email.");
+          setReady(true);
+        }
+      }).catch(() => {
+        if (!active) return;
+        setError("We couldn't verify this reset link. Check your connection or request a new password reset email.");
         setReady(true);
-      }
-    });
+      });
+    } else {
+      void supabase.auth.getSession().then(({ data, error: sessionError }) => {
+        if (!active || recoveryAccepted) return;
+        const callbackAccessToken = hash.get("access_token");
+        if (!sessionError && data.session && hash.get("type") === "recovery" && callbackAccessToken === data.session.access_token) acceptRecoverySession();
+        else {
+          setError("This reset link is invalid, expired, or has already been used. Request a new password reset email.");
+          setReady(true);
+        }
+      }).catch(() => {
+        if (!active) return;
+        setError("We couldn't verify this reset link. Check your connection or request a new password reset email.");
+        setReady(true);
+      });
+    }
     return () => {
       active = false;
       window.clearTimeout(finishCheck);
@@ -65,15 +99,34 @@ export function ResetPasswordPage() {
     event.preventDefault();
     setError("");
     setMessage("");
-    const passwordSchema = z.string().min(8, "Use at least 8 characters.").max(72);
+    const passwordSchema = z.string().min(8, "Use at least 8 characters.").max(72, "Use 72 characters or fewer.");
     const parsed = passwordSchema.safeParse(password);
     if (!parsed.success) return setError(parsed.error.issues[0]?.message ?? "Enter a valid password.");
     if (password !== confirmPassword) return setError("The passwords do not match.");
     setBusy(true);
-    const { error: updateError } = await supabase.auth.updateUser({ password });
+    let updateError: { code?: string; message?: string } | null = null;
+    try {
+      updateError = (await supabase.auth.updateUser({ password })).error;
+    } catch {
+      setBusy(false);
+      return setError("We couldn't update your password. Check your connection and try again.");
+    }
+    if (updateError) {
+      setBusy(false);
+      const code = "code" in updateError ? String(updateError.code) : "";
+      if (["session_not_found", "bad_jwt", "otp_expired", "flow_state_expired"].includes(code)) {
+        return setError("This reset link is invalid, expired, or has already been used. Request a new password reset email.");
+      }
+      return setError(updateError.message || "We couldn't update your password. Please try again.");
+    }
+    // A local sign-out prevents the login page from sending the recovered user
+    // straight into the app with the recovery session.
+    await Promise.resolve(supabase.auth.signOut({ scope: "local" })).catch(() => undefined);
     setBusy(false);
-    if (updateError) return setError("This reset link is invalid or has expired. Request a new link and try again.");
-    setMessage("Your password has been updated.");
+    setMessage("Your password has been updated. Redirecting you to Login…");
+    window.setTimeout(() => {
+      void navigate({ to: "/auth", search: { mode: "login" }, replace: true });
+    }, 1600);
   }
 
   return (
@@ -111,7 +164,7 @@ export function ResetPasswordPage() {
             {!message && <button disabled={busy} className="w-full rounded-full bg-primary py-4 text-sm font-semibold text-primary-foreground disabled:opacity-60">{busy ? "Updating…" : "Update Password"}</button>}
           </form>
         ) : <p role="alert" className="mt-5 text-center text-sm leading-relaxed text-muted-foreground">{error || "This reset link is invalid, expired, or has already been used. Request a new password reset email from the login page."}</p>}
-        {ready && <p className="mt-5 text-center text-sm text-muted-foreground"><Link to="/auth" search={{ mode: "login" }} className="text-primary-bright underline underline-offset-2">Return to login</Link></p>}
+        {ready && <p className="mt-5 text-center text-sm text-muted-foreground"><Link to="/auth" search={{ mode: "login" }} className="text-primary-bright underline underline-offset-2">Return to Login</Link></p>}
       </section>
     </main>
   );
