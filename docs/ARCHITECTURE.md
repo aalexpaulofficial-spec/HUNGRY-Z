@@ -70,7 +70,7 @@ The browser uses the Supabase client for user-scoped reads and realtime subscrip
 
 1. A student selects an approved canteen, reviews its current menu and chooses Dine In or Parcel.
 2. The application validates order data and applicable coupon/stock rules through the order workflow.
-3. Pay-at-counter orders remain unpaid until handled at the canteen. Dine In can offer Razorpay online payment when configured. Parcel is pay-at-counter.
+3. Pay-at-counter orders remain unpaid until handled at the canteen. Dine In and Parcel can offer Razorpay online payment when configured.
 4. Online payment state is updated after server-side payment verification or a valid Razorpay webhook; the client is not the source of payment confirmation.
 5. Students and canteen owners can follow the order's supported status and pickup flow.
 
@@ -90,7 +90,7 @@ Refund eligibility is reviewed through the application's refund flow; cancellati
 
 ### Food scan and website help
 
-HUNGRY AI Scan is available as a student-facing food and nutrition estimate workflow. The public landing page also provides a website assistant with English, Hindi and Kannada responses. These are guidance and estimate features, not substitutes for provider payment records or verified nutrition labeling.
+HUNGRY AI Scan is available to student, faculty and guest accounts as a food and nutrition estimate workflow. The server grants one scan usage per 15 completed food orders, counts printed-workflow orders only after the customer confirms receipt, and reserves/consumes each usage through account-scoped database functions. The public landing page also provides a website assistant with English, Hindi and Kannada responses. These are guidance and estimate features, not substitutes for provider payment records or verified nutrition labeling.
 
 ## Data and trust boundaries
 

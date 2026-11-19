@@ -90,7 +90,7 @@ describe("HUNGRY Z authentication", () => {
     fireEvent.click(screen.getByRole("button", { name: "Create Account" }));
 
     await waitFor(() => expect(signUp).toHaveBeenCalled());
-    expect(signUp.mock.calls.at(-1)?.[0].options.data).toMatchObject({ accepted_terms: true, terms_version: "2026-11-19" });
+    expect(signUp.mock.calls.at(-1)?.[0].options.data).toMatchObject({ accepted_terms: true, terms_version: "2026-11-19-ai-15-order" });
     expect(await screen.findByText("Account created")).toBeInTheDocument();
     expect(await screen.findByRole("status")).toHaveTextContent("Thank you for registering with HUNGRY Z! A confirmation email has been sent to your registered email address. Please check your Inbox. If you cannot find it, kindly check your Spam or Junk folder.");
   });

@@ -35,9 +35,9 @@ The first official release brings together student and faculty ordering, canteen
 
 - Browse approved participating canteens and current menu availability.
 - Place Dine In or Parcel orders and follow the supported order and pickup flow.
-- Pay at the counter, or use Razorpay online payment when available for Dine In. Parcel orders are pay-at-counter.
+- Pay at the counter or use Razorpay online payment when it is available for Dine In or Parcel.
 - View order details and pickup QR codes where supported.
-- Use **HUNGRY AI Scan** for food identification and nutrition estimates.
+- Use **HUNGRY AI Scan** for food identification and nutrition estimates. Students, faculty and guests earn one scan usage per 15 completed food orders.
 
 ### Faculty events
 

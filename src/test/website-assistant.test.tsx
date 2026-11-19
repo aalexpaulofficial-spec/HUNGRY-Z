@@ -10,6 +10,9 @@ afterEach(() => { cleanup(); localStorage.removeItem("hungry:assistant-language"
 describe("HUNGRY Z website help chat", () => {
   it("answers common questions from the live ordering, event and refund workflows", () => {
     expect(getWebsiteAssistantAnswer("How do I place an order?", "en")).toContain("7-character code");
+    expect(getWebsiteAssistantAnswer("How do I earn HUNGRY AI scan usage?", "en")).toContain("every 15 completed food orders");
+    expect(getWebsiteAssistantAnswer("HUNGRY AI उपयोग कब मिलेगा?", "hi")).toContain("हर 15 पूरे हुए फूड ऑर्डर");
+    expect(getWebsiteAssistantAnswer("HUNGRY AI ಬಳಕೆ ಯಾವಾಗ ಸಿಗುತ್ತದೆ?", "kn")).toContain("ಪ್ರತಿ 15 ಪೂರ್ಣಗೊಂಡ ಆಹಾರ ಆರ್ಡರ್‌ಗಳಿಗೆ");
     expect(getWebsiteAssistantAnswer("मैं खाना कैसे ऑर्डर करूँ?", "hi")).toContain("UPI / ऑनलाइन भुगतान");
     expect(getWebsiteAssistantAnswer("ನಾನು ಆಹಾರವನ್ನು ಹೇಗೆ ಆರ್ಡರ್ ಮಾಡಲಿ?", "kn")).toContain("UPI / ಆನ್‌ಲೈನ್");
     expect(getWebsiteAssistantAnswer("How do event tokens work?", "en")).toContain("four-digit token");

@@ -10,11 +10,11 @@ First official release.
 
 - Student, faculty, guest, canteen-owner and administrator experiences for campus food ordering and operations.
 - Dine In and Parcel ordering, with live order updates, pickup codes and QR-based order access.
-- Counter payments and verified Razorpay payments where supported. Parcel orders are paid at the counter.
+- Counter payments and verified Razorpay payments for Dine In or Parcel when available.
 - Canteen menu, availability, online-order and point-of-sale workflows, with analytics.
 - Faculty event requests, canteen quotations, approval and publishing, capacity-limited student participation tokens, and serving verification.
 - Transactional account, order, payment and refund email flows.
-- HUNGRY AI Scan for food identification and nutrition estimates.
+- HUNGRY AI Scan for food identification and nutrition estimates; one scan usage per 15 completed food orders.
 
 ### Reliability and security
 

@@ -49,9 +49,9 @@ const topicWords: Record<Topic, Record<AssistantLanguage, string[]>> = {
     kn: ["ಕ್ಯಾಂಟೀನ್", "ಕ್ಯಾಂಟೀನ್ ಕೋಡ್", "ಮಾಲೀಕ", "ನೋಂದಾಯ", "ನೋಂದಣಿ"],
   },
   scanner: {
-    en: ["scan", "scanner", "nutrition", "calorie", "photo"],
-    hi: ["स्कैन", "पोषण", "कैलोरी", "फोटो"],
-    kn: ["ಸ್ಕ್ಯಾನ್", "ಪೌಷ್ಟಿಕಾಂಶ", "ಕ್ಯಾಲರಿ", "ಫೋಟೋ"],
+    en: ["scan", "scanner", "nutrition", "calorie", "photo", "hungry ai", "ai usage", "scan usage", "usage", "unlock"],
+    hi: ["स्कैन", "पोषण", "कैलोरी", "फोटो", "hungry ai", "उपयोग", "15 ऑर्डर"],
+    kn: ["ಸ್ಕ್ಯಾನ್", "ಪೌಷ್ಟಿಕಾಂಶ", "ಕ್ಯಾಲರಿ", "ಫೋಟೋ", "hungry ai", "ಬಳಕೆ", "15 ಆರ್ಡರ್"],
   },
   privacy: {
     en: ["privacy", "terms", "data", "personal information"],
@@ -112,9 +112,9 @@ const answers: Record<Topic, Record<AssistantLanguage, string>> = {
     kn: "ಕ್ಯಾಂಟೀನ್ ಮಾಲೀಕರು Register Your Canteen ಮೂಲಕ ಸಂಸ್ಥೆ, ಕ್ಯಾಂಟೀನ್, ಮಾಲೀಕ, ವ್ಯವಹಾರ ಮತ್ತು ಸಹಾಯಕ ವಿವರಗಳನ್ನು ಪರಿಶೀಲನೆಗೆ ಕಳುಹಿಸಬಹುದು. ಅನುಮೋದಿತ ಕ್ಯಾಂಟೀನ್‌ಗಳಿಗೆ ಪ್ರತ್ಯೇಕ owner login ವಿವರಗಳು ಮತ್ತು ಗ್ರಾಹಕರಿಗಾಗಿ 7 ಅಕ್ಷರಗಳ Canteen Code ಸಿಗುತ್ತದೆ. ಅರ್ಜಿ ಸಹಾಯಕ್ಕೆ hungryofficialx@gmail.com ಗೆ ಬರೆಯಿರಿ.",
   },
   scanner: {
-    en: "HUNGRY AI Scan can identify food from a photo and request an estimated nutrition lookup. Results may be incomplete or inaccurate and are not medical, allergy or dietary advice. Check ingredients and allergy questions directly with the canteen.",
-    hi: "HUNGRY AI Scan फोटो से भोजन पहचानकर अनुमानित nutrition जानकारी दिखा सकता है। परिणाम अधूरे या गलत हो सकते हैं; यह चिकित्सा, एलर्जी या आहार सलाह नहीं है। सामग्री और एलर्जी के बारे में कैंटीन से सीधे पूछें।",
-    kn: "HUNGRY AI Scan ಫೋಟೋದಿಂದ ಆಹಾರ ಗುರುತಿಸಿ ಅಂದಾಜು ಪೌಷ್ಟಿಕಾಂಶ ಮಾಹಿತಿಯನ್ನು ಪಡೆಯಬಹುದು. ಫಲಿತಾಂಶಗಳು ಅಪೂರ್ಣ ಅಥವಾ ತಪ್ಪಾಗಿರಬಹುದು; ಇದು ವೈದ್ಯಕೀಯ, ಅಲರ್ಜಿ ಅಥವಾ ಆಹಾರ ಸಲಹೆಯಲ್ಲ. ಪದಾರ್ಥ ಮತ್ತು ಅಲರ್ಜಿ ಬಗ್ಗೆ ಕ್ಯಾಂಟೀನ್‌ನಿಂದಲೇ ಖಚಿತಪಡಿಸಿಕೊಳ್ಳಿ.",
+    en: "Signed-in Students, Faculty and Guests earn one HUNGRY AI scan usage for every 15 completed food orders. Completed means collected, or customer-confirmed receipt for a printed bill. HUNGRY AI Scan can identify food from a photo and request an estimated nutrition lookup. Results may be incomplete or inaccurate and are not medical, allergy or dietary advice. Check ingredients and allergy questions directly with the canteen.",
+    hi: "साइन-इन किए हुए Student, Faculty और Guest को हर 15 पूरे हुए फूड ऑर्डर पर HUNGRY AI स्कैन का एक उपयोग मिलता है। पूरा ऑर्डर वह है जो लिया जा चुका हो, या प्रिंटेड बिल पर ग्राहक ने खाना मिलने की पुष्टि की हो। HUNGRY AI Scan फोटो से भोजन पहचानकर अनुमानित nutrition जानकारी दिखा सकता है। परिणाम अधूरे या गलत हो सकते हैं; यह चिकित्सा, एलर्जी या आहार सलाह नहीं है। सामग्री और एलर्जी के बारे में कैंटीन से सीधे पूछें।",
+    kn: "ಸೈನ್-ಇನ್ ಮಾಡಿದ Student, Faculty ಮತ್ತು Guest ಖಾತೆಗಳಿಗೆ ಪ್ರತಿ 15 ಪೂರ್ಣಗೊಂಡ ಆಹಾರ ಆರ್ಡರ್‌ಗಳಿಗೆ ಒಂದು HUNGRY AI ಸ್ಕ್ಯಾನ್ ಬಳಕೆ ಸಿಗುತ್ತದೆ. ಆರ್ಡರ್ ಸಂಗ್ರಹಿಸಿದಾಗ, ಅಥವಾ ಮುದ್ರಿತ ಬಿಲ್‌ನ ಆಹಾರ ಸ್ವೀಕೃತಿಯನ್ನು ಗ್ರಾಹಕರು ದೃಢಪಡಿಸಿದಾಗ ಅದು ಪೂರ್ಣಗೊಳ್ಳುತ್ತದೆ. HUNGRY AI Scan ಫೋಟೋದಿಂದ ಆಹಾರ ಗುರುತಿಸಿ ಅಂದಾಜು ಪೌಷ್ಟಿಕಾಂಶ ಮಾಹಿತಿಯನ್ನು ಪಡೆಯಬಹುದು. ಫಲಿತಾಂಶಗಳು ಅಪೂರ್ಣ ಅಥವಾ ತಪ್ಪಾಗಿರಬಹುದು; ಇದು ವೈದ್ಯಕೀಯ, ಅಲರ್ಜಿ ಅಥವಾ ಆಹಾರ ಸಲಹೆಯಲ್ಲ. ಪದಾರ್ಥ ಮತ್ತು ಅಲರ್ಜಿ ಬಗ್ಗೆ ಕ್ಯಾಂಟೀನ್‌ನಿಂದಲೇ ಖಚಿತಪಡಿಸಿಕೊಳ್ಳಿ.",
   },
   privacy: {
     en: "The Privacy Policy and Terms & Conditions are available at www.hungryz.in from the website footer, sign-up flow and dashboard profile. The policy explains account, order, payment, support, scanner and event information. You can email privacy questions or requests to hungryofficialx@gmail.com.",

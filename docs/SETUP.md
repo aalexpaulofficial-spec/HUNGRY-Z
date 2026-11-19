@@ -50,7 +50,7 @@ The older [`database/`](../database/) SQL files are historical references for th
 
 ## Payments and email
 
-- Razorpay online payment is available for supported Dine In orders when the integration is configured. Parcel orders use pay-at-counter. Payment and refund state must come from server-side provider verification or a verified webhook.
+- Razorpay online payment is available for Dine In and Parcel orders when the integration is configured. Pay at counter is also supported. Payment and refund state must come from server-side provider verification or a verified webhook.
 - The public webhook route is `/api/public/razorpay-webhook`. Configure webhook URL and event subscriptions in Razorpay only for an authorized deployment, using the matching server-side webhook secret.
 - Transactional mail is sent by the server mailer. Configure SMTP credentials server-side; delivery and status depend on the configured provider.
 

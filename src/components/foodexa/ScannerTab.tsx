@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Camera, Check, ChevronDown, ImageUp, Loader2, Lock, ScanLine, Sparkles, SwitchCamera, Upload, X } from "lucide-react";
 import { getScannerAccess, scanFood, updateFoodScan } from "@/lib/scanner.functions";
-import { STUDENT_SCANNER_PLANS } from "@/lib/scanner";
+import { SCANNER_ORDERS_PER_USAGE, STUDENT_SCANNER_PLANS } from "@/lib/scanner";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -128,7 +128,7 @@ export function ScannerTab({ userId }: { userId?: string }) {
       <p className="mx-auto mt-2 max-w-sm text-center text-sm text-muted-foreground">{livePlan.description}</p>
       <div className="mx-auto mt-3 max-w-2xl rounded-2xl border border-primary/25 bg-primary/5 px-4 py-3 text-center text-xs leading-relaxed text-foreground">
         <p>Available to Students, Faculty and Guests with eligible completed food orders.</p>
-        <p className="mt-1">One HUNGRY AI usage is available for each completed food order.</p>
+        <p className="mt-1">Every {SCANNER_ORDERS_PER_USAGE} completed food orders unlock one HUNGRY AI usage.</p>
       </div>
       <p className="mx-auto mt-3 flex max-w-2xl flex-wrap justify-center gap-x-1 text-center text-xs leading-relaxed text-muted-foreground"><span className="font-semibold text-foreground">Features:</span>{livePlan.features.map((feature, index) => <span key={feature}>{index > 0 && <span aria-hidden="true"> · </span>}{feature}</span>)}</p>
       <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4" aria-label="HUNGRY AI usage">
@@ -137,14 +137,14 @@ export function ScannerTab({ userId }: { userId?: string }) {
         <UsageMetric label="Used usages" value={access.used_usages} />
         <UsageMetric label="Usages remaining" value={access.remaining_usages} highlight />
       </div>
-      <p className="mt-3 text-center text-xs font-medium text-muted-foreground">One HUNGRY AI usage is available for each completed food order.</p>
+      <p className="mt-3 text-center text-xs font-medium text-muted-foreground">Every {SCANNER_ORDERS_PER_USAGE} completed food orders unlock one HUNGRY AI usage.</p>
       {access.remaining_usages > 0 && !preview && !cameraOpen && <div className="mx-auto mt-6 grid w-full max-w-md grid-cols-1 gap-3 sm:grid-cols-2">
         <button type="button" onClick={() => void openCamera()} className="scanner-action scanner-action-primary scanner-start"><Camera className="h-5 w-5" /><span><b>Scan Food</b><small>Capture with camera</small></span></button>
         <button type="button" onClick={() => uploadRef.current?.click()} className="scanner-action scanner-start"><ImageUp className="h-5 w-5" /><span><b>Upload Image</b><small>Choose from Gallery</small></span></button>
         <input ref={uploadRef} type="file" accept="image/*" className="hidden" aria-label="Upload food photo from gallery" onChange={(e) => void onFile(e.target.files?.[0])} />
         <input ref={cameraFallbackRef} type="file" accept="image/*" capture="environment" className="hidden" aria-label="Open device camera" onChange={(e) => void onFile(e.target.files?.[0])} />
       </div>}
-      {access.remaining_usages < 1 && !preview && !cameraOpen && <p className="mx-auto mt-5 max-w-md rounded-2xl border border-primary/30 bg-primary/5 p-4 text-center text-sm font-semibold text-foreground">Complete a food order to unlock another HUNGRY AI usage.</p>}
+      {access.remaining_usages < 1 && !preview && !cameraOpen && <p className="mx-auto mt-5 max-w-md rounded-2xl border border-primary/30 bg-primary/5 p-4 text-center text-sm font-semibold text-foreground">Every {SCANNER_ORDERS_PER_USAGE} completed food orders unlock one HUNGRY AI usage.</p>}
     </section>
 
     {cameraOpen && <section className="scanner-card overflow-hidden">

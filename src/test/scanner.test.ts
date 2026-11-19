@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { SCANNER_PRICE_INR, STUDENT_SCANNER_PLANS, isTrialActive, trialDaysLeft, trialEndsAt } from "@/lib/scanner";
+import { SCANNER_ORDERS_PER_USAGE, SCANNER_PRICE_INR, STUDENT_SCANNER_PLANS, isTrialActive, trialDaysLeft, trialEndsAt } from "@/lib/scanner";
 
 describe("HUNGRY Z SCANNER student plans", () => {
   it("all three versions are ₹0", () => {
@@ -8,6 +8,9 @@ describe("HUNGRY Z SCANNER student plans", () => {
   });
   it("only Version 1.0 is live", () => {
     expect(STUDENT_SCANNER_PLANS.filter((p) => p.status === "live").map((p) => p.version)).toEqual(["1.0"]);
+  });
+  it("earns one scan usage for every 15 completed food orders", () => {
+    expect(SCANNER_ORDERS_PER_USAGE).toBe(15);
   });
 });
 
