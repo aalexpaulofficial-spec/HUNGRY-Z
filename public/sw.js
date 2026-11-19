@@ -1,5 +1,5 @@
 const CACHE_PREFIX = "hungry-public-";
-const CACHE_NAME = `${CACHE_PREFIX}v14`;
+const CACHE_NAME = `${CACHE_PREFIX}v15`;
 const PRECACHE_URLS = [
   "/offline.html",
   "/manifest-student.webmanifest",
@@ -32,6 +32,57 @@ self.addEventListener("activate", (event) => {
       .map((name) => caches.delete(name)));
     await self.clients.claim();
   })());
+});
+
+self.addEventListener("push", (event) => {
+  event.waitUntil((async () => {
+    let message = {};
+    try { message = event.data?.json() ?? {}; }
+    catch { message = { body: event.data?.text() ?? "" }; }
+    const title = typeof message.title === "string" ? message.title : "HUNGRY Z";
+    const options = {
+      body: typeof message.body === "string" ? message.body : "You have a new update.",
+      icon: "/icons/student-192.png",
+      badge: "/icons/student-192.png",
+      tag: typeof message.notificationId === "string" ? `hz-${message.notificationId}` : "hz-notification",
+      renotify: false,
+      data: { href: typeof message.href === "string" ? message.href : "/app" },
+    };
+    const windows = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+    const foreground = windows.find((client) => client.visibilityState === "visible");
+    if (foreground) {
+      foreground.postMessage({ type: "HUNGRYZ_PUSH", notification: message });
+      return;
+    }
+    await self.registration.showNotification(title, options);
+  })());
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const path = event.notification.data?.href;
+  let target = new URL("/app", self.location.origin);
+  if (typeof path === "string" && path.startsWith("/") && !path.startsWith("//")) {
+    const candidate = new URL(path, self.location.origin);
+    if (candidate.origin === self.location.origin) target = candidate;
+  }
+  event.waitUntil((async () => {
+    const windows = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+    for (const client of windows) {
+      if (client.url.startsWith(self.location.origin) && "focus" in client) {
+        await client.navigate(target.href);
+        return client.focus();
+      }
+    }
+    return self.clients.openWindow(target.href);
+  })());
+});
+
+self.addEventListener("pushsubscriptionchange", (event) => {
+  event.waitUntil(self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((windows) => {
+    const subscription = event.newSubscription?.toJSON() ?? null;
+    for (const client of windows) client.postMessage({ type: "HUNGRYZ_PUSH_SUBSCRIPTION_CHANGED", subscription });
+  }));
 });
 
 self.addEventListener("fetch", (event) => {

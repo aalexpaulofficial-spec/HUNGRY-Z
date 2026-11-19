@@ -74,7 +74,7 @@ beforeEach(() => {
 
 describe("canteen template save flow", () => {
   it("uploads the selected image, saves crop settings, returns to Menu, and restores the saved crop", async () => {
-    const { container } = render(<Dashboard canteen={{ id: "canteen-1", code: "ABC1234", name: "Main Canteen", university_name: "Campus", visibility: "public", is_active: true, availability_mode: "schedule", timezone: "Asia/Kolkata", operating_hours: { mon: { open: "00:00", close: "24:00" }, tue: { open: "00:00", close: "24:00" }, wed: { open: "00:00", close: "24:00" }, thu: { open: "00:00", close: "24:00" }, fri: { open: "00:00", close: "24:00" }, sat: { open: "00:00", close: "24:00" }, sun: { open: "00:00", close: "24:00" } } }} language="en" onLanguageChange={() => undefined} onSignOut={() => undefined} />);
+    const { container } = render(<Dashboard canteen={{ id: "canteen-1", code: "ABC1234", name: "Main Canteen", university_name: "Campus", visibility: "public", is_active: true, availability_mode: "schedule", timezone: "Asia/Kolkata", operating_hours: { mon: { open: "00:00", close: "24:00" }, tue: { open: "00:00", close: "24:00" }, wed: { open: "00:00", close: "24:00" }, thu: { open: "00:00", close: "24:00" }, fri: { open: "00:00", close: "24:00" }, sat: { open: "00:00", close: "24:00" }, sun: { open: "00:00", close: "24:00" } } }} ownerUserId="owner-1" language="en" onLanguageChange={() => undefined} onSignOut={() => undefined} />);
     await waitFor(() => expect(screen.getByRole("button", { name: /CHANGE TEMPLATE/ })).toBeInTheDocument());
     fireEvent.click(screen.getByRole("button", { name: /CHANGE TEMPLATE/ }));
 
@@ -122,7 +122,7 @@ describe("canteen template save flow", () => {
 
   it("uses one editable search field for physical and on-screen input and closes the keypad on cancel", async () => {
     localStorage.setItem("hungry:offline-menu:canteen-1", JSON.stringify([{ id: "item-1", name: "Lime Soda", price: 30, image: null, category: "Drinks", description: "Fresh lime", stock: 0, available: false }]));
-    render(<Dashboard canteen={{ id: "canteen-1", code: "ABC1234", name: "Main Canteen", university_name: "Campus", visibility: "public", is_active: true, availability_mode: "schedule", timezone: "Asia/Kolkata", operating_hours: { mon: { open: "00:00", close: "24:00" }, tue: { open: "00:00", close: "24:00" }, wed: { open: "00:00", close: "24:00" }, thu: { open: "00:00", close: "24:00" }, fri: { open: "00:00", close: "24:00" }, sat: { open: "00:00", close: "24:00" }, sun: { open: "00:00", close: "24:00" } } }} language="en" onLanguageChange={() => undefined} onSignOut={() => undefined} />);
+    render(<Dashboard canteen={{ id: "canteen-1", code: "ABC1234", name: "Main Canteen", university_name: "Campus", visibility: "public", is_active: true, availability_mode: "schedule", timezone: "Asia/Kolkata", operating_hours: { mon: { open: "00:00", close: "24:00" }, tue: { open: "00:00", close: "24:00" }, wed: { open: "00:00", close: "24:00" }, thu: { open: "00:00", close: "24:00" }, fri: { open: "00:00", close: "24:00" }, sat: { open: "00:00", close: "24:00" }, sun: { open: "00:00", close: "24:00" } } }} ownerUserId="owner-1" language="en" onLanguageChange={() => undefined} onSignOut={() => undefined} />);
     fireEvent.click(screen.getByRole("button", { name: /OFFLINE POS/ }));
 
     const search = screen.getByRole("searchbox", { name: "Search POS menu" });
@@ -185,7 +185,7 @@ describe("canteen template save flow", () => {
       held: [{ id: "H-12345678", createdAt: "2026-11-09T10:00:00.000Z", paymentMethod: "upi", paymentStatus: "paid", lines: [{ id: "item-1", name: "Lime Soda", price: 30, image: null, category: "Drinks", stock: 0, qty: 2 }] }],
       completed: [], paymentMethod: "cash", paymentStatus: "unpaid",
     }));
-    render(<Dashboard canteen={{ id: "canteen-1", code: "ABC1234", name: "Main Canteen", university_name: "Campus", visibility: "public", is_active: true, availability_mode: "schedule", timezone: "Asia/Kolkata", operating_hours: { mon: { open: "00:00", close: "24:00" }, tue: { open: "00:00", close: "24:00" }, wed: { open: "00:00", close: "24:00" }, thu: { open: "00:00", close: "24:00" }, fri: { open: "00:00", close: "24:00" }, sat: { open: "00:00", close: "24:00" }, sun: { open: "00:00", close: "24:00" } } }} language="en" onLanguageChange={() => undefined} onSignOut={() => undefined} />);
+    render(<Dashboard canteen={{ id: "canteen-1", code: "ABC1234", name: "Main Canteen", university_name: "Campus", visibility: "public", is_active: true, availability_mode: "schedule", timezone: "Asia/Kolkata", operating_hours: { mon: { open: "00:00", close: "24:00" }, tue: { open: "00:00", close: "24:00" }, wed: { open: "00:00", close: "24:00" }, thu: { open: "00:00", close: "24:00" }, fri: { open: "00:00", close: "24:00" }, sat: { open: "00:00", close: "24:00" }, sun: { open: "00:00", close: "24:00" } } }} ownerUserId="owner-1" language="en" onLanguageChange={() => undefined} onSignOut={() => undefined} />);
     fireEvent.click(screen.getByRole("button", { name: /OFFLINE POS/ }));
 
     const heldSection = screen.getByRole("region", { name: "Held orders" });

@@ -1,1 +1,7 @@
 project_id = "hpzllbhusihvkbkbowut"
+
+[functions.manage-push-subscription]
+verify_jwt = false
+
+[functions.dispatch-push]
+verify_jwt = false

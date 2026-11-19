@@ -73,3 +73,7 @@ npm run lint      # Run ESLint
 - Use test-mode provider credentials for local payment exercises. Do not place real customer or government ID data in development fixtures.
 
 For application boundaries and domain flows, see [Architecture](ARCHITECTURE.md). For product-facing data practices, see the live [Privacy Policy](https://www.hungryz.in/privacy).
+
+## Browser push notifications
+
+For in-app notification history and browser push setup, follow [NOTIFICATIONS.md](NOTIFICATIONS.md). The migration is manual and must be reviewed and applied in the intended Supabase project.

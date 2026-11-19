@@ -174,3 +174,7 @@ For product support, contact **hungryofficialx@gmail.com**. For security issues,
 HUNGRY Z is proprietary software. All rights are reserved. No permission to use, copy, modify, distribute, sublicense or commercially exploit this repository is granted unless HUNGRY Z provides written authorization. See the root [LICENSE](LICENSE) for the full terms.
 
 **Copyright © 2026 HUNGRY Z. All Rights Reserved.**
+
+## Push notifications
+
+The Supabase-backed in-app and browser push notification setup, manual SQL migration, and deployment steps are documented in [docs/NOTIFICATIONS.md](docs/NOTIFICATIONS.md).

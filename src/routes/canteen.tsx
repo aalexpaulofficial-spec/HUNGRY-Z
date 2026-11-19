@@ -26,6 +26,7 @@ import { CanteenAnalytics, type AnalyticsOrder } from "@/components/foodexa/Cant
 import { OfflinePOSAnalytics } from "@/components/foodexa/OfflinePOSAnalytics";
 import { EventCapacityPanel } from "@/components/foodexa/EventCapacityPanel";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { NotificationBell } from "@/components/foodexa/NotificationBell";
 import { FeedbackDialog } from "@/components/foodexa/FeedbackDialog";
 import { LegalDialog } from "@/components/foodexa/LegalDialog";
 import { useSessionState } from "@/lib/session-state";
@@ -34,7 +35,7 @@ import { CanteenAvailabilityPanel, type AvailabilitySettings } from "@/component
 
 export const Route = createFileRoute("/canteen")({
   ssr: false,
-  validateSearch: z.object({ code: z.string().optional() }),
+  validateSearch: z.object({ code: z.string().optional(), orderId: z.string().uuid().optional(), eventId: z.string().uuid().optional() }),
   head: () => ({
     meta: [
       { title: "HUNGRY Z Canteen Dashboard" },
@@ -59,6 +60,7 @@ const field =
 type Canteen = { id: string; code: string; name: string; university_name: string; visibility: string; is_active: boolean; availability_mode: "schedule" | "open" | "closed"; operating_hours: AvailabilitySettings["operating_hours"]; timezone: string };
 
 function CanteenPage() {
+  const { orderId: notificationOrderId, eventId: notificationEventId } = Route.useSearch();
   const ownerAccess = useServerFn(getCanteenOwnerAccess);
   const siteNavigationEnabled = useBackNavigationEnabled();
   const [state, setState] = useState<"loading" | "auth" | "ok" | "pending" | "rejected" | "missing" | "error">("loading");
@@ -158,7 +160,7 @@ function CanteenPage() {
   if (state === "loading") return (
     <GlobalLoadingScreen />
   );
-  if (state === "ok" && canteen) return <Dashboard canteen={canteen} onSignOut={signOut} language={language} onLanguageChange={saveLanguage} />;
+  if (state === "ok" && canteen) return <Dashboard canteen={canteen} ownerUserId={ownerUserId ?? ""} notificationOrderId={notificationOrderId} notificationEventId={notificationEventId} onSignOut={signOut} language={language} onLanguageChange={saveLanguage} />;
 
   return (
     <div className="hz-canteen-login grain relative min-h-screen overflow-hidden bg-background px-4 py-10">
@@ -463,7 +465,7 @@ function normalizeCanteenTemplate(value: Partial<CanteenTemplate> | null | undef
 const uid = () => Math.random().toString(36).slice(2);
 const NEXT: Record<string, string | undefined> = { placed: "preparing", preparing: "ready", ready: "collected" };
 const BANNER_IMAGE_TYPES: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/avif": "avif" };
-export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { canteen: Canteen; onSignOut: () => void; language: "en" | "hi" | "kn"; onLanguageChange: (language: "en" | "hi" | "kn") => void }) {
+export function Dashboard({ canteen, ownerUserId, notificationOrderId, notificationEventId, onSignOut, language, onLanguageChange }: { canteen: Canteen; ownerUserId: string; notificationOrderId?: string; notificationEventId?: string; onSignOut: () => void; language: "en" | "hi" | "kn"; onLanguageChange: (language: "en" | "hi" | "kn") => void }) {
   const [tab, setTab] = useSessionState<"overview" | "menu" | "orders" | "pos" | "template" | "analytics" | "events" | "settings">(`hungry-canteen-dashboard-tab-v2-${canteen.id}`, "overview");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [pendingEventRequests, setPendingEventRequests] = useState(0);
@@ -495,6 +497,15 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
   const [bannerCrop, setBannerCrop] = useState(DEFAULT_BANNER_CROP);
   useBackStep(tab !== "overview", () => setTab("overview"));
   useBackStep(!!editing, () => setEditing(null));
+  useEffect(() => {
+    if (notificationOrderId) {
+      setTab("orders");
+      setOrderStatusFilter("all");
+      setSelectedOrderId(notificationOrderId);
+    } else if (notificationEventId) {
+      setTab("events");
+    }
+  }, [notificationEventId, notificationOrderId, setTab]);
   const [err, setErr] = useState("");
   const [orderMsg, setOrderMsg] = useState("");
   const [orderStatusFilter, setOrderStatusFilter] = useState<"all" | "placed" | "preparing" | "ready" | "completed" | "cancelled">("all");
@@ -509,6 +520,7 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
   const [posFullScreen, setPOSFullScreen] = useState(false);
   const canteenAppRef = useRef<HTMLDivElement>(null);
   const [printerPaperWidth, setPrinterPaperWidth] = useState<ReceiptPaperWidth>(() => readPrinterPaperWidth(canteen.id));
+  const [printDialogAvailable, setPrintDialogAvailable] = useState(false);
   const [printerSettingsMsg, setPrinterSettingsMsg] = useState("");
   const [canteenCodeCopied, setCanteenCodeCopied] = useState(false);
   const [printJob, setPrintJob] = useState<ActiveReceiptPrint | null>(null);
@@ -684,6 +696,10 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
   }, [canteen.id]);
 
   useEffect(() => {
+    setPrintDialogAvailable(typeof window.print === "function");
+  }, []);
+
+  useEffect(() => {
     const syncPrinterPreference = (event: StorageEvent) => {
       if (event.key !== null && event.key !== printerPreferenceKey(canteen.id)) return;
       setPrinterPaperWidth(readPrinterPaperWidth(canteen.id));
@@ -714,10 +730,10 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
     try {
       localStorage.setItem(printerPreferenceKey(canteen.id), JSON.stringify({ paperWidth: printerPaperWidth }));
       setPrinterSettingsMsg(printerPaperWidth === "auto"
-        ? "Automatic width saved. The receipt will follow the paper size selected by the printer driver."
-        : `${printerPaperWidth}mm width saved. Match the printer driver's paper size before printing.`);
+        ? "Receipt preferences saved. Your browser/device manages the selected printer and its paper settings."
+        : `${printerPaperWidth}mm receipt width saved. Match this width to the paper setting in your printer dialog.`);
     } catch {
-      setPrinterSettingsMsg("Could not save printer preferences in this browser.");
+      setPrinterSettingsMsg("Could not save receipt preferences in this browser.");
     }
   }
 
@@ -1250,6 +1266,7 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
             </div>
           </div>
           <div className="hz-canteen-actions flex min-w-0 flex-wrap items-center justify-end gap-2 sm:gap-3 lg:justify-self-end">
+            <NotificationBell userId={ownerUserId} language={language} />
             <ThemeToggle scope="canteen" />
             <LanguageSelect language={language} onChange={onLanguageChange} className="hz-canteen-header-control" />
             <button onClick={onSignOut} className="hz-canteen-header-control flex min-h-10 shrink-0 items-center gap-2 rounded-full border border-border px-4 py-2 text-xs text-muted-foreground hover:text-foreground"><LogOut className="h-3.5 w-3.5" /> Log out</button>
@@ -1291,21 +1308,25 @@ export function Dashboard({ canteen, onSignOut, language, onLanguageChange }: { 
           <section id="printer-settings-panel" className="hz-printer-settings mt-3" aria-labelledby="printer-settings-title">
             <div className="hz-printer-settings-heading">
               <span className="hz-printer-settings-icon"><Printer aria-hidden="true" /></span>
-              <div><p className="hz-printer-settings-eyebrow">RECEIPT SETUP</p><h2 id="printer-settings-title" className="display">Printer Settings</h2><p>Choose your installed Epson printer in the browser print dialog. Automatic uses the paper size selected by that printer driver; browser pages cannot read printer capabilities directly. If the driver does not provide the expected width, select 58mm or 80mm and match the driver paper setting. Windows Epson drivers and supported ESC/POS printers use the standard print interface.</p></div>
+              <div><p className="hz-printer-settings-eyebrow">RECEIPT SETUP</p><h2 id="printer-settings-title" className="display">Printer Settings</h2><p>Use any printer available to this device through its browser or operating-system print dialog. Web pages cannot enumerate installed printers, read printer names/capabilities, or silently save a hardware destination. Choose your printer in the print dialog; your browser or device may remember its last choice. If no printer appears, connect or install it in your device's printer settings, then reopen the dialog.</p></div>
               <button type="button" onClick={() => { setPrinterSettingsOpen(false); setPrinterSettingsMsg(""); }} aria-label="Close Printer Settings" title="Close Printer Settings" className="hz-printer-settings-close"><X aria-hidden="true" /></button>
+            </div>
+            <div className="hz-printer-availability" role="status">
+              <span className={cn("hz-printer-availability-indicator", printDialogAvailable && "is-ready")} aria-hidden="true" />
+              <div><strong>{printDialogAvailable ? "Device print dialog available" : "Print dialog unavailable"}</strong><p>{printDialogAvailable ? "Open the test receipt below to see and choose printers installed or connected on this device." : "This browser does not provide the standard print dialog. Try a current browser on this device."}</p></div>
             </div>
             <fieldset className="hz-printer-widths">
               <legend>Receipt paper width</legend>
               {(["auto", "58", "80"] as const).map((width) => (
                 <label key={width} className={cn("hz-printer-width-option", printerPaperWidth === width && "is-selected")}>
                   <input type="radio" name="receipt-paper-width" value={width} checked={printerPaperWidth === width} onChange={() => { setPrinterPaperWidth(width); setPrinterSettingsMsg(""); }} />
-                  <span><strong>{width === "auto" ? "Printer default" : `${width} mm`}</strong><small>{width === "auto" ? "Use the paper size set in your printer driver" : `For ${width} mm receipt rolls`}</small></span>
+                  <span><strong>{width === "auto" ? "Device default" : `${width} mm`}</strong><small>{width === "auto" ? "Use the paper size selected in the print dialog" : `For ${width} mm receipt rolls on any compatible printer`}</small></span>
                 </label>
               ))}
             </fieldset>
             <div className="hz-printer-settings-actions">
-              <button type="button" onClick={savePrinterPreferences} className="hz-printer-save">Save Printer Preferences</button>
-              <button type="button" disabled={printing} onClick={() => startReceiptPrint({ kind: "test", counterName: canteen.name, createdAt: new Date().toISOString() })} className="hz-printer-test"><Printer aria-hidden="true" /> Print Test Receipt</button>
+              <button type="button" onClick={savePrinterPreferences} className="hz-printer-save">Save Receipt Preferences</button>
+              <button type="button" disabled={printing || !printDialogAvailable} onClick={() => startReceiptPrint({ kind: "test", counterName: canteen.name, createdAt: new Date().toISOString() })} className="hz-printer-test"><Printer aria-hidden="true" /> Choose Printer / Test Receipt</button>
               {printerSettingsMsg && <p role="status">{printerSettingsMsg}</p>}
             </div>
           </section>

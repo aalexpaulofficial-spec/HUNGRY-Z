@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { foodImage } from "@/lib/foodexa-images";
 import { ORDER_LABELS, ORDER_STATUSES, canAcceptOrders, type MenuItem } from "@/lib/access";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { NotificationBell } from "@/components/foodexa/NotificationBell";
 import { ScannerTab } from "@/components/foodexa/ScannerTab";
 import { canUseHungryAi } from "@/lib/scanner";
 import { SocialThankYouDialog } from "@/components/foodexa/SocialThankYouDialog";
@@ -60,7 +61,7 @@ import { createOrderQrUrl } from "@/lib/order-qr";
 import { z } from "zod";
 
 export const Route = createFileRoute("/_authenticated/app")({
-  validateSearch: z.object({ orderId: z.string().uuid().optional() }),
+  validateSearch: z.object({ orderId: z.string().uuid().optional(), eventId: z.string().uuid().optional() }),
   head: () => ({
     links: [
       { rel: "manifest", href: "/manifest-student.webmanifest" },
@@ -132,7 +133,7 @@ function clearPendingPaymentOrder(userId: string) {
 
 function OrderingApp() {
   const navigate = useNavigate();
-  const { orderId: qrOrderId } = Route.useSearch();
+  const { orderId: qrOrderId, eventId: notificationEventId } = Route.useSearch();
   const [profile, setProfile] = useState<Profile | null | undefined>(undefined);
   const [canteen, setCanteen] = useState<Canteen | null>(null);
   const [menuLoadedFor, setMenuLoadedFor] = useState<string | null>(null);
@@ -441,6 +442,10 @@ function OrderingApp() {
   }
 
   useEffect(() => {
+    if (notificationEventId) setTab("events");
+  }, [notificationEventId, setTab]);
+
+  useEffect(() => {
     if (!qrOrderId || !userId) return;
     let active = true;
     setTab("orders");
@@ -520,6 +525,7 @@ function OrderingApp() {
             </div>
           </div>
           <div className="hz-customer-header-actions flex min-w-0 flex-1 items-center justify-start gap-2 sm:flex-initial">
+            <NotificationBell userId={profile.id} />
             <ThemeToggle />
             <button onClick={() => setSwitching(true)} className="hz-campus-switch glass flex min-w-0 flex-1 items-center gap-2 rounded-2xl px-3 py-2 sm:max-w-[55%] sm:flex-initial">
               <MapPin className="h-3.5 w-3.5 shrink-0 text-primary-bright" />

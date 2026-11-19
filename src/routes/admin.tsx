@@ -11,6 +11,7 @@ import { visibilities, type Visibility } from "@/lib/access";
 import { cn } from "@/lib/utils";
 import { backendConfigured } from "@/lib/backend-config";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { NotificationBell } from "@/components/foodexa/NotificationBell";
 import { clearSessionState, useSessionState } from "@/lib/session-state";
 
 export const Route = createFileRoute("/admin")({
@@ -35,6 +36,7 @@ const field =
 function AdminPage() {
   const [state, setState] = useState<"loading" | "login" | "ok">("loading");
   const [gateError, setGateError] = useState("");
+  const [adminUserId, setAdminUserId] = useState("");
   const check = useCallback(async () => {
     setGateError("");
     try {
@@ -44,9 +46,10 @@ function AdminPage() {
       if (error && error.name !== "AuthSessionMissingError") {
         throw new Error("Could not verify the current Supabase session. Please try signing in again.");
       }
-      if (!data.user) return setState("login");
+      if (!data.user) { setAdminUserId(""); return setState("login"); }
       const { data: isAdmin, error: roleError } = await supabase.rpc("has_role", { _user_id: data.user.id, _role: "admin" });
       if (roleError) throw new Error("Could not verify your Admin role in Supabase. Please try again.");
+      setAdminUserId(isAdmin ? data.user.id : "");
       setState(isAdmin ? "ok" : "login");
       if (!isAdmin) setGateError("This account does not have HUNGRY Z Admin access.");
     } catch (error) {
@@ -63,7 +66,7 @@ function AdminPage() {
   }, [check]);
   if (state === "loading") return <GlobalLoadingScreen />;
   if (state === "login") return <AdminLogin onDone={check} initialError={gateError} />;
-  return <Dashboard onSignOut={async () => { clearSessionState("hungry-admin-dashboard-tab"); await supabase.auth.signOut(); setState("login"); }} />;
+  return <Dashboard userId={adminUserId} onSignOut={async () => { clearSessionState("hungry-admin-dashboard-tab"); await supabase.auth.signOut(); setAdminUserId(""); setState("login"); }} />;
 }
 
 function AdminLogin({ onDone, initialError = "" }: { onDone: () => Promise<void>; initialError?: string }) {
@@ -109,7 +112,7 @@ function AdminLogin({ onDone, initialError = "" }: { onDone: () => Promise<void>
 type App = { id: string; owner_name: string; owner_phone: string; canteen_name: string; university_name: string; campus_location: string; contact_email: string; fssai_license: string; fssai_license_document_path: string | null; owner_id_proof: string; owner_id_document_path: string | null; notes: string | null; status: string; created_at: string };
 type Canteen = { id: string; code: string; name: string; university_name: string; contact_email: string; visibility: string; owner_user_id: string | null };
 
-function Dashboard({ onSignOut }: { onSignOut: () => void }) {
+function Dashboard({ userId, onSignOut }: { userId: string; onSignOut: () => void }) {
   const approve = useServerFn(approveApplication);
   const reject = useServerFn(rejectApplication);
   const issueOwnerCredentials = useServerFn(issueCanteenOwnerCredentials);
@@ -174,7 +177,7 @@ function Dashboard({ onSignOut }: { onSignOut: () => void }) {
             <h1 className="display text-3xl">Canteen applications</h1>
           </div>
           </div>
-          <div className="flex items-center gap-2"><ThemeToggle /><button onClick={onSignOut} className="flex items-center gap-2 rounded-full border border-border px-4 py-2 text-xs text-muted-foreground hover:text-foreground"><LogOut className="h-3.5 w-3.5" /> Log out</button></div>
+          <div className="flex items-center gap-2"><NotificationBell userId={userId} /><ThemeToggle /><button onClick={onSignOut} className="flex items-center gap-2 rounded-full border border-border px-4 py-2 text-xs text-muted-foreground hover:text-foreground"><LogOut className="h-3.5 w-3.5" /> Log out</button></div>
         </header>
         <div className="mt-6 flex flex-wrap gap-2">
           {([["pending", `Pending (${apps.filter((a) => a.status === "pending").length})`], ["reviewed", "Reviewed"], ["canteens", `Canteens (${canteens.length})`], ["refunds", "Refunds"], ["coupons", "Coupons"], ["payments", "Payments"], ["emails", "Email log"]] as const).map(([k, l]) => (
