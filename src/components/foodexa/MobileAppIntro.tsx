@@ -1,5 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
+import { GlobalLoadingScreen } from "@/components/foodexa/GlobalLoadingScreen";
+import { STUDENT_INTRO_LEGAL_RETURN_KEY } from "@/lib/back-nav";
 
 // v3 discards prior CTA-based completion flags. Completion means successful signup/login.
 export const STUDENT_INTRO_COMPLETED_KEY = "hungry:student-intro:completed:v3";
@@ -43,6 +45,7 @@ export function MobileAppIntro({ onContinue }: { onContinue: () => void }) {
   const navigationStartedRef = useRef(false);
   const [segmentIndex, setSegmentIndex] = useState(0);
   const [segmentLoaded, setSegmentLoaded] = useState(false);
+  const [showInitialLoader, setShowInitialLoader] = useState(true);
   const [animationError, setAnimationError] = useState(false);
   const [animationAttempt, setAnimationAttempt] = useState(0);
   const segment = INTRO_SEGMENTS[segmentIndex]!;
@@ -77,12 +80,18 @@ export function MobileAppIntro({ onContinue }: { onContinue: () => void }) {
   function openLegalPage() {
     if (navigationStartedRef.current) return;
     navigationStartedRef.current = true;
+    try {
+      window.sessionStorage.setItem(STUDENT_INTRO_LEGAL_RETURN_KEY, "true");
+    } catch {
+      // Keep legal navigation available when session storage is disabled.
+    }
     onContinue();
   }
 
   function retryAnimation() {
     setAnimationError(false);
     setSegmentLoaded(false);
+    setShowInitialLoader(true);
     setAnimationAttempt((attempt) => attempt + 1);
   }
 
@@ -100,19 +109,17 @@ export function MobileAppIntro({ onContinue }: { onContinue: () => void }) {
         className="absolute inset-0 h-full w-full object-cover"
         onLoad={() => {
           setSegmentLoaded(true);
+          setShowInitialLoader(false);
           setAnimationError(false);
         }}
         onError={() => {
           setSegmentLoaded(false);
+          setShowInitialLoader(false);
           setAnimationError(true);
         }}
       />
 
-      {!segmentLoaded && !animationError && (
-        <div aria-live="polite" className="absolute inset-x-0 top-1/2 z-10 flex -translate-y-1/2 justify-center">
-          <span className="rounded-full bg-black/70 px-4 py-2 text-xs text-white/90">Loading intro animation…</span>
-        </div>
-      )}
+      {showInitialLoader && !animationError && <GlobalLoadingScreen overlay tone="student" />}
 
       {animationError && (
         <div className="absolute inset-x-5 top-1/2 z-10 flex -translate-y-1/2 flex-col items-center gap-3 text-center">

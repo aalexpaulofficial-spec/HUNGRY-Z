@@ -205,8 +205,16 @@ function RootComponent() {
       studentIntroDismissedRef.current = false;
       if (isInstalledMobileStudentApp()) setShowStudentIntro(true);
     };
+    const returnToStudentIntro = () => {
+      studentIntroDismissedRef.current = false;
+      if (isInstalledMobileStudentApp()) setShowStudentIntro(true);
+    };
     window.addEventListener("hungry:student-intro:reset", replayIntroAfterLogout);
-    return () => window.removeEventListener("hungry:student-intro:reset", replayIntroAfterLogout);
+    window.addEventListener("hungry:student-intro:return", returnToStudentIntro);
+    return () => {
+      window.removeEventListener("hungry:student-intro:reset", replayIntroAfterLogout);
+      window.removeEventListener("hungry:student-intro:return", returnToStudentIntro);
+    };
   }, []);
 
   useEffect(() => {

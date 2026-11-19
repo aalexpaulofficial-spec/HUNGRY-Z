@@ -1,8 +1,8 @@
 import { useLocation, useRouter } from "@tanstack/react-router";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, X } from "lucide-react";
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { isStandaloneApp } from "@/lib/pwa-install";
+import { isInstalledMobileStudentApp, isStandaloneApp } from "@/lib/pwa-install";
 
 /**
  * Global Back navigation.
@@ -15,6 +15,16 @@ type Step = { id: number; fn: () => void };
 type Ctx = { enabled: boolean; push: (s: Step) => void; remove: (id: number) => void; stack: React.MutableRefObject<Step[]>; inline: number; setInline: React.Dispatch<React.SetStateAction<number>> };
 const BackCtx = createContext<Ctx | null>(null);
 let nextId = 1;
+export const STUDENT_INTRO_LEGAL_RETURN_KEY = "hungry:student-intro:legal-return";
+
+export function isStudentIntroLegalReturn(pathname: string) {
+  if ((pathname !== "/privacy" && pathname !== "/terms") || !isInstalledMobileStudentApp()) return false;
+  try {
+    return window.sessionStorage.getItem(STUDENT_INTRO_LEGAL_RETURN_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
 
 export function BackProvider({ children, disabled = false }: { children: ReactNode; disabled?: boolean }) {
   const stack = useRef<Step[]>([]);
@@ -139,6 +149,7 @@ export function BackButton({ inline = false }: { inline?: boolean }) {
   const { pathname, searchStr } = useLocation();
   const setInline = ctx?.setInline;
   const enabled = ctx?.enabled ?? true;
+  const introCancel = isStudentIntroLegalReturn(pathname);
   useEffect(() => {
     if (!inline || !setInline || !enabled) return;
     setInline((n) => n + 1);
@@ -147,6 +158,12 @@ export function BackButton({ inline = false }: { inline?: boolean }) {
   if (ctx?.enabled === false || pathname === "/") return null;
   if (!inline && (ctx?.inline ?? 0) > 0) return null;
   const goBack = () => {
+    if (introCancel) {
+      try { window.sessionStorage.removeItem(STUDENT_INTRO_LEGAL_RETURN_KEY); } catch { /* Continue navigation if storage is disabled. */ }
+      window.dispatchEvent(new Event("hungry:student-intro:return"));
+      void router.navigate({ to: "/auth", search: { mode: "signup" }, replace: true });
+      return;
+    }
     const websiteCanteenLaunch = pathname === "/canteen" && new URLSearchParams(searchStr).get("hungry_app") === "canteen" && !isStandaloneApp();
     if (pathname === "/install/canteen" || websiteCanteenLaunch) {
       void router.navigate({ to: "/", replace: true });
@@ -155,8 +172,8 @@ export function BackButton({ inline = false }: { inline?: boolean }) {
     void navigateBack(router, pathname, ctx?.stack.current ?? []);
   };
   return (
-    <button type="button" onClick={goBack} aria-label="Go back" className={inline ? "back-btn back-btn-inline" : "back-btn back-btn-float"}>
-      <ArrowLeft className="h-5 w-5" strokeWidth={2.5} />
+    <button type="button" onClick={goBack} aria-label={introCancel ? "Cancel and return to the intro" : "Go back"} className={inline ? "back-btn back-btn-inline" : "back-btn back-btn-float"}>
+      {introCancel ? <X className="h-5 w-5" strokeWidth={2.5} /> : <ArrowLeft className="h-5 w-5" strokeWidth={2.5} />}
     </button>
   );
 }

@@ -1,10 +1,12 @@
-import { Link } from "@tanstack/react-router";
-import { BackButton } from "@/lib/back-nav";
+import { Link, useLocation } from "@tanstack/react-router";
+import { BackButton, isStudentIntroLegalReturn } from "@/lib/back-nav";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 export type LegalSection = { title: string; paragraphs: string[] };
 
 export function LegalPage({ title, intro, sections }: { title: string; intro: string; sections: LegalSection[] }) {
+  const { pathname } = useLocation();
+  const introCancel = isStudentIntroLegalReturn(pathname);
   return <main className="grain relative min-h-screen overflow-hidden bg-background px-4 py-8 sm:px-6 sm:py-12">
     <div aria-hidden="true" className="ember pointer-events-none absolute -top-44 left-1/2 h-[520px] w-[520px] -translate-x-1/2 opacity-40" />
     <div className="relative mx-auto max-w-4xl">
@@ -12,7 +14,7 @@ export function LegalPage({ title, intro, sections }: { title: string; intro: st
         <Link to="/" className="display text-[15px] tracking-[0.3em]" aria-label="HUNGRY Z home">HUNGRY Z</Link>
         <div className="inline-flex items-center gap-2 rounded-full border border-border px-3 py-1.5">
           <BackButton inline />
-          <span className="pr-1 text-xs font-semibold text-muted-foreground">Back</span>
+          <span className="pr-1 text-xs font-semibold text-muted-foreground">{introCancel ? "Cancel" : "Back"}</span>
         </div>
         <ThemeToggle />
       </header>
