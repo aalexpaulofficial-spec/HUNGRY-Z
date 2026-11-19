@@ -43,6 +43,7 @@ export function resetStudentIntro() {
 export function MobileAppIntro({ onContinue }: { onContinue: () => void }) {
   const navigate = useNavigate();
   const navigationStartedRef = useRef(false);
+  const preloadedSegmentsRef = useRef(new Map<number, Promise<void>>());
   const [segmentIndex, setSegmentIndex] = useState(0);
   const [segmentLoaded, setSegmentLoaded] = useState(false);
   const [showInitialLoader, setShowInitialLoader] = useState(true);
@@ -52,22 +53,34 @@ export function MobileAppIntro({ onContinue }: { onContinue: () => void }) {
 
   useEffect(() => {
     if (!segmentLoaded || animationError || navigationStartedRef.current) return;
-    const timer = window.setTimeout(() => {
+    const nextIndex = (segmentIndex + 1) % INTRO_SEGMENTS.length;
+    let active = true;
+    const timer = window.setTimeout(async () => {
+      try {
+        await (preloadedSegmentsRef.current.get(nextIndex) ?? Promise.resolve());
+      } catch {
+        // The visible image's onError handler presents the retry action if decoding failed.
+      }
+      if (!active) return;
       setSegmentLoaded(false);
-      setSegmentIndex((index) => (index + 1) % INTRO_SEGMENTS.length);
+      setSegmentIndex(nextIndex);
     }, segment.frames * INTRO_FRAME_DURATION_MS);
-    return () => window.clearTimeout(timer);
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+    };
   }, [animationError, segment.frames, segmentIndex, segmentLoaded]);
 
   useEffect(() => {
-    const nextSegment = INTRO_SEGMENTS[segmentIndex + 1];
-    if (!nextSegment) return;
-    const preload = document.createElement("link");
-    preload.rel = "preload";
-    preload.as = "image";
-    preload.href = nextSegment.src;
-    document.head.appendChild(preload);
-    return () => preload.remove();
+    const nextIndex = (segmentIndex + 1) % INTRO_SEGMENTS.length;
+    const nextSegment = INTRO_SEGMENTS[nextIndex]!;
+    const image = new Image();
+    image.src = nextSegment.src;
+    const decoded = image.decode();
+    preloadedSegmentsRef.current.set(nextIndex, decoded);
+    return () => {
+      // Keep the decode promise cached so the next segment can switch without waiting.
+    };
   }, [segmentIndex]);
 
   function openAuth(mode: "signup" | "login") {
