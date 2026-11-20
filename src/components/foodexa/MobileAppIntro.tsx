@@ -57,8 +57,8 @@ export function MobileAppIntro({ onContinue }: { onContinue: () => void }) {
   const legalPageOpen = legalPage !== null;
 
   useEffect(() => {
-    if (!segmentLoaded || animationError || navigationStartedRef.current || legalPageOpen) return;
-    const nextIndex = (segmentIndex + 1) % INTRO_SEGMENTS.length;
+    if (!segmentLoaded || animationError || navigationStartedRef.current || legalPageOpen || segmentIndex === INTRO_SEGMENTS.length - 1) return;
+    const nextIndex = segmentIndex + 1;
     const deadline = segmentDeadlineRef.current ?? Date.now() + segment.frames * INTRO_FRAME_DURATION_MS;
     segmentDeadlineRef.current = deadline;
     let active = true;
@@ -81,7 +81,8 @@ export function MobileAppIntro({ onContinue }: { onContinue: () => void }) {
   }, [animationError, legalPageOpen, segment.frames, segmentIndex, segmentLoaded]);
 
   useEffect(() => {
-    const nextIndex = (segmentIndex + 1) % INTRO_SEGMENTS.length;
+    if (segmentIndex === INTRO_SEGMENTS.length - 1) return;
+    const nextIndex = segmentIndex + 1;
     const nextSegment = INTRO_SEGMENTS[nextIndex]!;
     const image = new Image();
     image.src = nextSegment.src;
