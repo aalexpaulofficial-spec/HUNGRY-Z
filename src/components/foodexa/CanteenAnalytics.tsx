@@ -899,7 +899,7 @@ export function CanteenAnalytics({
     );
 
   return (
-    <section className="mt-6 space-y-5" aria-label="Canteen analytics">
+    <section className="mt-6 w-full min-w-0 space-y-5" aria-label="Canteen analytics">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-primary-bright">
@@ -1007,7 +1007,7 @@ export function CanteenAnalytics({
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {[
           ["ONLINE · Total orders", filteredOrders.length.toLocaleString("en-IN")],
           ["ONLINE · Revenue", currency(revenue)],
@@ -1027,7 +1027,7 @@ export function CanteenAnalytics({
         ))}
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-2">
+      <div className="grid min-w-0 gap-4 xl:grid-cols-2">
         <article className={cardClass}>
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
@@ -1203,7 +1203,7 @@ export function CanteenAnalytics({
         </article>
       </div>
 
-      <section className={`${cardClass} grid gap-4 md:grid-cols-3`}>
+      <section className={`${cardClass} grid min-w-0 gap-4 sm:grid-cols-2 xl:grid-cols-3`}>
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
             ONLINE This Month Revenue
@@ -1232,7 +1232,7 @@ export function CanteenAnalytics({
         </div>
       </section>
 
-      <div className="grid gap-4 xl:grid-cols-2">
+      <div className="grid min-w-0 gap-4 xl:grid-cols-2">
         {[
           { title: "ONLINE Top 5 Best-Selling Food Items", rows: best },
           { title: "ONLINE Top 5 Least-Selling Food Items", rows: least },
@@ -1273,13 +1273,13 @@ export function CanteenAnalytics({
               Quantities and revenue from paid orders in the selected period
             </p>
           </div>
-          <label className="relative">
+          <label className="relative w-full sm:w-auto">
             <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
             <input
               value={itemSearch}
               onChange={(event) => setItemSearch(event.target.value)}
               placeholder="Search food items"
-              className="w-56 rounded-full border border-input bg-ink-soft py-2 pl-9 pr-3 text-xs outline-none focus:border-primary"
+              className="w-full rounded-full border border-input bg-ink-soft py-2 pl-9 pr-3 text-xs outline-none focus:border-primary sm:w-56"
             />
           </label>
         </div>

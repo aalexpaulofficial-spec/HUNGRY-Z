@@ -423,6 +423,7 @@ html[data-theme="light"] .hz-customer-app { background-color: #f5f5f7; backgroun
 .hz-customer-template-banner .hz-template-dashboard-copy button { min-height: 3rem; margin-top: 1.15rem; padding-inline: 1.5rem; }
 .hz-home-page > section > h2 { font-size: 1.35rem; letter-spacing: -.035em; }
 .hz-published-events { display: grid; gap: 1rem; padding-top: .25rem; }
+.hz-customer-content, .hz-faculty-workspace, .hz-published-events, .hz-published-events > .grid { min-width: 0; }
 .hz-published-events > .grid article { border-color: color-mix(in oklab, var(--foreground) 9%, var(--border)); border-radius: 1.35rem; box-shadow: var(--hz-shadow-card); }
 .hz-published-events > .grid article > button { min-height: 2.8rem; background: var(--foreground); color: var(--background); }
 .hz-events-empty, .hz-faculty-events-empty { display: flex; min-width: 0; align-items: flex-start; gap: .9rem; border: 1px solid var(--border); border-radius: 1.35rem; background: var(--card); padding: 1.15rem; box-shadow: var(--hz-shadow-card); }
@@ -1237,6 +1238,7 @@ html[data-theme="dark"] .hz-global-loading.is-website .hz-global-loading-track {
 .hz-canteen-plan-card span { color: var(--muted-foreground); font-size: .65rem; }
 .hz-canteen-main { min-width: 0; padding: 1.4rem clamp(1rem, 2.2vw, 2.25rem) 2rem; }
 .hz-canteen-content { display: grid; gap: 1rem; min-width: 0; }
+.hz-canteen-main, .hz-canteen-content, .hz-canteen-content > * { min-width: 0; }
 .hz-canteen-app.is-pos-fullscreen:fullscreen { width: 100vw; height: 100vh; height: 100dvh; min-height: 0; overflow: hidden; background: var(--background); }
 .hz-canteen-app.is-pos-fullscreen .hz-canteen-layout { display: block; width: 100%; height: 100%; min-height: 0; max-width: none; margin: 0; overflow: hidden; }
 .hz-canteen-app.is-pos-fullscreen .hz-canteen-sidebar { display: none; }

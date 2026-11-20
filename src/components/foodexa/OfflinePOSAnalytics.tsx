@@ -58,7 +58,7 @@ export function OfflinePOSAnalytics({ sales }: { sales: Sale[] }) {
   ];
 
   return (
-    <section className="mt-5 space-y-4" aria-label="OFFLINE POS analytics">
+    <section className="mt-5 w-full min-w-0 space-y-4" aria-label="OFFLINE POS analytics">
       <header className="flex flex-wrap items-start justify-between gap-3 rounded-3xl border border-border bg-card p-4 sm:p-5">
         <div>
           <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-primary">OFFLINE POS REPORT</p>
@@ -68,7 +68,7 @@ export function OfflinePOSAnalytics({ sales }: { sales: Sale[] }) {
         <button type="button" onClick={downloadReport} disabled={!sales.length} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-xs font-bold text-primary-foreground disabled:opacity-40"><Download className="h-4 w-4" /> Export OFFLINE report</button>
       </header>
 
-      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+      <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {cards.map(([label, value]) => <article key={label} className="min-w-0 rounded-3xl border border-border bg-card p-4"><p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{label}</p><p className="display mt-2 truncate text-xl sm:text-2xl">{value}</p></article>)}
       </div>
 

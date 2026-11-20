@@ -542,7 +542,7 @@ function OrderingApp() {
           <p className="text-left leading-relaxed">{ordering ? `Today's operating hours: ${describeTodayHours(canteen, availabilityNow)}` : canteen.availability_mode === "closed" ? "The owner has temporarily closed the canteen." : canteen.visibility === "maintenance" ? "The canteen is under maintenance." : nextOpen ? `Next opening: ${formatCanteenTime(nextOpen)}` : "The canteen is outside its operating hours."}</p>
         </div>
 
-          <main key={tab} className="hz-customer-content px-4 sm:px-7">
+          <main key={tab} className="hz-customer-content min-w-0 px-4 sm:px-7">
             {tab === "home" && <HomeTab menu={liveMenu} canteen={canteen} template={canteenTemplate} onOpen={setDetail} onAdd={add} goMenu={(category) => { if (category) setMenuCategory(category); setTab("menu"); }} />}
             {tab === "menu" && <MenuTab menu={liveMenu} onOpen={setDetail} onAdd={add} selectedCategory={menuCategory} onCategoryChange={setMenuCategory} />}
             {tab === "events" && (profile.role === "faculty"
@@ -1100,20 +1100,20 @@ function displayedCustomerOrderStatus(order: Order) {
 function OrdersTab({ orders, onOpen }: { orders: Order[]; onOpen: (o: Order) => void }) {
   if (!orders.length) return <Empty title="No orders yet" text="Your orders, tracking and pickup QR codes will show up here." />;
   return (
-    <div className="space-y-3 pt-2">
+    <div className="min-w-0 space-y-3 pt-2">
         {orders.map((o) => (
-        <button key={o.id} onClick={() => onOpen(o)} className={cn("w-full rounded-3xl border bg-card p-5 text-left transition hover:border-primary/50", orderStatusBorderClass(displayedCustomerOrderStatus(o)))}>
+        <button key={o.id} onClick={() => onOpen(o)} className={cn("w-full min-w-0 rounded-3xl border bg-card p-4 text-left transition hover:border-primary/50 sm:p-5", orderStatusBorderClass(displayedCustomerOrderStatus(o)))}>
           <div className="flex items-center justify-between gap-2">
             <span className="min-w-0 truncate font-mono text-sm font-bold">{o.order_number}</span>
             <span className="flex shrink-0 items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1 text-[10px] font-semibold text-primary-bright"><Clock className="h-3 w-3" />{o.prep_minutes} min</span>
           </div>
-          <div className="mt-2 flex justify-end">
+          <div className="mt-2 flex min-w-0 justify-start sm:justify-end">
             <OrderStatusBadge status={displayedCustomerOrderStatus(o)} />
           </div>
-          <p data-no-translate className="mt-2 truncate text-sm text-muted-foreground">{o.lines.map((l) => `${l.qty}× ${l.name}`).join(", ")}</p>
-          <p className="mt-2 flex items-center justify-between text-sm">
+          <p data-no-translate className="mt-2 break-words text-sm leading-relaxed text-muted-foreground">{o.lines.map((l) => `${l.qty}× ${l.name}`).join(", ")}</p>
+          <p className="mt-3 flex min-w-0 flex-col items-start gap-1 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-3">
             <span className="font-bold">₹{o.total}</span>
-            <span className="text-xs text-muted-foreground">{ORDER_TYPE_LABELS[o.order_type as OrderType] ?? "Dine In"} · {orderPaymentMethodLabel(o.payment_method)} · {orderPaymentStatusLabel(o.payment_status)}</span>
+            <span className="min-w-0 break-words text-xs leading-relaxed text-muted-foreground sm:text-right">{ORDER_TYPE_LABELS[o.order_type as OrderType] ?? "Dine In"} · {orderPaymentMethodLabel(o.payment_method)} · {orderPaymentStatusLabel(o.payment_status)}</span>
           </p>
         </button>
       ))}

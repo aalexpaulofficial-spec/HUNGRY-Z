@@ -132,12 +132,12 @@ export function StudentEventsTab({ canteenId, canteenName, userId, audience = "s
     }
   }
 
-  return <section className={`hz-published-events${audience === "faculty" ? " is-faculty" : ""}`} aria-label="Published faculty events">
+  return <section className={`hz-published-events w-full min-w-0${audience === "faculty" ? " is-faculty" : ""}`} aria-label="Published faculty events">
     <div className="hz-customer-section-heading"><p className="hz-customer-eyebrow">PARTICIPATE</p><h2 className="display">{audience === "faculty" ? "Published events" : "Faculty events"}</h2><p>{audience === "faculty" ? "Choose an event, verify its 7-digit access code, then create your participation token." : "Choose a published event and enter its access code to view details and generate a participation token."}</p></div>
     {loading && <p role="status" className="text-sm text-muted-foreground">Loading events…</p>}
     {loadingError && <p role="alert" className="rounded-2xl border border-primary/30 bg-primary/10 p-3 text-sm text-primary-bright">{loadingError}</p>}
     {!loading && !loadingError && events.length === 0 && <div className="hz-events-empty"><span><Ticket aria-hidden="true" /></span><div><h3>No published events yet</h3><p>{audience === "faculty" ? "When the canteen publishes an event, it will appear here. To organize one, use the Plan an event section below." : "New events from this canteen will appear here when they are published."}</p></div></div>}
-    {events.length > 0 && <div className="grid min-w-0 gap-3 sm:grid-cols-2">{events.map((event) => <article key={event.id} className="min-w-0 overflow-hidden rounded-2xl border border-border bg-card p-4 sm:p-5">
+    {events.length > 0 && <div className="grid min-w-0 gap-3 sm:grid-cols-2 2xl:grid-cols-3">{events.map((event) => <article key={event.id} className="min-w-0 overflow-hidden rounded-2xl border border-border bg-card p-4 sm:p-5">
       {event.event_logo_url
         ? <EventLogoImage src={event.event_logo_url} alt={`${event.name} event image`} />
         : <div aria-hidden="true" className="grid aspect-[16/10] w-full place-items-center rounded-2xl border border-border bg-ink-soft text-primary"><Ticket className="h-8 w-8" /></div>}
