@@ -674,7 +674,8 @@ export function Dashboard({ canteen, ownerUserId, notificationOrderId, notificat
         .select("id", { count: "exact", head: true })
         .eq("canteen_id", canteen.id)
         .neq("status", "collected")
-        .neq("status", "cancelled");
+        .neq("status", "cancelled")
+        .or("completion_workflow.is.null,completion_workflow.neq.printed,food_received_confirmed_at.is.null");
       if (!error) setActiveOrderCount(count ?? 0);
     } catch {
       // Keep the last confirmed count; the Realtime subscription and retry interval refresh it.

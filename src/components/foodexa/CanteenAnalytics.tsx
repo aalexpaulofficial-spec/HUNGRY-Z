@@ -18,6 +18,8 @@ export type AnalyticsOrder = {
   lines: OrderLine[];
   paid_at?: string | null;
   prep_minutes?: number;
+  completion_workflow?: string | null;
+  food_received_confirmed_at?: string | null;
 };
 type MenuRow = { id: string; name: string; category: string; price: number };
 type Preset = "today" | "yesterday" | "7days" | "30days" | "month" | "custom";
@@ -316,6 +318,14 @@ function orderRevenue(order: AnalyticsOrder) {
     : 0;
 }
 
+function isPrintedOrderComplete(order: AnalyticsOrder) {
+  return order.status !== "cancelled" && order.completion_workflow === "printed" && Boolean(order.food_received_confirmed_at);
+}
+
+function isCompletedOrder(order: AnalyticsOrder) {
+  return order.status === "collected" || isPrintedOrderComplete(order);
+}
+
 function keyForDate(date: Date, grain: Grain) {
   if (grain === "monthly")
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
@@ -369,7 +379,7 @@ export function CanteenAnalytics({
         const { data, error: queryError } = await supabase
           .from("orders")
           .select(
-            "id,order_number,created_at,total,discount,subtotal,status,payment_status,payment_method,lines,paid_at,prep_minutes",
+            "id,order_number,created_at,total,discount,subtotal,status,payment_status,payment_method,lines,paid_at,prep_minutes,completion_workflow,food_received_confirmed_at",
           )
           .eq("canteen_id", canteenId)
           .order("created_at", { ascending: true })
@@ -419,8 +429,21 @@ export function CanteenAnalytics({
           void loadData();
         },
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") void loadData();
+      });
+    const refreshTimer = window.setInterval(() => {
+      if (document.visibilityState === "visible") void loadData();
+    }, 60_000);
+    const refreshOnFocus = () => {
+      if (document.visibilityState === "visible") void loadData();
+    };
+    window.addEventListener("focus", refreshOnFocus);
+    document.addEventListener("visibilitychange", refreshOnFocus);
     return () => {
+      window.clearInterval(refreshTimer);
+      window.removeEventListener("focus", refreshOnFocus);
+      document.removeEventListener("visibilitychange", refreshOnFocus);
       void supabase.removeChannel(channel);
     };
   }, [canteenId, loadData]);
@@ -623,10 +646,10 @@ export function CanteenAnalytics({
     .slice(0, 5);
   const mostPopularCategory = categoryRows.slice().sort((a, b) => b.quantity - a.quantity)[0];
   const zeroSales = itemRows.filter((item) => item.quantity === 0);
-  const completed = filteredOrders.filter((order) => order.status === "collected").length;
+  const completed = filteredOrders.filter(isCompletedOrder).length;
   const cancelled = filteredOrders.filter((order) => order.status === "cancelled").length;
   const pending = filteredOrders.filter((order) =>
-    ["pending_payment", "placed", "preparing", "ready"].includes(order.status),
+    ["pending_payment", "placed", "preparing", "ready"].includes(order.status) && !isPrintedOrderComplete(order),
   ).length;
   const average = revenueOrders.length ? revenue / revenueOrders.length : 0;
   const currency = (value: number) => money(value);
