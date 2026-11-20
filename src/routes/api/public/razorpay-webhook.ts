@@ -9,7 +9,7 @@ const eventSchema = z.object({
   event: z.string().max(80),
   payload: z.object({
     payment: z.object({ entity: z.object({ id: z.string().max(60), order_id: z.string().max(60).nullable().optional() }).passthrough() }).optional(),
-    refund: z.object({ entity: z.object({ id: z.string().max(60), payment_id: z.string().max(60).optional(), status: z.string().optional() }).passthrough() }).optional(),
+    refund: z.object({ entity: z.object({ id: z.string().max(60), payment_id: z.string().max(60).optional(), status: z.string().optional(), acquirer_data: z.object({ rrn: z.string().nullable().optional(), arn: z.string().nullable().optional(), utr: z.string().nullable().optional() }).passthrough().nullable().optional() }).passthrough() }).optional(),
   }).passthrough(),
 });
 
@@ -64,7 +64,7 @@ export const Route = createFileRoute("/api/public/razorpay-webhook")({
               if (pay?.order_id) await orders.recordFailedPayment({ razorpayOrderId: pay.order_id, razorpayPaymentId: pay.id });
               break;
             case "refund.processed":
-              if (refund) await orders.finalizeRefund(refund.id, "processed");
+              if (refund) await orders.finalizeRefund(refund.id, "processed", refund.acquirer_data?.rrn ?? refund.acquirer_data?.arn ?? refund.acquirer_data?.utr ?? null);
               break;
             case "refund.failed":
               if (refund) await orders.finalizeRefund(refund.id, "failed");

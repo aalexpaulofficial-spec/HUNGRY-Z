@@ -13,7 +13,7 @@ export function razorpayKeys() {
   return { keyId, keySecret, configured: Boolean(keyId && keySecret), testMode: keyId.startsWith("rzp_test_") };
 }
 
-async function call<T>(method: "GET" | "POST", path: string, body?: unknown): Promise<T> {
+async function call<T>(method: "GET" | "POST", path: string, body?: unknown, extraHeaders?: Record<string, string>): Promise<T> {
   const { keyId, keySecret, configured } = razorpayKeys();
   if (!configured) throw new Error("Online payments aren't configured yet (RAZORPAY_KEY_ID / RAZORPAY_KEY_SECRET).");
   const res = await fetch(`${API}${path}`, {
@@ -21,6 +21,7 @@ async function call<T>(method: "GET" | "POST", path: string, body?: unknown): Pr
     headers: {
       Authorization: `Basic ${btoa(`${keyId}:${keySecret}`)}`,
       ...(body ? { "Content-Type": "application/json" } : {}),
+      ...extraHeaders,
     },
     body: body ? JSON.stringify(body) : null,
   });
@@ -45,7 +46,13 @@ export type RzpPayment = {
   error_description?: string | null;
   amount_refunded?: number;
 };
-export type RzpRefund = { id: string; payment_id: string; amount: number; status: "pending" | "processed" | "failed" };
+export type RzpRefund = {
+  id: string;
+  payment_id: string;
+  amount: number;
+  status: "pending" | "processed" | "failed";
+  acquirer_data?: { rrn?: string | null; arn?: string | null; utr?: string | null } | null;
+};
 
 export function createRazorpayOrder(p: { amountPaise: number; receipt: string; notes: Record<string, string> }) {
   return call<RzpOrder>("POST", "/orders", { amount: p.amountPaise, currency: "INR", receipt: p.receipt.slice(0, 40), notes: p.notes });
@@ -59,6 +66,6 @@ export function captureRazorpayPayment(paymentId: string, amountPaise: number) {
   return call<RzpPayment>("POST", `/payments/${encodeURIComponent(paymentId)}/capture`, { amount: amountPaise, currency: "INR" });
 }
 
-export function createRazorpayRefund(paymentId: string, amountPaise: number, notes: Record<string, string>) {
-  return call<RzpRefund>("POST", `/payments/${encodeURIComponent(paymentId)}/refund`, { amount: amountPaise, speed: "normal", notes });
+export function createRazorpayRefund(paymentId: string, amountPaise: number, notes: Record<string, string>, idempotencyKey: string) {
+  return call<RzpRefund>("POST", `/payments/${encodeURIComponent(paymentId)}/refund`, { amount: amountPaise, speed: "normal", notes }, { "X-Refund-Idempotency": idempotencyKey });
 }

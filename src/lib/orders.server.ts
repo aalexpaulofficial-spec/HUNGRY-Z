@@ -345,8 +345,30 @@ export async function createRefundRequest(p: { order: Order; amount: number; rea
   return { ...data, customerEmailSent };
 }
 
+function bankRefundReference(refund: { acquirer_data?: { rrn?: string | null; arn?: string | null; utr?: string | null } | null }) {
+  const data = refund.acquirer_data;
+  return data?.rrn?.trim() || data?.arn?.trim() || data?.utr?.trim() || null;
+}
+
 /** Sends the refund to Razorpay. Only one caller can move a refund into processing. */
 export async function startRefund(refundId: string) {
+  const { data: previous } = await db.from("refunds").select("*").eq("id", refundId).maybeSingle();
+  if (!previous) throw new Error("This refund wasn't found.");
+  // A final gateway failure is a completed attempt. Create a fresh attempt/key
+  // when an admin explicitly retries it; an unknown network result reuses the
+  // same row and Razorpay idempotency key so it cannot double-refund.
+  if (previous.status === "failed" && previous.razorpay_refund_id) {
+    const { data: retry, error } = await db.from("refunds").insert({
+      order_id: previous.order_id,
+      user_id: previous.user_id,
+      amount: previous.amount,
+      reason: previous.reason,
+      requested_by: previous.requested_by,
+      admin_note: `Retry of Razorpay refund ${previous.razorpay_refund_id}`,
+    }).select("id").single();
+    if (error || !retry) throw new Error("Could not create a new refund attempt.");
+    return startRefund(retry.id);
+  }
   const { data: r } = await db.from("refunds").update({ status: "processing" }).eq("id", refundId).in("status", ["requested", "failed"]).select("*").maybeSingle();
   if (!r) throw new Error("This refund isn't waiting to be processed.");
   const order = await getOrder(r.order_id);
@@ -364,48 +386,64 @@ export async function startRefund(refundId: string) {
   if (!pay) {
     await db.from("refunds").update({ status: "failed", admin_note: "No captured payment found for this order" }).eq("id", r.id);
     if (who.email) await sendEmailOnce("refund_failed", who.email, T.refundFailedEmail({ customerName: order.customer_name, orderNumber: order.order_number, amount: r.amount }), r.id);
+    await sendEmailOnce("admin_refund_update", T.ADMIN_ALERT_EMAIL, T.adminRefundEmail({ stage: "failed", orderNumber: order.order_number, canteenName: cName, customerEmail: who.email, amount: r.amount, reason: "No captured payment found for this order" }), r.id);
     throw new Error("No captured payment found for this order.");
   }
   try {
-    const rf = await createRazorpayRefund(pay.razorpay_payment_id, rupeesToPaise(r.amount), { hungry_refund_id: r.id, order_number: order.order_number });
-    await db.from("refunds").update({ razorpay_refund_id: rf.id, payment_id: pay.id }).eq("id", r.id);
+    const rf = await createRazorpayRefund(pay.razorpay_payment_id, rupeesToPaise(r.amount), { hungry_refund_id: r.id, order_number: order.order_number }, r.id);
+    const refundReference = bankRefundReference(rf);
+    let { error: saveRefundError } = await db.from("refunds").update({ razorpay_refund_id: rf.id, payment_id: pay.id, refund_reference: refundReference }).eq("id", r.id);
+    // Keep the refund path working during a rolling database migration; the
+    // Razorpay ID is still stored so the refund can be reconciled safely.
+    if (saveRefundError) {
+      const fallback = await db.from("refunds").update({ razorpay_refund_id: rf.id, payment_id: pay.id }).eq("id", r.id);
+      saveRefundError = fallback.error;
+    }
+    if (saveRefundError) throw new Error("Razorpay accepted the refund, but the refund record could not be updated. Retry from the admin dashboard.");
     // Stop the kitchen and return stock/coupon if the food wasn't collected yet.
     await db.rpc("hungry_release_order", { p_order: order.id });
-    await db.from("orders").update({ payment_status: "refund_pending" }).eq("id", order.id);
+    const { error: paymentStatusError } = await db.from("orders").update({ payment_status: "refund_pending" }).eq("id", order.id);
+    if (paymentStatusError) throw new Error("Razorpay accepted the refund, but the order payment status could not be updated.");
     if (who.email)
-      await sendEmailOnce("refund_processing", who.email, T.refundProcessingEmail({ customerName: order.customer_name, orderNumber: order.order_number, amount: r.amount }), r.id);
+      await sendEmailOnce("refund_processing", who.email, T.refundProcessingEmail({ customerName: order.customer_name, orderNumber: order.order_number, amount: r.amount, refundReference }), r.id);
     await sendEmailOnce(
       "admin_refund_update",
       T.ADMIN_ALERT_EMAIL,
       T.adminRefundEmail({ stage: "initiated", orderNumber: order.order_number, canteenName: cName, customerEmail: who.email, amount: r.amount, reason: r.reason, refundId: rf.id }),
       r.id,
     );
-    if (rf.status === "processed") await finalizeRefund(rf.id, "processed");
+    if (rf.status === "processed") await finalizeRefund(rf.id, "processed", refundReference);
     if (rf.status === "failed") await finalizeRefund(rf.id, "failed");
     return { razorpayRefundId: rf.id, status: rf.status };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    await db.from("refunds").update({ status: "failed", admin_note: msg.slice(0, 480) }).eq("id", r.id).eq("status", "processing");
-    if (who.email) await sendEmailOnce("refund_failed", who.email, T.refundFailedEmail({ customerName: order.customer_name, orderNumber: order.order_number, amount: r.amount }), r.id);
+    const { data: latest } = await db.from("refunds").select("razorpay_refund_id").eq("id", r.id).maybeSingle();
+    const gatewayAccepted = Boolean(latest?.razorpay_refund_id);
+    await db.from("refunds").update({ ...(gatewayAccepted ? {} : { status: "failed" }), admin_note: msg.slice(0, 480) }).eq("id", r.id).eq("status", "processing");
+    if (who.email && !gatewayAccepted) await sendEmailOnce("refund_failed", who.email, T.refundFailedEmail({ customerName: order.customer_name, orderNumber: order.order_number, amount: r.amount }), r.id);
     await sendEmailOnce(
       "admin_refund_update",
       T.ADMIN_ALERT_EMAIL,
-      T.adminRefundEmail({ stage: "failed", orderNumber: order.order_number, canteenName: cName, customerEmail: who.email, amount: r.amount, reason: msg.slice(0, 200) }),
+      T.adminRefundEmail({ stage: gatewayAccepted ? "needs reconciliation" : "failed", orderNumber: order.order_number, canteenName: cName, customerEmail: who.email, amount: r.amount, reason: msg.slice(0, 200), refundId: latest?.razorpay_refund_id ?? undefined }),
       r.id,
     );
-    throw new Error("Razorpay couldn't start this refund. It's marked failed so it can be retried.");
+    throw new Error(gatewayAccepted ? "Razorpay accepted the refund. HUNGRY Z is checking the order update and will email you." : "Razorpay couldn't start this refund. HUNGRY Z has been notified and will review it.");
   }
 }
 
 /** Applies the final refund result reported by Razorpay. Idempotent. */
-export async function finalizeRefund(razorpayRefundId: string, outcome: "processed" | "failed") {
-  const { data: r } = await db
+export async function finalizeRefund(razorpayRefundId: string, outcome: "processed" | "failed", refundReference?: string | null) {
+  let { data: r } = await db
     .from("refunds")
-    .update({ status: outcome })
+    .update({ status: outcome, ...(refundReference ? { refund_reference: refundReference } : {}) })
     .eq("razorpay_refund_id", razorpayRefundId)
     .eq("status", "processing")
     .select("*")
     .maybeSingle();
+  if (!r && refundReference) {
+    const fallback = await db.from("refunds").update({ status: outcome }).eq("razorpay_refund_id", razorpayRefundId).eq("status", "processing").select("*").maybeSingle();
+    r = fallback.data;
+  }
   if (!r) return false;
   const order = await getOrder(r.order_id);
   if (!order) return false;
@@ -421,9 +459,12 @@ export async function finalizeRefund(razorpayRefundId: string, outcome: "process
         .eq("id", r.payment_id);
     }
     if (who.email)
-      await sendEmailOnce("refund_processed", who.email, T.refundProcessedEmail({ customerName: order.customer_name, orderNumber: order.order_number, amount: r.amount }), r.id);
+      await sendEmailOnce("refund_processed", who.email, T.refundProcessedEmail({ customerName: order.customer_name, orderNumber: order.order_number, amount: r.amount, refundReference: refundReference ?? r.refund_reference }), r.id);
   } else if (who.email) {
+    await db.from("orders").update({ payment_status: "paid" }).eq("id", order.id).eq("payment_status", "refund_pending");
     await sendEmailOnce("refund_failed", who.email, T.refundFailedEmail({ customerName: order.customer_name, orderNumber: order.order_number, amount: r.amount }), r.id);
+  } else {
+    await db.from("orders").update({ payment_status: "paid" }).eq("id", order.id).eq("payment_status", "refund_pending");
   }
   await sendEmail(
     "admin_refund_update",

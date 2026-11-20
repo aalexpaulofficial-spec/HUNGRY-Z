@@ -823,6 +823,7 @@ export type Database = {
           order_id: string
           payment_id: string | null
           razorpay_refund_id: string | null
+          refund_reference: string | null
           reason: string
           requested_by: string
           status: string
@@ -837,6 +838,7 @@ export type Database = {
           order_id: string
           payment_id?: string | null
           razorpay_refund_id?: string | null
+          refund_reference?: string | null
           reason: string
           requested_by?: string
           status?: string
@@ -851,6 +853,7 @@ export type Database = {
           order_id?: string
           payment_id?: string | null
           razorpay_refund_id?: string | null
+          refund_reference?: string | null
           reason?: string
           requested_by?: string
           status?: string

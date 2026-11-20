@@ -178,7 +178,7 @@ export function adminPaymentFailedEmail(d: { orderNumber: string; canteenName: s
   };
 }
 
-type RefundData = { customerName: string; orderNumber: string; amount: number; reason?: string; note?: string };
+type RefundData = { customerName: string; orderNumber: string; amount: number; reason?: string; note?: string; refundReference?: string | null };
 
 export function refundRequestedEmail(d: RefundData): EmailContent {
   return {
@@ -190,9 +190,9 @@ export function refundRequestedEmail(d: RefundData): EmailContent {
 
 export function refundProcessingEmail(d: RefundData): EmailContent {
   return {
-    subject: `Your refund for ${d.orderNumber} is being processed`,
-    text: `Hi ${d.customerName},\n\nYour refund of ₹${d.amount} for order ${d.orderNumber} has been approved and successfully initiated with Razorpay. Eligible refunds generally take 5–7 business working days after approval and successful initiation to appear in the original payment method. Processing time can vary by Razorpay, your bank and payment method. Your order details show the latest refund status; we will email you when it changes.\n\n— Team HUNGRY Z`,
-    html: wrap("Refund initiated", `<p>Hi ${esc(d.customerName)}, your refund of <b>${esc(rupee(d.amount))}</b> for order <b>${esc(d.orderNumber)}</b> has been approved and successfully initiated with Razorpay.</p><p>Eligible refunds generally take <b>5–7 business working days after approval and successful initiation</b> to appear in the original payment method. Processing time can vary by Razorpay, your bank and payment method. Your order details show the latest refund status; we will email you when it changes.</p>`),
+    subject: `Refund initiated for ${d.orderNumber} | HUNGRY Z`,
+    text: `Hi ${d.customerName},\n\nHUNGRY Z has initiated your refund of ₹${d.amount} for order ${d.orderNumber} through Razorpay, back to your original payment method. Refunds usually take 5–7 working days after initiation to appear; your bank and payment provider may affect the timing. We’ll email you when the refund is successful.\n${d.refundReference ? `Refund reference (RRN/ARN/UTR): ${d.refundReference}\n` : ""}\nNeed help? Email hungryofficialx@gmail.com with your Order ID. Our team is here to help.\n\n— Team HUNGRY Z`,
+    html: wrap("Refund initiated", `<p>Hi ${esc(d.customerName)}, HUNGRY Z has initiated your refund of <b>${esc(rupee(d.amount))}</b> for order <b>${esc(d.orderNumber)}</b> through Razorpay, back to your original payment method.</p><p>Refunds usually take <b>5–7 working days after initiation</b> to appear. Your bank and payment provider may affect the timing. We’ll email you when the refund is successful.</p>${d.refundReference ? `<p>Refund reference (RRN/ARN/UTR): <b>${esc(d.refundReference)}</b></p>` : ""}<p>Need help? Email <a href="mailto:hungryofficialx@gmail.com">hungryofficialx@gmail.com</a> with your Order ID. Our team is here to help.</p>`),
   };
 }
 
@@ -206,9 +206,9 @@ export function refundFailedEmail(d: RefundData): EmailContent {
 
 export function refundProcessedEmail(d: RefundData): EmailContent {
   return {
-    subject: `Refund completed — ${d.orderNumber}`,
-    text: `Hi ${d.customerName},\n\nYour refund of ₹${d.amount} for order ${d.orderNumber} has been processed to your original payment method.\n\n— Team HUNGRY Z`,
-    html: wrap("Refund completed", `<p>Hi ${esc(d.customerName)}, your refund of <b>${esc(rupee(d.amount))}</b> for order <b>${esc(d.orderNumber)}</b> has been processed to your original payment method.</p>`),
+    subject: `Refund successful for HUNGRY Z order ${d.orderNumber}`,
+    text: `Hi ${d.customerName},\n\nYour refund of ₹${d.amount} for order ${d.orderNumber} has been successfully processed by Razorpay to your original payment method. Your bank may take a little longer to show the credit.\n${d.refundReference ? `Refund reference (RRN/ARN/UTR): ${d.refundReference}\nUse this reference to track the credit with your bank.\n` : ""}\nNeed help? Email hungryofficialx@gmail.com with your Order ID. Our team is here to help.\n\n— Team HUNGRY Z`,
+    html: wrap("Refund successful", `<p>Hi ${esc(d.customerName)}, your refund of <b>${esc(rupee(d.amount))}</b> for order <b>${esc(d.orderNumber)}</b> has been successfully processed by Razorpay to your original payment method. Your bank may take a little longer to show the credit.</p>${d.refundReference ? `<p>Refund reference (RRN/ARN/UTR): <b>${esc(d.refundReference)}</b><br/>Use this reference to track the credit with your bank.</p>` : ""}<p>Need help? Email <a href="mailto:hungryofficialx@gmail.com">hungryofficialx@gmail.com</a> with your Order ID. Our team is here to help.</p>`),
   };
 }
 

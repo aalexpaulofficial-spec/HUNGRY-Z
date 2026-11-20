@@ -257,7 +257,7 @@ function Dashboard({ userId, onSignOut }: { userId: string; onSignOut: () => voi
 }
 
 /* ---------------- Refunds ---------------- */
-type RefundRow = { id: string; order_id: string; amount: number; reason: string; status: string; requested_by: string; razorpay_refund_id: string | null; admin_note: string | null; created_at: string; orders: { order_number: string; customer_name: string } | null };
+type RefundRow = { id: string; order_id: string; amount: number; reason: string; status: string; requested_by: string; razorpay_refund_id: string | null; refund_reference: string | null; admin_note: string | null; created_at: string; orders: { order_number: string; customer_name: string } | null };
 
 function RefundsPanel() {
   const approve = useServerFn(approveRefund);
@@ -301,6 +301,7 @@ function RefundsPanel() {
           <p className="mt-1 text-xs text-muted-foreground">{r.orders?.customer_name} · by {r.requested_by} · {new Date(r.created_at).toLocaleString()}</p>
           <p className="mt-2 text-sm">“{r.reason}”</p>
           {r.razorpay_refund_id && <p className="mt-1 font-mono text-[11px] text-muted-foreground">{r.razorpay_refund_id}</p>}
+          {r.refund_reference && <p className="mt-1 break-all text-xs text-muted-foreground">Bank reference (RRN/ARN/UTR): <strong className="font-mono text-foreground">{r.refund_reference}</strong></p>}
           {r.admin_note && <p className="mt-1 text-xs text-muted-foreground">Note: {r.admin_note}</p>}
           {(r.status === "requested" || r.status === "failed") && (
             <div className="mt-4 flex flex-wrap gap-2">

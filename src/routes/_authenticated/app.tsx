@@ -107,7 +107,7 @@ type Order = {
   bill_print_confirmed_at: string | null; bill_print_thank_you_seen_at: string | null; completion_workflow: string | null;
   food_received_confirmed_at: string | null; collection_thank_you_seen_at: string | null;
 };
-type Refund = { id: string; order_id: string; amount: number; status: string; admin_note: string | null; created_at: string };
+type Refund = { id: string; order_id: string; amount: number; status: string; admin_note: string | null; refund_reference: string | null; created_at: string };
 type Tab = "home" | "menu" | "events" | "orders" | "you" | "scan";
 const uid = () => Math.random().toString(36).slice(2);
 const pendingPaymentOrderKey = (userId: string) => `hungry:pending-payment-order:${userId}`;
@@ -364,7 +364,7 @@ function OrderingApp() {
       setOrders(nextOrders);
     };
     const loadRefunds = async () => {
-      const { data } = await supabase.from("refunds").select("id, order_id, amount, status, admin_note, created_at").eq("user_id", userId).order("created_at", { ascending: false }).limit(50);
+      const { data } = await supabase.from("refunds").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(50);
       setRefunds((data as Refund[]) ?? []);
     };
     load();
@@ -1267,7 +1267,19 @@ function OrderDetail({ order, canteenName, refund, notice, onNotice, onOrderUpda
           </div>
         </div>
       ) : order.status === "cancelled" ? (
-        <p className="mt-6 rounded-2xl border border-primary/40 bg-primary/10 p-4 text-sm text-primary-bright">This order was cancelled.</p>
+        <div className="mt-6 rounded-2xl border border-primary/40 bg-primary/10 p-4 text-sm text-primary-bright">
+          <p className="font-semibold">This order was cancelled.</p>
+          {order.payment_method === "razorpay" && ["paid", "refund_pending", "refunded"].includes(order.payment_status) && (
+            <div className="mt-2 space-y-1 text-xs leading-relaxed text-muted-foreground">
+              {refund?.status === "processing" && <p>Your refund has been initiated to your original payment method. It usually arrives within 5–7 working days. We’ll email you when it is successful.</p>}
+              {refund?.status === "processed" && <p>Your refund was successful. Your bank may take a little longer to show the credit.</p>}
+              {refund?.status === "failed" && <p>Our team is working on your refund and will email you with updates. Need help? Email <a className="text-primary-bright underline" href="mailto:hungryofficialx@gmail.com">hungryofficialx@gmail.com</a> with your Order ID.</p>}
+              {refund?.status === "requested" && <p>Our team is reviewing your refund. We’ll email you when it has been initiated.</p>}
+              {!refund && <p>Our team is checking your refund and will email you when it has been initiated. Need help? Email <a className="text-primary-bright underline" href="mailto:hungryofficialx@gmail.com">hungryofficialx@gmail.com</a> with your Order ID.</p>}
+              {refund?.refund_reference && <p className="break-all">Refund reference (RRN/ARN/UTR): <strong className="font-mono text-foreground">{refund.refund_reference}</strong></p>}
+            </div>
+          )}
+        </div>
       ) : (
         <div className="mt-6 space-y-4">
           {ORDER_STATUSES.map((s, i) => (
@@ -1309,13 +1321,14 @@ function OrderDetail({ order, canteenName, refund, notice, onNotice, onOrderUpda
       )}
       <button type="button" onClick={downloadBill} className="mt-5 w-full rounded-full border border-primary/50 px-5 py-3 text-xs font-semibold text-foreground hover:bg-primary/10"><Download className="mr-2 inline h-4 w-4" />Download Bill</button>
 
-      {refund && (
+      {refund && order.status !== "cancelled" && (
         <div className="mt-5 rounded-2xl border border-primary/45 bg-primary/[0.08] p-4 text-sm shadow-[0_0_20px_hsl(var(--primary)/0.08)]">
           <p className="font-bold text-primary">{REFUND_STATUS_LABELS[refund.status] ?? refund.status} · ₹{refund.amount}</p>
           {refund.status === "requested" && <p className="mt-2 text-xs text-muted-foreground">Your request is received and awaiting review. A cancellation does not automatically qualify for a refund. We’ll email you when its status changes.</p>}
-          {refund.status === "processing" && <p className="mt-2 text-xs text-muted-foreground">Approved and successfully initiated refunds generally take 5–7 business working days to appear in the original payment method. Timing can vary by Razorpay, your bank and payment method. We’ll email you when this status changes.</p>}
-          {refund.status === "processed" && <p className="mt-2 text-xs text-muted-foreground">Razorpay has confirmed the refund to your original payment method. Your bank may take additional time to show the credit.</p>}
-          {refund.status === "failed" && <p className="mt-2 text-xs text-muted-foreground">The gateway did not confirm completion. HUNGRY Z has been notified and will review the refund. Check your email and contact support with your Order ID if you need help.</p>}
+          {refund.status === "processing" && <p className="mt-2 text-xs text-muted-foreground">Your refund has been initiated to your original payment method. It usually takes 5–7 working days to appear. We’ll email you when the status changes.</p>}
+          {refund.status === "processed" && <p className="mt-2 text-xs text-muted-foreground">Razorpay has confirmed your refund to the original payment method. Your bank may take additional time to show the credit.</p>}
+          {refund.status === "failed" && <p className="mt-2 text-xs text-muted-foreground">Our team is working on your refund and will email you with updates. Need help? Email <a className="text-primary-bright underline" href="mailto:hungryofficialx@gmail.com">hungryofficialx@gmail.com</a> with your Order ID.</p>}
+          {refund.refund_reference && <p className="mt-2 break-all text-xs text-muted-foreground">Refund reference (RRN/ARN/UTR): <strong className="font-mono text-foreground">{refund.refund_reference}</strong></p>}
           {refund.status === "rejected" && <p className="mt-2 text-xs text-muted-foreground">This request was not approved. Cancellation does not automatically qualify for a refund.</p>}
           {refund.status === "rejected" && refund.admin_note && <p className="mt-1 text-xs text-muted-foreground">{refund.admin_note}</p>}
         </div>
