@@ -36,6 +36,7 @@ const COPY: Record<DashboardLanguage, Record<string, string>> = {
     enabled: "Push is enabled on this device.",
     disabled: "Push is off on this device.",
     error: "Could not update this device. Please try again.",
+    pushServiceError: "Your browser couldn't reach its push service. Check your connection or VPN, reload HUNGRY Z, and try again.",
     open: "Open notification",
     close: "Close notifications",
   },
@@ -80,9 +81,45 @@ const COPY: Record<DashboardLanguage, Record<string, string>> = {
 };
 
 function base64UrlToBytes(value: string): Uint8Array {
+  if (!/^[A-Za-z0-9_-]+$/.test(value)) throw new Error("Push setup is invalid. Please reload HUNGRY Z and try again.");
   const base64 = value.replace(/-/g, "+").replace(/_/g, "/");
   const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, "=");
-  return Uint8Array.from(atob(padded), (character) => character.charCodeAt(0));
+  const bytes = Uint8Array.from(atob(padded), (character) => character.charCodeAt(0));
+  if (bytes.length !== 65 || bytes[0] !== 4) {
+    throw new Error("Push setup is invalid. Please reload HUNGRY Z and try again.");
+  }
+  return bytes;
+}
+
+function subscriptionUsesKey(subscription: PushSubscription, key: Uint8Array): boolean {
+  const currentKey = subscription.options.applicationServerKey;
+  if (!currentKey) return true;
+  const currentBytes = new Uint8Array(currentKey);
+  return currentBytes.length === key.length && currentBytes.every((byte, index) => byte === key[index]);
+}
+
+function isPushServiceFailure(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  return error.name === "AbortError" || /push service error|registration failed/i.test(error.message);
+}
+
+async function subscribeWithRetry(
+  registration: ServiceWorkerRegistration,
+  applicationServerKey: Uint8Array,
+): Promise<PushSubscription> {
+  try {
+    return await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: applicationServerKey.slice().buffer as ArrayBuffer,
+    });
+  } catch (error) {
+    if (!isPushServiceFailure(error)) throw error;
+    await new Promise((resolve) => window.setTimeout(resolve, 800));
+    return registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: applicationServerKey.slice().buffer as ArrayBuffer,
+    });
+  }
 }
 
 function publicVapidKey(): string | null {
@@ -214,10 +251,7 @@ export function NotificationBell({
             if (!subscription) {
               const key = publicVapidKey();
               if (!key || Notification.permission !== "granted") return;
-              const renewed = await registration.pushManager.subscribe({
-                userVisibleOnly: true,
-                applicationServerKey: base64UrlToBytes(key).slice().buffer as ArrayBuffer,
-              });
+              const renewed = await subscribeWithRetry(registration, base64UrlToBytes(key));
               await registerSubscription(renewed);
               return;
             }
@@ -260,18 +294,30 @@ export function NotificationBell({
         return;
       }
       const registration = await navigator.serviceWorker.ready;
-      const subscription =
-        (await registration.pushManager.getSubscription()) ??
-        (await registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: base64UrlToBytes(key).slice().buffer as ArrayBuffer,
-        }));
+      const applicationServerKey = base64UrlToBytes(key);
+      let subscription = await registration.pushManager.getSubscription();
+      if (subscription && !subscriptionUsesKey(subscription, applicationServerKey)) {
+        const oldEndpoint = subscription.endpoint;
+        const { error } = await supabase.functions.invoke("manage-push-subscription", {
+          body: { action: "unsubscribe", endpoint: oldEndpoint },
+        });
+        if (error) throw error;
+        await subscription.unsubscribe();
+        subscription = null;
+      }
+      subscription ??= await subscribeWithRetry(registration, applicationServerKey);
       await registerSubscription(subscription);
       setPushState("enabled");
       setMessage(labels.enabled);
     } catch (error) {
       setPushState("error");
-      setMessage(error instanceof Error && error.message ? error.message : labels.error);
+      setMessage(
+        isPushServiceFailure(error)
+          ? labels.pushServiceError
+          : error instanceof Error && error.message
+            ? error.message
+            : labels.error,
+      );
     }
   }
 
