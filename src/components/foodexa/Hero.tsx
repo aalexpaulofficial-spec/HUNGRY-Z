@@ -135,9 +135,9 @@ export function Hero() {
               </a>
               <a
                 href="/register-canteen"
-                className="inline-flex min-w-0 shrink items-center justify-center whitespace-nowrap rounded-full border border-primary/60 bg-background px-4 py-3.5 text-center text-[13px] font-semibold text-foreground transition-all duration-300 hover:scale-[1.03] hover:border-primary sm:px-5 sm:text-sm"
+                className="group inline-flex min-w-0 shrink items-center justify-center gap-2 whitespace-nowrap rounded-full bg-primary px-4 py-3.5 text-[13px] font-semibold text-primary-foreground transition-all duration-300 hover:scale-[1.03] hover:shadow-[0_0_44px_-6px_var(--primary-bright)] sm:px-6 sm:text-sm"
               >
-                Register &amp; Login Canteen
+                Canteen Owner Register &amp; Login
               </a>
               <HeroInstallButton app="student" />
             </div>
