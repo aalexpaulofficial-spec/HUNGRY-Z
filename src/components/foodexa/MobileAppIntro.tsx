@@ -75,7 +75,7 @@ export function MobileAppIntro({ onContinue }: { onContinue: () => void }) {
         poster="/HUNGRYZ-INTRO-POSTER.jpg"
         src={animationAttempt === 0 ? INTRO_VIDEO : `${INTRO_VIDEO}?retry=${animationAttempt}`}
         aria-label="HUNGRY Z introduction"
-        className="absolute inset-0 h-full w-full object-cover opacity-50"
+        className="absolute inset-0 h-full w-full object-cover opacity-[0.35]"
         onCanPlayThrough={() => {
           setVideoReady(true);
           setAnimationError(false);
