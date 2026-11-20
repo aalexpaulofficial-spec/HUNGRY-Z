@@ -66,6 +66,6 @@ export function captureRazorpayPayment(paymentId: string, amountPaise: number) {
   return call<RzpPayment>("POST", `/payments/${encodeURIComponent(paymentId)}/capture`, { amount: amountPaise, currency: "INR" });
 }
 
-export function createRazorpayRefund(paymentId: string, amountPaise: number, notes: Record<string, string>) {
-  return call<RzpRefund>("POST", `/payments/${encodeURIComponent(paymentId)}/refund`, { amount: amountPaise, speed: "normal", notes });
+export function createRazorpayRefund(paymentId: string, amountPaise: number, notes: Record<string, string>, idempotencyKey: string) {
+  return call<RzpRefund>("POST", `/payments/${encodeURIComponent(paymentId)}/refund`, { amount: amountPaise, speed: "normal", notes }, { "X-Refund-Idempotency": idempotencyKey });
 }

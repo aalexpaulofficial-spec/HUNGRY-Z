@@ -389,7 +389,7 @@ export async function startRefund(refundId: string) {
     throw new Error("No captured payment found for this order.");
   }
   try {
-    const rf = await createRazorpayRefund(pay.razorpay_payment_id, rupeesToPaise(r.amount), { hungry_refund_id: r.id, order_number: order.order_number });
+    const rf = await createRazorpayRefund(pay.razorpay_payment_id, rupeesToPaise(r.amount), { hungry_refund_id: r.id, order_number: order.order_number }, r.id);
     const refundReference = bankRefundReference(rf);
     let { error: saveRefundError } = await db.from("refunds").update({ razorpay_refund_id: rf.id, payment_id: pay.id, refund_reference: refundReference }).eq("id", r.id);
     // Keep the refund path working during a rolling database migration; the

@@ -150,6 +150,7 @@ function OrderingApp() {
   const [openOrderId, setOpenOrderId] = useSessionState<string | null>("hungry-student-dashboard-order", null);
   const [switching, setSwitching] = useState(false);
   const [refunds, setRefunds] = useState<Refund[]>([]);
+  const [refundsLoadedFor, setRefundsLoadedFor] = useState<string | null>(null);
   const [notice, setNotice] = useState("");
   const [thankYouQueue, setThankYouQueue] = useState<Order[]>([]);
   const dismissedThankYouOrderIds = useRef(new Set<string>());
@@ -329,11 +330,14 @@ function OrderingApp() {
   }, [qrOrderId, refreshOwnOrder, setOpenOrderId, setTab, userId]);
 
   useEffect(() => {
+    setRefundsLoadedFor(null);
+    setRefunds([]);
     setThankYouQueue([]);
     dismissedThankYouOrderIds.current.clear();
     setFoodReceiptQueue([]);
     setFoodReceiptError("");
     if (!userId) return;
+    let active = true;
     const canReceiveThankYou = ["student", "faculty", "guest"].includes(profile?.role ?? "");
     const queueThankYou = (candidates: Order[]) => {
       if (!canReceiveThankYou) return;
@@ -365,7 +369,10 @@ function OrderingApp() {
     };
     const loadRefunds = async () => {
       const { data } = await supabase.from("refunds").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(50);
-      setRefunds((data as Refund[]) ?? []);
+      if (active) {
+        setRefunds((data as Refund[]) ?? []);
+        setRefundsLoadedFor(userId);
+      }
     };
     load();
     loadRefunds();
@@ -405,6 +412,7 @@ function OrderingApp() {
         hasConnected = true;
       });
     return () => {
+      active = false;
       supabase.removeChannel(ch);
     };
   }, [profile?.role, userId]);
@@ -594,7 +602,7 @@ function OrderingApp() {
         />
       </Sheet>
       <Sheet open={!!openOrderId} onClose={closeOrderDetails}>
-        {openOrder ? <OrderDetail order={openOrder} canteenName={openOrder.canteen_name ?? (openOrder.canteen_id === canteen.id ? canteen.name : "Canteen")} refund={refunds.find((r) => r.order_id === openOrder.id) ?? null} notice={notice} onNotice={setNotice} onOrderUpdated={(updated) => {
+        {openOrder ? <OrderDetail order={openOrder} canteenName={openOrder.canteen_name ?? (openOrder.canteen_id === canteen.id ? canteen.name : "Canteen")} refund={refunds.find((r) => r.order_id === openOrder.id) ?? null} refundStatusReady={refundsLoadedFor === userId} notice={notice} onNotice={setNotice} onOrderUpdated={(updated) => {
           setOrders((current) => [updated, ...current.filter((existing) => existing.id !== updated.id)].sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 50));
           setQrOrder(updated);
           if (userId && updated.status !== "pending_payment") clearPendingPaymentOrder(userId);
@@ -1145,19 +1153,46 @@ function FoodReceivedConfirmationDialog({ order, busy, error, onConfirm }: { ord
 function QrOrderPage({ orderId, order, message }: { orderId: string; order: Order | null; message: string }) {
   const navigate = useNavigate();
   const [currentOrder, setCurrentOrder] = useState(order);
+  const [refund, setRefund] = useState<Refund | null>(null);
+  const [refundStatusReady, setRefundStatusReady] = useState(false);
   const [notice, setNotice] = useState("");
 
   useEffect(() => setCurrentOrder(order), [order]);
   useEffect(() => {
+    setRefund(null);
+    setRefundStatusReady(false);
     if (!order?.user_id) return;
+    let active = true;
+    const loadRefund = async () => {
+      const { data } = await supabase
+        .from("refunds")
+        .select("*")
+        .eq("user_id", order.user_id)
+        .eq("order_id", orderId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (active) {
+        setRefund((data as Refund | null) ?? null);
+        setRefundStatusReady(true);
+      }
+    };
+    void loadRefund();
     const channel = supabase
       .channel(`qr-order-${orderId}-${uid()}`)
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "orders", filter: `id=eq.${orderId}` }, (payload) => {
         const updated = payload.new as Order;
         if (updated.id === orderId) setCurrentOrder((previous) => previous ? { ...previous, ...updated } : updated);
       })
+      .on("postgres_changes", { event: "*", schema: "public", table: "refunds", filter: `user_id=eq.${order.user_id}` }, (payload) => {
+        const changed = (payload.eventType === "DELETE" ? payload.old : payload.new) as Refund;
+        if (changed.order_id !== orderId) return;
+        if (payload.eventType === "DELETE") setRefund(null);
+        else setRefund(changed);
+        setRefundStatusReady(true);
+      })
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    return () => { active = false; supabase.removeChannel(channel); };
   }, [order?.user_id, orderId]);
 
   return (
@@ -1169,7 +1204,7 @@ function QrOrderPage({ orderId, order, message }: { orderId: string; order: Orde
         </header>
         <div className="overflow-hidden rounded-3xl border border-border bg-card shadow-[var(--shadow-cinema)]">
           {currentOrder ? (
-            <OrderDetail order={currentOrder} canteenName={currentOrder.canteen_name ?? "Canteen"} refund={null} notice={notice} onNotice={setNotice} onOrderUpdated={setCurrentOrder} />
+            <OrderDetail order={currentOrder} canteenName={currentOrder.canteen_name ?? "Canteen"} refund={refund} refundStatusReady={refundStatusReady} notice={notice} onNotice={setNotice} onOrderUpdated={setCurrentOrder} />
           ) : (
             <p className="p-8 text-center text-sm text-muted-foreground" role="status">{message || "Loading secure order details…"}</p>
           )}
@@ -1179,7 +1214,7 @@ function QrOrderPage({ orderId, order, message }: { orderId: string; order: Orde
   );
 }
 
-function OrderDetail({ order, canteenName, refund, notice, onNotice, onOrderUpdated }: { order: Order; canteenName: string; refund: Refund | null; notice: string; onNotice: (m: string) => void; onOrderUpdated?: (order: Order) => void }) {
+function OrderDetail({ order, canteenName, refund, refundStatusReady, notice, onNotice, onOrderUpdated }: { order: Order; canteenName: string; refund: Refund | null; refundStatusReady: boolean; notice: string; onNotice: (m: string) => void; onOrderUpdated?: (order: Order) => void }) {
   const resume = useServerFn(resumePayment);
   const reloadOrder = useServerFn(getOwnOrderDetails);
   const cancel = useServerFn(cancelPendingOrder);
@@ -1269,7 +1304,7 @@ function OrderDetail({ order, canteenName, refund, notice, onNotice, onOrderUpda
       ) : order.status === "cancelled" ? (
         <div className="mt-6 rounded-2xl border border-primary/40 bg-primary/10 p-4 text-sm text-primary-bright">
           <p className="font-semibold">This order was cancelled.</p>
-          {order.payment_method === "razorpay" && ["paid", "refund_pending", "refunded"].includes(order.payment_status) && (
+          {refundStatusReady && order.payment_method === "razorpay" && ["paid", "refund_pending", "refunded"].includes(order.payment_status) && (
             <div className="mt-2 space-y-1 text-xs leading-relaxed text-muted-foreground">
               {refund?.status === "processing" && <p>Your refund for order {order.order_number} has been initiated to your original payment method. It usually reaches your account within 5-7 business days. We’ll email you with updates. Need help? Email <a className="text-primary-bright underline" href="mailto:hungryofficialx@gmail.com">hungryofficialx@gmail.com</a> and include your Order ID.</p>}
               {refund?.status === "processed" && <p>Razorpay has successfully processed your refund for order {order.order_number}. Your bank may need a little more time to show the credit. We’ll email you with the refund details.</p>}
