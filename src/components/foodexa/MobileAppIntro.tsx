@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { GlobalLoadingScreen } from "@/components/foodexa/GlobalLoadingScreen";
 import { STUDENT_INTRO_LEGAL_RETURN_KEY } from "@/lib/back-nav";
@@ -42,7 +42,9 @@ export function resetStudentIntro() {
 
 export function MobileAppIntro({ onContinue }: { onContinue: () => void }) {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const navigationStartedRef = useRef(false);
+  const segmentDeadlineRef = useRef<number | null>(null);
   const preloadedSegmentsRef = useRef(new Map<number, Promise<void>>());
   const [segmentIndex, setSegmentIndex] = useState(0);
   const [segmentLoaded, setSegmentLoaded] = useState(false);
@@ -50,10 +52,13 @@ export function MobileAppIntro({ onContinue }: { onContinue: () => void }) {
   const [animationError, setAnimationError] = useState(false);
   const [animationAttempt, setAnimationAttempt] = useState(0);
   const segment = INTRO_SEGMENTS[segmentIndex]!;
+  const legalPageOpen = pathname === "/privacy" || pathname === "/terms";
 
   useEffect(() => {
-    if (!segmentLoaded || animationError || navigationStartedRef.current) return;
+    if (!segmentLoaded || animationError || navigationStartedRef.current || legalPageOpen) return;
     const nextIndex = (segmentIndex + 1) % INTRO_SEGMENTS.length;
+    const deadline = segmentDeadlineRef.current ?? Date.now() + segment.frames * INTRO_FRAME_DURATION_MS;
+    segmentDeadlineRef.current = deadline;
     let active = true;
     const timer = window.setTimeout(async () => {
       try {
@@ -62,14 +67,15 @@ export function MobileAppIntro({ onContinue }: { onContinue: () => void }) {
         // The visible image's onError handler presents the retry action if decoding failed.
       }
       if (!active) return;
+      segmentDeadlineRef.current = null;
       setSegmentLoaded(false);
       setSegmentIndex(nextIndex);
-    }, segment.frames * INTRO_FRAME_DURATION_MS);
+    }, Math.max(0, deadline - Date.now()));
     return () => {
       active = false;
       window.clearTimeout(timer);
     };
-  }, [animationError, segment.frames, segmentIndex, segmentLoaded]);
+  }, [animationError, legalPageOpen, segment.frames, segmentIndex, segmentLoaded]);
 
   useEffect(() => {
     const nextIndex = (segmentIndex + 1) % INTRO_SEGMENTS.length;
@@ -91,25 +97,23 @@ export function MobileAppIntro({ onContinue }: { onContinue: () => void }) {
   }
 
   function openLegalPage() {
-    if (navigationStartedRef.current) return;
-    navigationStartedRef.current = true;
     try {
       window.sessionStorage.setItem(STUDENT_INTRO_LEGAL_RETURN_KEY, "true");
     } catch {
       // Keep legal navigation available when session storage is disabled.
     }
-    onContinue();
   }
 
   function retryAnimation() {
     setAnimationError(false);
     setSegmentLoaded(false);
+    segmentDeadlineRef.current = null;
     setShowInitialLoader(true);
     setAnimationAttempt((attempt) => attempt + 1);
   }
 
   return (
-    <main className="fixed inset-0 z-[100] min-h-[100dvh] overflow-hidden bg-black text-white">
+    <main aria-hidden={legalPageOpen} className={`fixed inset-0 z-[100] min-h-[100dvh] overflow-hidden bg-black text-white ${legalPageOpen ? "invisible" : ""}`}>
       <header className="pointer-events-none absolute inset-x-0 top-0 z-20 flex justify-center px-4 pt-[max(1.25rem,env(safe-area-inset-top))]">
         <span className="rounded-full border border-white/15 bg-black/55 px-5 py-2 text-sm font-extrabold tracking-[0.32em] text-white shadow-lg backdrop-blur-sm">
           HUNGRY Z

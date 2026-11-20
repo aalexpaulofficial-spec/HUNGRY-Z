@@ -134,6 +134,14 @@ export function Pricing() {
                 FOR CANTEEN OWNERS
               </p>
               <p className="display mt-6 text-[clamp(1.8rem,5vw,3rem)]">Run daily service.</p>
+              <div className="mt-6 flex flex-wrap items-end justify-between gap-4 rounded-2xl border border-primary/20 bg-black/30 p-5">
+                <div>
+                  <p className="text-[10px] font-semibold tracking-[0.22em] text-muted-foreground">PLATFORM FEE</p>
+                  <p className="display mt-2 text-4xl leading-none text-primary-bright">₹0</p>
+                </div>
+                <span className="rounded-full border border-primary/30 px-3 py-1.5 text-[10px] font-bold tracking-[0.18em] text-primary-bright">FREE</span>
+                <p className="w-full text-xs text-muted-foreground">No platform fee on canteen orders.</p>
+              </div>
               <p className="mt-5 text-sm text-muted-foreground">
                 Manage menu availability, incoming orders, fulfilment and sales reports from the
                 canteen dashboard. Apply to register your canteen and our team will review it.
