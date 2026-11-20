@@ -138,6 +138,9 @@ export function Hero() {
                 className="group inline-flex min-w-0 shrink items-center justify-center gap-2 whitespace-nowrap rounded-full bg-primary px-4 py-3.5 text-[13px] font-semibold text-primary-foreground transition-all duration-300 hover:scale-[1.03] hover:shadow-[0_0_44px_-6px_var(--primary-bright)] sm:px-6 sm:text-sm"
               >
                 Canteen Owner Register &amp; Login
+                <span className="transition-transform duration-300 group-hover:translate-x-1 group-hover:-translate-y-1">
+                  ↗
+                </span>
               </a>
               <HeroInstallButton app="student" />
             </div>
