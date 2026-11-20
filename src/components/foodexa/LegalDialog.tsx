@@ -27,7 +27,7 @@ export function LegalDialog({ legalDocument, onClose, themeScope = "site" }: { l
 
   return createPortal((
     <div
-      className="fixed inset-0 z-[90] grid place-items-center bg-background/80 px-3 py-3 backdrop-blur-md sm:px-6 sm:py-6"
+      className="fixed inset-0 z-[110] grid place-items-center bg-background/80 px-3 py-3 backdrop-blur-md sm:px-6 sm:py-6"
       role="presentation"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) close();
@@ -71,6 +71,9 @@ export function LegalDialog({ legalDocument, onClose, themeScope = "site" }: { l
           <p className="mt-6 text-sm text-muted-foreground">
             Questions or requests: <a className="font-semibold text-primary-bright underline" href="mailto:hungryofficialx@gmail.com">hungryofficialx@gmail.com</a>
           </p>
+          <div className="mt-6 flex justify-end border-t border-border pt-4">
+            <button type="button" onClick={close} className="min-h-10 rounded-full border border-border px-5 text-sm font-semibold text-foreground transition hover:border-primary/50">Cancel</button>
+          </div>
         </div>
       </section>
     </div>

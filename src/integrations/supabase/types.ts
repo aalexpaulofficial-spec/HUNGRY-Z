@@ -575,6 +575,7 @@ export type Database = {
           coupon_id: string | null
           created_at: string
           customer_name: string
+          customer_role: string
           discount: number
           id: string
           idempotency_key: string | null
@@ -607,6 +608,7 @@ export type Database = {
           coupon_id?: string | null
           created_at?: string
           customer_name: string
+          customer_role?: string
           discount?: number
           id?: string
           idempotency_key?: string | null
@@ -639,6 +641,7 @@ export type Database = {
           coupon_id?: string | null
           created_at?: string
           customer_name?: string
+          customer_role?: string
           discount?: number
           id?: string
           idempotency_key?: string | null

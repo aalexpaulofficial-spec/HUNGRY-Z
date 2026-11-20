@@ -1,7 +1,8 @@
-import { Link, useLocation, useNavigate } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { GlobalLoadingScreen } from "@/components/foodexa/GlobalLoadingScreen";
-import { STUDENT_INTRO_LEGAL_RETURN_KEY } from "@/lib/back-nav";
+import { LegalDialog } from "@/components/foodexa/LegalDialog";
+import { privacyPolicy, termsConditions } from "@/content/legal";
 
 // v3 discards prior CTA-based completion flags. Completion means successful signup/login.
 export const STUDENT_INTRO_COMPLETED_KEY = "hungry:student-intro:completed:v3";
@@ -42,17 +43,18 @@ export function resetStudentIntro() {
 
 export function MobileAppIntro({ onContinue }: { onContinue: () => void }) {
   const navigate = useNavigate();
-  const { pathname } = useLocation();
   const navigationStartedRef = useRef(false);
   const segmentDeadlineRef = useRef<number | null>(null);
   const preloadedSegmentsRef = useRef(new Map<number, Promise<void>>());
   const [segmentIndex, setSegmentIndex] = useState(0);
   const [segmentLoaded, setSegmentLoaded] = useState(false);
+  const [hasAdvanced, setHasAdvanced] = useState(false);
   const [showInitialLoader, setShowInitialLoader] = useState(true);
   const [animationError, setAnimationError] = useState(false);
   const [animationAttempt, setAnimationAttempt] = useState(0);
+  const [legalPage, setLegalPage] = useState<"privacy" | "terms" | null>(null);
   const segment = INTRO_SEGMENTS[segmentIndex]!;
-  const legalPageOpen = pathname === "/privacy" || pathname === "/terms";
+  const legalPageOpen = legalPage !== null;
 
   useEffect(() => {
     if (!segmentLoaded || animationError || navigationStartedRef.current || legalPageOpen) return;
@@ -69,6 +71,7 @@ export function MobileAppIntro({ onContinue }: { onContinue: () => void }) {
       if (!active) return;
       segmentDeadlineRef.current = null;
       setSegmentLoaded(false);
+      setHasAdvanced(true);
       setSegmentIndex(nextIndex);
     }, Math.max(0, deadline - Date.now()));
     return () => {
@@ -96,14 +99,6 @@ export function MobileAppIntro({ onContinue }: { onContinue: () => void }) {
     void navigate({ to: "/auth", search: { mode } });
   }
 
-  function openLegalPage() {
-    try {
-      window.sessionStorage.setItem(STUDENT_INTRO_LEGAL_RETURN_KEY, "true");
-    } catch {
-      // Keep legal navigation available when session storage is disabled.
-    }
-  }
-
   function retryAnimation() {
     setAnimationError(false);
     setSegmentLoaded(false);
@@ -119,11 +114,19 @@ export function MobileAppIntro({ onContinue }: { onContinue: () => void }) {
           HUNGRY Z
         </span>
       </header>
+      {hasAdvanced && (
+        <img
+          alt=""
+          aria-hidden="true"
+          src={INTRO_SEGMENTS[(segmentIndex + INTRO_SEGMENTS.length - 1) % INTRO_SEGMENTS.length]!.src}
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+      )}
       <img
         key={`${segmentIndex}-${animationAttempt}`}
         alt="HUNGRY Z introduction"
         src={animationAttempt === 0 ? segment.src : `${segment.src}?retry=${animationAttempt}`}
-        className="absolute inset-0 h-full w-full object-cover"
+        className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-300 ease-in-out ${segmentLoaded ? "opacity-100" : hasAdvanced ? "opacity-0" : "opacity-100"}`}
         onLoad={() => {
           setSegmentLoaded(true);
           setShowInitialLoader(false);
@@ -165,11 +168,12 @@ export function MobileAppIntro({ onContinue }: { onContinue: () => void }) {
           </button>
         </div>
         <nav aria-label="Legal" className="mt-4 flex justify-center gap-3 text-xs font-medium text-white/85">
-          <Link to="/privacy" onClick={openLegalPage} className="underline underline-offset-4">Privacy Policy</Link>
+          <button type="button" onClick={() => setLegalPage("privacy")} className="underline underline-offset-4">Privacy Policy</button>
           <span aria-hidden="true">·</span>
-          <Link to="/terms" onClick={openLegalPage} className="underline underline-offset-4">Terms &amp; Conditions</Link>
+          <button type="button" onClick={() => setLegalPage("terms")} className="underline underline-offset-4">Terms &amp; Conditions</button>
         </nav>
       </div>
+      {legalPage && <LegalDialog legalDocument={legalPage === "privacy" ? privacyPolicy : termsConditions} onClose={() => setLegalPage(null)} />}
     </main>
   );
 }

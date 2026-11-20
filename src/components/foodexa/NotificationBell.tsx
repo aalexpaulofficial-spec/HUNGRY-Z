@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { Bell, BellOff, CheckCheck, LoaderCircle, Smartphone, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -134,7 +135,17 @@ export function NotificationBell({
           subscription: "toJSON" in subscription ? subscription.toJSON() : subscription,
         },
       });
-      if (error) throw new Error("Could not register this device.");
+      if (error) {
+        let detail = error.message;
+        const context = "context" in error ? error.context : null;
+        if (context instanceof Response) {
+          try {
+            const payload = await context.clone().json() as { error?: unknown };
+            if (typeof payload.error === "string") detail = payload.error;
+          } catch { /* Preserve the SDK's useful status message. */ }
+        }
+        throw new Error(detail || "Could not register this device.");
+      }
     },
     [],
   );
@@ -239,7 +250,7 @@ export function NotificationBell({
     setMessage("");
     try {
       const key = publicVapidKey();
-      if (!key) throw new Error("Push notifications are not configured yet.");
+      if (!key) throw new Error("Push is not configured for this site yet. Add VITE_VAPID_PUBLIC_KEY in Vercel and redeploy.");
       const currentPermission =
         Notification.permission === "granted" ? "granted" : await Notification.requestPermission();
       setPermission(currentPermission);
@@ -258,9 +269,9 @@ export function NotificationBell({
       await registerSubscription(subscription);
       setPushState("enabled");
       setMessage(labels.enabled);
-    } catch {
+    } catch (error) {
       setPushState("error");
-      setMessage(labels.error);
+      setMessage(error instanceof Error && error.message ? error.message : labels.error);
     }
   }
 
@@ -335,11 +346,13 @@ export function NotificationBell({
           </span>
         )}
       </button>
-      {open && (
+      {open && createPortal(
+        <div className="fixed inset-0 z-[120] flex items-start justify-center bg-black/55 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-[max(0.75rem,env(safe-area-inset-top))] backdrop-blur-sm sm:items-center sm:p-6" onMouseDown={(event) => { if (event.target === event.currentTarget) setOpen(false); }}>
         <section
           role="dialog"
+          aria-modal="true"
           aria-label={labels.notifications}
-          className="absolute right-0 top-12 z-[80] flex max-h-[min(80vh,36rem)] w-[min(24rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-3xl border border-border bg-card text-card-foreground shadow-2xl"
+          className="flex max-h-[calc(100dvh-2rem)] w-full max-w-lg flex-col overflow-hidden rounded-3xl border border-border bg-card text-card-foreground shadow-2xl sm:max-h-[min(85dvh,44rem)]"
         >
           <header className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
             <h2 className="font-semibold">{labels.notifications}</h2>
@@ -364,7 +377,7 @@ export function NotificationBell({
               </button>
             </div>
           </header>
-          <div className="overflow-y-auto">
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
             {rows.length === 0 ? (
               <p className="px-5 py-8 text-center text-sm text-muted-foreground">{labels.empty}</p>
             ) : (
@@ -441,6 +454,7 @@ export function NotificationBell({
             )}
           </footer>
         </section>
+        </div>, document.body,
       )}
     </div>
   );
