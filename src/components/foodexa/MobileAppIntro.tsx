@@ -4,8 +4,8 @@ import { GlobalLoadingScreen } from "@/components/foodexa/GlobalLoadingScreen";
 import { LegalDialog } from "@/components/foodexa/LegalDialog";
 import { privacyPolicy, termsConditions } from "@/content/legal";
 
-// v3 discards prior CTA-based completion flags. Completion means successful signup/login.
-export const STUDENT_INTRO_COMPLETED_KEY = "hungry:student-intro:completed:v3";
+// v4 ensures existing installs see the refreshed intro once. Completion means successful signup/login.
+export const STUDENT_INTRO_COMPLETED_KEY = "hungry:student-intro:completed:v4";
 const INTRO_VIDEO = "/HUNGRYZ-INTRO.mp4";
 
 export function hasCompletedStudentIntro() {
@@ -27,6 +27,7 @@ export function markStudentIntroCompleted() {
 export function resetStudentIntro() {
   try {
     window.localStorage.removeItem(STUDENT_INTRO_COMPLETED_KEY);
+    window.localStorage.removeItem("hungry:student-intro:completed:v3");
     window.localStorage.removeItem("hungry:student-intro:completed:v2");
     window.localStorage.removeItem("hungry:student-intro:completed:v1");
   } catch {

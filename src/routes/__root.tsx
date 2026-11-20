@@ -167,9 +167,17 @@ function RootComponent() {
   }, []);
 
   useEffect(() => {
-    if ("serviceWorker" in navigator) {
-      void navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch(() => undefined);
-    }
+    if (!("serviceWorker" in navigator)) return;
+    const hadController = Boolean(navigator.serviceWorker.controller);
+    let reloadedForUpdate = false;
+    const onControllerChange = () => {
+      if (!hadController || reloadedForUpdate) return;
+      reloadedForUpdate = true;
+      window.location.reload();
+    };
+    navigator.serviceWorker.addEventListener("controllerchange", onControllerChange);
+    void navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch(() => undefined);
+    return () => navigator.serviceWorker.removeEventListener("controllerchange", onControllerChange);
   }, []);
 
   useEffect(() => {
