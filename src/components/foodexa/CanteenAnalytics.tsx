@@ -3,6 +3,7 @@ import { Download, FileSpreadsheet, FileText, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { useSessionState } from "@/lib/session-state";
+import { analyticsDateRange, dateInputLocal, formatAnalyticsDateRange, type AnalyticsPreset } from "@/lib/analytics-date-range";
 
 type OrderLine = { id?: string; name: string; price?: number; qty: number };
 export type AnalyticsOrder = {
@@ -22,7 +23,7 @@ export type AnalyticsOrder = {
   food_received_confirmed_at?: string | null;
 };
 type MenuRow = { id: string; name: string; category: string; price: number };
-type Preset = "today" | "yesterday" | "7days" | "30days" | "month" | "custom";
+type Preset = AnalyticsPreset;
 type Grain = "daily" | "weekly" | "monthly";
 
 const PAGE_SIZE = 1000;
@@ -291,27 +292,6 @@ function currencyTick(value: number) {
   return value >= 1000 ? `₹${Math.round(value / 1000)}k` : `₹${Math.round(value)}`;
 }
 
-function rangeFor(preset: Preset, from: string, to: string) {
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  let start = today;
-  let end = new Date(today.getTime() + 86_400_000);
-  if (preset === "yesterday") {
-    start = new Date(today.getTime() - 86_400_000);
-    end = today;
-  }
-  if (preset === "7days") start = new Date(today.getTime() - 6 * 86_400_000);
-  if (preset === "30days") start = new Date(today.getTime() - 29 * 86_400_000);
-  if (preset === "month") start = new Date(today.getFullYear(), today.getMonth(), 1);
-  if (preset === "custom") {
-    start = from ? new Date(`${from}T00:00:00`) : today;
-    end = to
-      ? new Date(new Date(`${to}T00:00:00`).getTime() + 86_400_000)
-      : new Date(today.getTime() + 86_400_000);
-  }
-  return { start, end };
-}
-
 function orderRevenue(order: AnalyticsOrder) {
   return order.payment_status === "paid" && order.status !== "cancelled"
     ? Number(order.total) || 0
@@ -359,9 +339,9 @@ export function CanteenAnalytics({
   const [menu, setMenu] = useState<MenuRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [preset, setPreset] = useSessionState<Preset>(`hungry-canteen-analytics-${canteenId}-preset`, "30days");
-  const [customFrom, setCustomFrom] = useSessionState(`hungry-canteen-analytics-${canteenId}-from`, dateInput(new Date(Date.now() - 29 * 86_400_000)));
-  const [customTo, setCustomTo] = useSessionState(`hungry-canteen-analytics-${canteenId}-to`, dateInput(new Date()));
+  const [preset, setPreset] = useSessionState<Preset>(`hungry-canteen-analytics-${canteenId}-preset-v2`, "today");
+  const [customFrom, setCustomFrom] = useSessionState(`hungry-canteen-analytics-${canteenId}-from-v2`, dateInputLocal(new Date()));
+  const [customTo, setCustomTo] = useSessionState(`hungry-canteen-analytics-${canteenId}-to-v2`, dateInputLocal(new Date()));
   const [grain, setGrain] = useSessionState<Grain>(`hungry-canteen-analytics-${canteenId}-grain`, "daily");
   const [itemSearch, setItemSearch] = useSessionState(`hungry-canteen-analytics-${canteenId}-item-search`, "");
   const [reportMenu, setReportMenu] = useState(false);
@@ -449,7 +429,7 @@ export function CanteenAnalytics({
   }, [canteenId, loadData]);
 
   const { start, end } = useMemo(
-    () => rangeFor(preset, customFrom, customTo),
+    () => analyticsDateRange(preset, customFrom, customTo),
     [preset, customFrom, customTo],
   );
   const filteredOrders = useMemo(
@@ -668,7 +648,7 @@ export function CanteenAnalytics({
             ["Canteen", canteenName],
             [
               "Period",
-              `${start.toLocaleDateString()} – ${new Date(end.getTime() - 1).toLocaleDateString()}`,
+              formatAnalyticsDateRange(start, end),
             ],
             [],
             ["Metric", "Value"],
@@ -838,7 +818,7 @@ export function CanteenAnalytics({
       setExportError("Allow pop-ups to open the printable PDF report, then choose Save as PDF.");
       return;
     }
-    const period = `${start.toLocaleDateString()} – ${new Date(end.getTime() - 1).toLocaleDateString()}`;
+    const period = formatAnalyticsDateRange(start, end);
     const bars = (rows: { name: string; revenue: number }[]) => {
       const max = Math.max(1, ...rows.map((row) => row.revenue));
       return (
@@ -910,17 +890,17 @@ export function CanteenAnalytics({
             ONLINE orders for {canteenName}. ONLINE revenue includes paid orders only.
           </p>
         </div>
-        <div className="relative">
+        <div className="relative w-full min-w-0 sm:w-auto">
           <button
             type="button"
             onClick={() => setReportMenu((open) => !open)}
             aria-expanded={reportMenu}
-            className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2.5 text-xs font-semibold text-primary-foreground"
+            className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-primary px-4 py-2.5 text-xs font-semibold text-primary-foreground sm:w-auto"
           >
             <Download className="h-4 w-4" /> Download Report
           </button>
           {reportMenu && (
-            <div className="absolute right-0 z-20 mt-2 w-52 rounded-2xl border border-border bg-card p-2 shadow-xl">
+            <div className="static z-20 mt-2 w-full rounded-2xl border border-border bg-card p-2 shadow-xl sm:absolute sm:right-0 sm:mt-2 sm:w-52">
               <button
                 type="button"
                 onClick={downloadExcel}
@@ -950,17 +930,19 @@ export function CanteenAnalytics({
           {(
             [
               ["today", "Today"],
-              ["yesterday", "Yesterday"],
-              ["7days", "Last 7 Days"],
-              ["30days", "Last 30 Days"],
+              ["week", "This Week"],
               ["month", "This Month"],
+              ["year", "This Year"],
               ["custom", "Custom Range"],
             ] as [Preset, string][]
           ).map(([key, label]) => (
             <button
               key={key}
               type="button"
-              onClick={() => setPreset(key)}
+              onClick={() => {
+                setPreset(key);
+                setGrain(key === "year" ? "monthly" : "daily");
+              }}
               className={cn(
                 "rounded-full border px-3 py-2 text-[11px] font-semibold transition",
                 preset === key
@@ -972,6 +954,7 @@ export function CanteenAnalytics({
             </button>
           ))}
         </div>
+        <p className="text-xs text-muted-foreground">Showing {formatAnalyticsDateRange(start, end)} (local time)</p>
         {preset === "custom" && (
           <div className="flex flex-wrap items-center gap-3 text-xs">
             <label className="grid gap-1">
