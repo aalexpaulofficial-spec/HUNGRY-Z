@@ -1254,7 +1254,7 @@ function OrderDetail({ order, canteenName, refund, notice, onNotice, onOrderUpda
         <div className="min-w-0"><dt className="text-muted-foreground">Order status</dt><dd className="mt-1 break-words font-semibold capitalize text-foreground"><OrderStatusBadge status={trackingStatus} className="max-w-full text-left normal-case tracking-normal" /></dd></div>
         <div className="min-w-0"><dt className="text-muted-foreground">Date and time</dt><dd className="mt-1 break-words font-semibold text-foreground">{placedAt} IST</dd></div>
       </dl>
-      {notice && <p className="mt-4 rounded-2xl border border-primary/40 bg-primary/10 p-3 text-sm" role="status">{notice}</p>}
+      {notice && order.status !== "cancelled" && <p className="mt-4 rounded-2xl border border-primary/40 bg-primary/10 p-3 text-sm" role="status">{notice}</p>}
 
       {awaiting ? (
         <div className="mt-6 rounded-2xl border border-primary/40 bg-primary/10 p-4">
@@ -1271,11 +1271,11 @@ function OrderDetail({ order, canteenName, refund, notice, onNotice, onOrderUpda
           <p className="font-semibold">This order was cancelled.</p>
           {order.payment_method === "razorpay" && ["paid", "refund_pending", "refunded"].includes(order.payment_status) && (
             <div className="mt-2 space-y-1 text-xs leading-relaxed text-muted-foreground">
-              {refund?.status === "processing" && <p>Your refund has been initiated to your original payment method. It usually arrives within 5–7 working days. We’ll email you when it is successful.</p>}
-              {refund?.status === "processed" && <p>Your refund was successful. Your bank may take a little longer to show the credit.</p>}
-              {refund?.status === "failed" && <p>Our team is working on your refund and will email you with updates. Need help? Email <a className="text-primary-bright underline" href="mailto:hungryofficialx@gmail.com">hungryofficialx@gmail.com</a> with your Order ID.</p>}
-              {refund?.status === "requested" && <p>Our team is reviewing your refund. We’ll email you when it has been initiated.</p>}
-              {!refund && <p>Our team is checking your refund and will email you when it has been initiated. Need help? Email <a className="text-primary-bright underline" href="mailto:hungryofficialx@gmail.com">hungryofficialx@gmail.com</a> with your Order ID.</p>}
+              {refund?.status === "processing" && <p>Your refund for order {order.order_number} has been initiated to your original payment method. It usually reaches your account within 5-7 business days. We’ll email you with updates. Need help? Email <a className="text-primary-bright underline" href="mailto:hungryofficialx@gmail.com">hungryofficialx@gmail.com</a> and include your Order ID.</p>}
+              {refund?.status === "processed" && <p>Razorpay has successfully processed your refund for order {order.order_number}. Your bank may need a little more time to show the credit. We’ll email you with the refund details.</p>}
+              {refund?.status === "failed" && <p>Razorpay could not initiate the refund for order {order.order_number}. Our team has been alerted and will email you with an update. Need help? Email <a className="text-primary-bright underline" href="mailto:hungryofficialx@gmail.com">hungryofficialx@gmail.com</a> and include your Order ID.</p>}
+              {refund?.status === "requested" && <p>Your refund request for order {order.order_number} is being reviewed. We’ll email you when its status changes.</p>}
+              {!refund && <p>We’re checking the refund status for order {order.order_number}. We’ll email you with an update. Need help? Email <a className="text-primary-bright underline" href="mailto:hungryofficialx@gmail.com">hungryofficialx@gmail.com</a> and include your Order ID.</p>}
               {refund?.refund_reference && <p className="break-all">Refund reference (RRN/ARN/UTR): <strong className="font-mono text-foreground">{refund.refund_reference}</strong></p>}
             </div>
           )}
@@ -1325,9 +1325,9 @@ function OrderDetail({ order, canteenName, refund, notice, onNotice, onOrderUpda
         <div className="mt-5 rounded-2xl border border-primary/45 bg-primary/[0.08] p-4 text-sm shadow-[0_0_20px_hsl(var(--primary)/0.08)]">
           <p className="font-bold text-primary">{REFUND_STATUS_LABELS[refund.status] ?? refund.status} · ₹{refund.amount}</p>
           {refund.status === "requested" && <p className="mt-2 text-xs text-muted-foreground">Your request is received and awaiting review. A cancellation does not automatically qualify for a refund. We’ll email you when its status changes.</p>}
-          {refund.status === "processing" && <p className="mt-2 text-xs text-muted-foreground">Your refund has been initiated to your original payment method. It usually takes 5–7 working days to appear. We’ll email you when the status changes.</p>}
+          {refund.status === "processing" && <p className="mt-2 text-xs text-muted-foreground">Your refund has been initiated to your original payment method. It usually reaches your account within 5-7 business days. We’ll email you with updates.</p>}
           {refund.status === "processed" && <p className="mt-2 text-xs text-muted-foreground">Razorpay has confirmed your refund to the original payment method. Your bank may take additional time to show the credit.</p>}
-          {refund.status === "failed" && <p className="mt-2 text-xs text-muted-foreground">Our team is working on your refund and will email you with updates. Need help? Email <a className="text-primary-bright underline" href="mailto:hungryofficialx@gmail.com">hungryofficialx@gmail.com</a> with your Order ID.</p>}
+          {refund.status === "failed" && <p className="mt-2 text-xs text-muted-foreground">Razorpay could not initiate this refund automatically. Our team has been alerted and will email you with an update. Need help? Email <a className="text-primary-bright underline" href="mailto:hungryofficialx@gmail.com">hungryofficialx@gmail.com</a> with your Order ID.</p>}
           {refund.refund_reference && <p className="mt-2 break-all text-xs text-muted-foreground">Refund reference (RRN/ARN/UTR): <strong className="font-mono text-foreground">{refund.refund_reference}</strong></p>}
           {refund.status === "rejected" && <p className="mt-2 text-xs text-muted-foreground">This request was not approved. Cancellation does not automatically qualify for a refund.</p>}
           {refund.status === "rejected" && refund.admin_note && <p className="mt-1 text-xs text-muted-foreground">{refund.admin_note}</p>}

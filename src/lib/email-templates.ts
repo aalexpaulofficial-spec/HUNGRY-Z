@@ -191,16 +191,16 @@ export function refundRequestedEmail(d: RefundData): EmailContent {
 export function refundProcessingEmail(d: RefundData): EmailContent {
   return {
     subject: `Refund initiated for ${d.orderNumber} | HUNGRY Z`,
-    text: `Hi ${d.customerName},\n\nHUNGRY Z has initiated your refund of ₹${d.amount} for order ${d.orderNumber} through Razorpay, back to your original payment method. Refunds usually take 5–7 working days after initiation to appear; your bank and payment provider may affect the timing. We’ll email you when the refund is successful.\n${d.refundReference ? `Refund reference (RRN/ARN/UTR): ${d.refundReference}\n` : ""}\nNeed help? Email hungryofficialx@gmail.com with your Order ID. Our team is here to help.\n\n— Team HUNGRY Z`,
-    html: wrap("Refund initiated", `<p>Hi ${esc(d.customerName)}, HUNGRY Z has initiated your refund of <b>${esc(rupee(d.amount))}</b> for order <b>${esc(d.orderNumber)}</b> through Razorpay, back to your original payment method.</p><p>Refunds usually take <b>5–7 working days after initiation</b> to appear. Your bank and payment provider may affect the timing. We’ll email you when the refund is successful.</p>${d.refundReference ? `<p>Refund reference (RRN/ARN/UTR): <b>${esc(d.refundReference)}</b></p>` : ""}<p>Need help? Email <a href="mailto:hungryofficialx@gmail.com">hungryofficialx@gmail.com</a> with your Order ID. Our team is here to help.</p>`),
+    text: `Hi ${d.customerName},\n\nYour refund of ₹${d.amount} for order ${d.orderNumber} has been initiated through Razorpay to your original payment method. It usually reaches your account within 5-7 business days; your bank and payment provider may affect the timing. We’ll email you with updates.\n${d.refundReference ? `Refund reference (RRN/ARN/UTR): ${d.refundReference}\n` : ""}\nNeed help? Email hungryofficialx@gmail.com and include your Order ID.\n\n— Team HUNGRY Z`,
+    html: wrap("Refund initiated", `<p>Hi ${esc(d.customerName)}, your refund of <b>${esc(rupee(d.amount))}</b> for order <b>${esc(d.orderNumber)}</b> has been initiated through Razorpay to your original payment method.</p><p>It usually reaches your account within <b>5-7 business days</b>. Your bank and payment provider may affect the timing. We’ll email you with updates.</p>${d.refundReference ? `<p>Refund reference (RRN/ARN/UTR): <b>${esc(d.refundReference)}</b></p>` : ""}<p>Need help? Email <a href="mailto:hungryofficialx@gmail.com">hungryofficialx@gmail.com</a> and include your Order ID.</p>`),
   };
 }
 
 export function refundFailedEmail(d: RefundData): EmailContent {
   return {
-    subject: `Refund update for ${d.orderNumber}`,
-    text: `Hi ${d.customerName},\n\nThe refund of ₹${d.amount} for order ${d.orderNumber} could not be completed automatically. Our team has been notified and will review it. Your order details will show the latest refund status. Contact hungryofficialx@gmail.com with your Order ID if you need help.\n\n— Team HUNGRY Z`,
-    html: wrap("Refund needs review", `<p>Hi ${esc(d.customerName)}, the refund of <b>${esc(rupee(d.amount))}</b> for order <b>${esc(d.orderNumber)}</b> could not be completed automatically.</p><p>Our team has been notified and will review it. Your order details will show the latest refund status. Contact <a href="mailto:hungryofficialx@gmail.com">hungryofficialx@gmail.com</a> with your Order ID if you need help.</p>`),
+    subject: `Refund initiation update for ${d.orderNumber}`,
+    text: `Hi ${d.customerName},\n\nRazorpay could not initiate the refund of ₹${d.amount} for order ${d.orderNumber}. Our team has been alerted and will email you with an update. Need help? Email hungryofficialx@gmail.com and include your Order ID.\n\n— Team HUNGRY Z`,
+    html: wrap("Refund update", `<p>Hi ${esc(d.customerName)}, Razorpay could not initiate the refund of <b>${esc(rupee(d.amount))}</b> for order <b>${esc(d.orderNumber)}</b>.</p><p>Our team has been alerted and will email you with an update. Need help? Email <a href="mailto:hungryofficialx@gmail.com">hungryofficialx@gmail.com</a> and include your Order ID.</p>`),
   };
 }
 
