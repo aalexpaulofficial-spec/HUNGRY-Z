@@ -42,7 +42,10 @@ export function CanteenSection() {
         <p className="text-[10px] tracking-[0.3em] text-primary-bright">FOR CANTEENS</p>
         <h2 className="display mt-3 text-4xl sm:text-6xl">Register your canteen.</h2>
         <p className="mt-4 max-w-xl text-sm text-muted-foreground">
-          Bring your campus canteen to HUNGRY Z. Every canteen is verified by our team before it can accept orders.
+          Bring your campus canteen to HUNGRY Z. Get started with verification in under a minute. Our team reviews every application before the canteen can accept orders.
+        </p>
+        <p className="mt-4 inline-flex rounded-full border border-primary/40 bg-primary/10 px-4 py-2 text-[10px] font-bold tracking-[0.16em] text-primary-bright">
+          FREE FOR CANTEEN OWNERS
         </p>
         <div className="mt-10 grid max-w-md grid-cols-2 rounded-full bg-ink p-1">
           {([["register", "Register a Canteen", Store], ["login", "Canteen Login", KeyRound]] as const).map(([k, l, Icon]) => (
@@ -258,7 +261,7 @@ function DashboardLogin({ onRegister }: { onRegister: () => void }) {
   return (
     <div className="mx-auto max-w-md space-y-4 text-center">
       <p className="text-sm text-muted-foreground">
-        Sign in with the Canteen Owner ID and Password Code sent after approval.
+        Sign in with your 7-character Canteen Owner ID and Password Code. We’ll email both after your canteen is approved.
       </p>
       <CanteenOwnerLoginForm submitLabel="Open dashboard" onRegister={onRegister} />
     </div>
