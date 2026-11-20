@@ -1,18 +1,12 @@
 import { useNavigate } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { GlobalLoadingScreen } from "@/components/foodexa/GlobalLoadingScreen";
 import { LegalDialog } from "@/components/foodexa/LegalDialog";
 import { privacyPolicy, termsConditions } from "@/content/legal";
 
 // v3 discards prior CTA-based completion flags. Completion means successful signup/login.
 export const STUDENT_INTRO_COMPLETED_KEY = "hungry:student-intro:completed:v3";
-const INTRO_FRAME_DURATION_MS = 40;
-const INTRO_SEGMENTS = [
-  { src: "/HUNGRYZ%20INTRO%20SEGMENT%201.webp", frames: 300 },
-  { src: "/HUNGRYZ%20INTRO%20SEGMENT%202.webp", frames: 270 },
-  { src: "/HUNGRYZ%20INTRO%20SEGMENT%203.webp", frames: 270 },
-  { src: "/HUNGRYZ%20INTRO%20SEGMENT%204.webp", frames: 60 },
-] as const;
+const INTRO_VIDEO = "/HUNGRYZ-INTRO.mp4";
 
 export function hasCompletedStudentIntro() {
   try {
@@ -44,54 +38,11 @@ export function resetStudentIntro() {
 export function MobileAppIntro({ onContinue }: { onContinue: () => void }) {
   const navigate = useNavigate();
   const navigationStartedRef = useRef(false);
-  const segmentDeadlineRef = useRef<number | null>(null);
-  const preloadedSegmentsRef = useRef(new Map<number, Promise<void>>());
-  const [segmentIndex, setSegmentIndex] = useState(0);
-  const [segmentLoaded, setSegmentLoaded] = useState(false);
-  const [hasAdvanced, setHasAdvanced] = useState(false);
-  const [showInitialLoader, setShowInitialLoader] = useState(true);
+  const [videoReady, setVideoReady] = useState(false);
   const [animationError, setAnimationError] = useState(false);
   const [animationAttempt, setAnimationAttempt] = useState(0);
   const [legalPage, setLegalPage] = useState<"privacy" | "terms" | null>(null);
-  const segment = INTRO_SEGMENTS[segmentIndex]!;
   const legalPageOpen = legalPage !== null;
-
-  useEffect(() => {
-    if (!segmentLoaded || animationError || navigationStartedRef.current || legalPageOpen || segmentIndex === INTRO_SEGMENTS.length - 1) return;
-    const nextIndex = segmentIndex + 1;
-    const deadline = segmentDeadlineRef.current ?? Date.now() + segment.frames * INTRO_FRAME_DURATION_MS;
-    segmentDeadlineRef.current = deadline;
-    let active = true;
-    const timer = window.setTimeout(async () => {
-      try {
-        await (preloadedSegmentsRef.current.get(nextIndex) ?? Promise.resolve());
-      } catch {
-        // The visible image's onError handler presents the retry action if decoding failed.
-      }
-      if (!active) return;
-      segmentDeadlineRef.current = null;
-      setSegmentLoaded(false);
-      setHasAdvanced(true);
-      setSegmentIndex(nextIndex);
-    }, Math.max(0, deadline - Date.now()));
-    return () => {
-      active = false;
-      window.clearTimeout(timer);
-    };
-  }, [animationError, legalPageOpen, segment.frames, segmentIndex, segmentLoaded]);
-
-  useEffect(() => {
-    if (segmentIndex === INTRO_SEGMENTS.length - 1) return;
-    const nextIndex = segmentIndex + 1;
-    const nextSegment = INTRO_SEGMENTS[nextIndex]!;
-    const image = new Image();
-    image.src = nextSegment.src;
-    const decoded = image.decode();
-    preloadedSegmentsRef.current.set(nextIndex, decoded);
-    return () => {
-      // Keep the decode promise cached so the next segment can switch without waiting.
-    };
-  }, [segmentIndex]);
 
   function openAuth(mode: "signup" | "login") {
     if (navigationStartedRef.current) return;
@@ -102,9 +53,7 @@ export function MobileAppIntro({ onContinue }: { onContinue: () => void }) {
 
   function retryAnimation() {
     setAnimationError(false);
-    setSegmentLoaded(false);
-    segmentDeadlineRef.current = null;
-    setShowInitialLoader(true);
+    setVideoReady(false);
     setAnimationAttempt((attempt) => attempt + 1);
   }
 
@@ -115,32 +64,30 @@ export function MobileAppIntro({ onContinue }: { onContinue: () => void }) {
           HUNGRY Z
         </span>
       </header>
-      {hasAdvanced && (
-        <img
-          alt=""
-          aria-hidden="true"
-          src={INTRO_SEGMENTS[(segmentIndex + INTRO_SEGMENTS.length - 1) % INTRO_SEGMENTS.length]!.src}
-          className="absolute inset-0 h-full w-full object-cover"
-        />
-      )}
-      <img
-        key={`${segmentIndex}-${animationAttempt}`}
-        alt="HUNGRY Z introduction"
-        src={animationAttempt === 0 ? segment.src : `${segment.src}?retry=${animationAttempt}`}
-        className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-300 ease-in-out ${segmentLoaded ? "opacity-100" : hasAdvanced ? "opacity-0" : "opacity-100"}`}
-        onLoad={() => {
-          setSegmentLoaded(true);
-          setShowInitialLoader(false);
+      <video
+        key={animationAttempt}
+        autoPlay
+        muted
+        loop
+        playsInline
+        preload="auto"
+        poster="/HUNGRYZ-INTRO-POSTER.jpg"
+        src={animationAttempt === 0 ? INTRO_VIDEO : `${INTRO_VIDEO}?retry=${animationAttempt}`}
+        aria-label="HUNGRY Z introduction"
+        className="absolute inset-0 h-full w-full object-cover"
+        onCanPlayThrough={() => {
+          setVideoReady(true);
           setAnimationError(false);
         }}
+        onPlaying={() => setVideoReady(true)}
+        onWaiting={() => setVideoReady(false)}
         onError={() => {
-          setSegmentLoaded(false);
-          setShowInitialLoader(false);
+          setVideoReady(false);
           setAnimationError(true);
         }}
       />
 
-      {showInitialLoader && !animationError && <GlobalLoadingScreen overlay tone="student" />}
+      {!videoReady && !animationError && <GlobalLoadingScreen overlay tone="student" />}
 
       {animationError && (
         <div className="absolute inset-x-5 top-1/2 z-10 flex -translate-y-1/2 flex-col items-center gap-3 text-center">
