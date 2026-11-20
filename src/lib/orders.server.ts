@@ -354,9 +354,8 @@ function bankRefundReference(refund: { acquirer_data?: { rrn?: string | null; ar
 export async function startRefund(refundId: string) {
   const { data: previous } = await db.from("refunds").select("*").eq("id", refundId).maybeSingle();
   if (!previous) throw new Error("This refund wasn't found.");
-  // A final gateway failure is a completed attempt. Create a fresh attempt/key
-  // when an admin explicitly retries it; an unknown network result reuses the
-  // same row and Razorpay idempotency key so it cannot double-refund.
+  // A final gateway failure is a completed attempt. Create a fresh attempt
+  // when an admin explicitly retries it.
   if (previous.status === "failed" && previous.razorpay_refund_id) {
     const { data: retry, error } = await db.from("refunds").insert({
       order_id: previous.order_id,
@@ -390,7 +389,7 @@ export async function startRefund(refundId: string) {
     throw new Error("No captured payment found for this order.");
   }
   try {
-    const rf = await createRazorpayRefund(pay.razorpay_payment_id, rupeesToPaise(r.amount), { hungry_refund_id: r.id, order_number: order.order_number }, r.id);
+    const rf = await createRazorpayRefund(pay.razorpay_payment_id, rupeesToPaise(r.amount), { hungry_refund_id: r.id, order_number: order.order_number });
     const refundReference = bankRefundReference(rf);
     let { error: saveRefundError } = await db.from("refunds").update({ razorpay_refund_id: rf.id, payment_id: pay.id, refund_reference: refundReference }).eq("id", r.id);
     // Keep the refund path working during a rolling database migration; the
@@ -419,15 +418,17 @@ export async function startRefund(refundId: string) {
     const msg = e instanceof Error ? e.message : String(e);
     const { data: latest } = await db.from("refunds").select("razorpay_refund_id").eq("id", r.id).maybeSingle();
     const gatewayAccepted = Boolean(latest?.razorpay_refund_id);
-    await db.from("refunds").update({ ...(gatewayAccepted ? {} : { status: "failed" }), admin_note: msg.slice(0, 480) }).eq("id", r.id).eq("status", "processing");
-    if (who.email && !gatewayAccepted) await sendEmailOnce("refund_failed", who.email, T.refundFailedEmail({ customerName: order.customer_name, orderNumber: order.order_number, amount: r.amount }), r.id);
+    const ambiguous = !gatewayAccepted && (!(e instanceof RazorpayError) || msg.includes("Razorpay accepted the refund"));
+    const definitivelyFailed = !gatewayAccepted && !ambiguous;
+    await db.from("refunds").update({ ...(definitivelyFailed ? { status: "failed" } : {}), admin_note: msg.slice(0, 480) }).eq("id", r.id).eq("status", "processing");
+    if (who.email && definitivelyFailed) await sendEmailOnce("refund_failed", who.email, T.refundFailedEmail({ customerName: order.customer_name, orderNumber: order.order_number, amount: r.amount }), r.id);
     await sendEmailOnce(
       "admin_refund_update",
       T.ADMIN_ALERT_EMAIL,
-      T.adminRefundEmail({ stage: gatewayAccepted ? "needs reconciliation" : "failed", orderNumber: order.order_number, canteenName: cName, customerEmail: who.email, amount: r.amount, reason: msg.slice(0, 200), refundId: latest?.razorpay_refund_id ?? undefined }),
+      T.adminRefundEmail({ stage: gatewayAccepted || ambiguous ? "needs reconciliation" : "failed", orderNumber: order.order_number, canteenName: cName, customerEmail: who.email, amount: r.amount, reason: msg.slice(0, 200), refundId: latest?.razorpay_refund_id ?? undefined }),
       r.id,
     );
-    throw new Error(gatewayAccepted ? "Razorpay accepted the refund. HUNGRY Z is checking the order update and will email you." : "Razorpay couldn't start this refund. HUNGRY Z has been notified and will review it.");
+    throw new Error(gatewayAccepted || ambiguous ? "The refund result is being checked. HUNGRY Z has been notified and will email you with an update." : "Razorpay couldn't start this refund. HUNGRY Z has been notified and will review it.");
   }
 }
 
