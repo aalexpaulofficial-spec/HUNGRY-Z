@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { imageDataUrlSchema } from "@/lib/scanner";
+import { SCANNER_ORDERS_PER_USAGE, imageDataUrlSchema } from "@/lib/scanner";
 import {
   identifyFoodsWithGemini,
   lookupUsdaNutrition,
@@ -69,7 +69,7 @@ export const scanFood = createServerFn({ method: "POST" })
     const { data: reservedData, error } = await context.supabase.rpc("hungry_reserve_scanner_usage", { p_request_id: data.requestId });
     if (error) {
       if (error.message.includes("ineligible_role")) return { ok: false as const, message: "HUNGRY AI access requires an eligible Student, Faculty or Guest account and completed food orders." };
-      if (error.message.includes("usage_limit_reached")) return { ok: false as const, message: "Each completed food order unlocks one HUNGRY AI usage." };
+      if (error.message.includes("usage_limit_reached")) return { ok: false as const, message: `Every ${SCANNER_ORDERS_PER_USAGE} completed food orders unlock one HUNGRY AI usage.` };
       return { ok: false as const, message: "We couldn't verify scanner access. Please retry." };
     }
     const reservation = firstRow(reservedData as (ScannerUsage & { reserved: boolean }) | (ScannerUsage & { reserved: boolean })[] | null);

@@ -130,13 +130,13 @@ const authTranslations: Record<Exclude<DashboardLanguage, "en">, Record<string, 
 
 Object.assign(scannerProductTranslations.hi, {
   "Completed orders": "पूरे हुए ऑर्डर", "Total AI usages": "कुल AI उपयोग", "Used usages": "उपयोग किए गए",
-  "Usages remaining": "शेष उपयोग", "Each completed food order unlocks one HUNGRY AI usage.": "हर पूरे हुए फूड ऑर्डर पर HUNGRY AI का एक उपयोग मिलता है।",
+  "Usages remaining": "शेष उपयोग", "Every 15 completed food orders unlock one HUNGRY AI usage.": "हर 15 पूरे हुए फूड ऑर्डर पर HUNGRY AI का एक उपयोग मिलता है।",
   "Personalized food insight": "आपके लिए खाने की सलाह",
   "This scan request was already used. Start a new scan to continue.": "यह स्कैन अनुरोध पहले ही इस्तेमाल हो चुका है। जारी रखने के लिए नया स्कैन शुरू करें।",
 });
 Object.assign(scannerProductTranslations.kn, {
   "Completed orders": "ಪೂರ್ಣಗೊಂಡ ಆರ್ಡರ್‌ಗಳು", "Total AI usages": "ಒಟ್ಟು AI ಬಳಕೆಗಳು", "Used usages": "ಬಳಸಿದ ಬಳಕೆಗಳು",
-  "Usages remaining": "ಉಳಿದ ಬಳಕೆಗಳು", "Each completed food order unlocks one HUNGRY AI usage.": "ಪ್ರತಿ ಪೂರ್ಣಗೊಂಡ ಆಹಾರ ಆರ್ಡರ್‌ಗೆ ಒಂದು HUNGRY AI ಬಳಕೆ ಸಿಗುತ್ತದೆ.",
+  "Usages remaining": "ಉಳಿದ ಬಳಕೆಗಳು", "Every 15 completed food orders unlock one HUNGRY AI usage.": "ಪ್ರತಿ 15 ಪೂರ್ಣಗೊಂಡ ಆಹಾರ ಆರ್ಡರ್‌ಗೆ ಒಂದು HUNGRY AI ಬಳಕೆ ಸಿಗುತ್ತದೆ.",
   "Personalized food insight": "ನಿಮಗಾಗಿ ಆಹಾರ ಸಲಹೆ",
   "This scan request was already used. Start a new scan to continue.": "ಈ ಸ್ಕ್ಯಾನ್ ವಿನಂತಿಯನ್ನು ಈಗಾಗಲೇ ಬಳಸಲಾಗಿದೆ. ಮುಂದುವರಿಸಲು ಹೊಸ ಸ್ಕ್ಯಾನ್ ಪ್ರಾರಂಭಿಸಿ.",
 });
