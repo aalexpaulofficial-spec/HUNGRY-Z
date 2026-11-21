@@ -161,7 +161,7 @@ export function SignupForm({ onDone, orderId, language }: { onDone: () => void; 
           full_name: v.fullName,
           registration_number: v.registrationNumber,
           accepted_terms: true,
-          terms_version: "2026-11-19-ai-15-order",
+          terms_version: "2026-11-21-ai-per-order",
         },
       },
     });

@@ -9,8 +9,8 @@ describe("HUNGRY Z SCANNER student plans", () => {
   it("only Version 1.0 is live", () => {
     expect(STUDENT_SCANNER_PLANS.filter((p) => p.status === "live").map((p) => p.version)).toEqual(["1.0"]);
   });
-  it("earns one scan usage for every 15 completed food orders", () => {
-    expect(SCANNER_ORDERS_PER_USAGE).toBe(15);
+  it("earns one scan usage for each completed food order", () => {
+    expect(SCANNER_ORDERS_PER_USAGE).toBe(1);
   });
 });
 

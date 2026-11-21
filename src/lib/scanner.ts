@@ -3,7 +3,7 @@ import { z } from "zod";
 
 export const SCANNER_TRIAL_MONTHS = 1;
 export const SCANNER_PRICE_INR = 0;
-export const SCANNER_ORDERS_PER_USAGE = 15;
+export const SCANNER_ORDERS_PER_USAGE = 1;
 export const MAX_SCAN_IMAGE_BYTES = 6 * 1024 * 1024;
 
 export type ScannerPlan = {
