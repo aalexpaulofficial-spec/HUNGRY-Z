@@ -40,6 +40,8 @@ Set only the provider secrets required by the workflow you are developing:
 | Administrator login | `ADMIN_PASSWORD` |
 | AI food scan and nutrition lookup | `GEMINI_API_KEY`, `USDA_FDC_API_KEY` |
 
+Configure the Razorpay webhook URL as `https://www.hungryz.in/api/public/razorpay-webhook` in Razorpay Dashboard → Settings → Webhooks. Store the matching webhook signing secret in the deployment environment as `RAZORPAY_WEBHOOK_SECRET`; do not use the Razorpay API key secret for webhook signature verification.
+
 Keep all these values server-side. Configure production values in the hosting/provider secret manager, not in source control.
 
 ## Database changes

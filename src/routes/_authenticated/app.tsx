@@ -107,7 +107,7 @@ type Order = {
   bill_print_confirmed_at: string | null; bill_print_thank_you_seen_at: string | null; completion_workflow: string | null;
   food_received_confirmed_at: string | null; collection_thank_you_seen_at: string | null;
 };
-type Refund = { id: string; order_id: string; amount: number; status: string; admin_note: string | null; refund_reference: string | null; created_at: string };
+type Refund = { id: string; order_id: string; amount: number; status: string; requested_by: string; razorpay_refund_id: string | null; admin_note: string | null; refund_reference: string | null; created_at: string };
 type Tab = "home" | "menu" | "events" | "orders" | "you" | "scan";
 const uid = () => Math.random().toString(36).slice(2);
 const pendingPaymentOrderKey = (userId: string) => `hungry:pending-payment-order:${userId}`;
@@ -1306,7 +1306,9 @@ function OrderDetail({ order, canteenName, refund, refundStatusReady, notice, on
           <p className="font-semibold">This order was cancelled.</p>
           {refundStatusReady && order.payment_method === "razorpay" && ["paid", "refund_pending", "refunded"].includes(order.payment_status) && (
             <div className="mt-2 space-y-1 text-xs leading-relaxed text-muted-foreground">
-              {refund?.status === "processing" && <p>Your refund for order {order.order_number} has been initiated to your original payment method. It usually reaches your account within 5-7 business days. We’ll email you with updates. Need help? Email <a className="text-primary-bright underline" href="mailto:hungryofficialx@gmail.com">hungryofficialx@gmail.com</a> and include your Order ID.</p>}
+              {refund?.status === "processing" && !refund.razorpay_refund_id && <p>We’re checking the refund status with Razorpay for order {order.order_number}. We’ll email you as soon as it is confirmed. Your refund has not yet been confirmed as initiated. Need help? Email <a className="text-primary-bright underline" href="mailto:hungryofficialx@gmail.com">hungryofficialx@gmail.com</a> and include your Order ID.</p>}
+              {refund?.status === "processing" && !!refund.razorpay_refund_id && refund.requested_by === "canteen" && <p>Your order was cancelled by the canteen. Your refund has been initiated and will be credited to your original payment method.</p>}
+              {refund?.status === "processing" && !!refund.razorpay_refund_id && refund.requested_by !== "canteen" && <p>Your refund for order {order.order_number} has been initiated to your original payment method. It usually reaches your account within 5-7 business days. We’ll email you with updates. Need help? Email <a className="text-primary-bright underline" href="mailto:hungryofficialx@gmail.com">hungryofficialx@gmail.com</a> and include your Order ID.</p>}
               {refund?.status === "processed" && <p>Razorpay has successfully processed your refund for order {order.order_number}. Your bank may need a little more time to show the credit. We’ll email you with the refund details.</p>}
               {refund?.status === "failed" && <p>Razorpay could not initiate the refund for order {order.order_number}. Our team has been alerted and will email you with an update. Need help? Email <a className="text-primary-bright underline" href="mailto:hungryofficialx@gmail.com">hungryofficialx@gmail.com</a> and include your Order ID.</p>}
               {refund?.status === "requested" && <p>Your refund request for order {order.order_number} is being reviewed. We’ll email you when its status changes.</p>}

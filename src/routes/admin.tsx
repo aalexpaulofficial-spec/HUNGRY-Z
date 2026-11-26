@@ -300,7 +300,7 @@ function RefundsPanel() {
         <div key={r.id} className="rounded-3xl border border-border bg-card p-5">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="font-mono text-sm font-bold">{r.orders?.order_number ?? r.order_id.slice(0, 8)} · ₹{r.amount}</p>
-            <span className="rounded-full bg-muted px-3 py-1 text-[10px] font-bold uppercase tracking-widest">{REFUND_STATUS_LABELS[r.status] ?? r.status}</span>
+            <span className="rounded-full bg-muted px-3 py-1 text-[10px] font-bold uppercase tracking-widest">{r.status === "processing" && !r.razorpay_refund_id ? "Needs reconciliation" : REFUND_STATUS_LABELS[r.status] ?? r.status}</span>
           </div>
           <p className="mt-1 text-xs text-muted-foreground">{r.orders?.customer_name} · by {r.requested_by} · {new Date(r.created_at).toLocaleString()}</p>
           <p className="mt-2 text-sm">“{r.reason}”</p>

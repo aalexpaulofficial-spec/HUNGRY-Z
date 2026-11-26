@@ -178,7 +178,7 @@ export function adminPaymentFailedEmail(d: { orderNumber: string; canteenName: s
   };
 }
 
-type RefundData = { customerName: string; orderNumber: string; amount: number; reason?: string; note?: string; refundReference?: string | null };
+type RefundData = { customerName: string; orderNumber: string; amount: number; reason?: string; note?: string; refundReference?: string | null; cancelledByCanteen?: boolean };
 
 export function refundRequestedEmail(d: RefundData): EmailContent {
   return {
@@ -193,6 +193,17 @@ export function refundProcessingEmail(d: RefundData): EmailContent {
     subject: `Refund initiated for ${d.orderNumber} | HUNGRY Z`,
     text: `Hi ${d.customerName},\n\nYour refund of ₹${d.amount} for order ${d.orderNumber} has been initiated through Razorpay to your original payment method. It usually reaches your account within 5-7 business days; your bank and payment provider may affect the timing. We’ll email you with updates.\n${d.refundReference ? `Refund reference (RRN/ARN/UTR): ${d.refundReference}\n` : ""}\nNeed help? Email hungryofficialx@gmail.com and include your Order ID.\n\n— Team HUNGRY Z`,
     html: wrap("Refund initiated", `<p>Hi ${esc(d.customerName)}, your refund of <b>${esc(rupee(d.amount))}</b> for order <b>${esc(d.orderNumber)}</b> has been initiated through Razorpay to your original payment method.</p><p>It usually reaches your account within <b>5-7 business days</b>. Your bank and payment provider may affect the timing. We’ll email you with updates.</p>${d.refundReference ? `<p>Refund reference (RRN/ARN/UTR): <b>${esc(d.refundReference)}</b></p>` : ""}<p>Need help? Email <a href="mailto:hungryofficialx@gmail.com">hungryofficialx@gmail.com</a> and include your Order ID.</p>`),
+  };
+}
+
+export function canteenCancelledRefundEmail(d: RefundData): EmailContent {
+  const email = refundProcessingEmail(d);
+  const message = "Your order was cancelled by the canteen. Your refund has been initiated and will be credited to your original payment method.";
+  return {
+    ...email,
+    subject: `Order cancelled and refund initiated for ${d.orderNumber} | HUNGRY Z`,
+    text: email.text.replace(/Your refund of .*? to your original payment method\./, message),
+    html: email.html.replace(/your refund of <b>.*? to your original payment method\.<\/p>/, `${message}</p>`),
   };
 }
 

@@ -1619,16 +1619,32 @@ export const ownerUpdateOrderStatus = createServerFn({ method: "POST" })
     const orders = await import("@/lib/orders.server");
     const o = await orders.getOrder(data.orderId);
     if (!o) throw new Error("Order not found");
-    const { data: c } = await db.from("canteens").select("owner_user_id").eq("id", o.canteen_id).maybeSingle();
+    const { data: c } = await db.from("canteens").select("owner_user_id, name").eq("id", o.canteen_id).maybeSingle();
     if (!c || c.owner_user_id !== context.userId) throw new Error("Forbidden");
     if (o.completion_workflow === "printed" && data.status !== "cancelled") throw new Error("This order uses customer-confirmed printed collection; it cannot enter the manual preparation workflow.");
     if (!canOwnerMove(o.status, data.status)) throw new Error("That status change isn't allowed.");
 
     if (data.status === "cancelled") {
       if (shouldAutoRefundCanteenCancellation(o)) {
-        const r = await orders.createRefundRequest({ order: o, amount: o.total, reason: "Cancelled by the canteen", requestedBy: "canteen" });
         const { data: released, error: releaseError } = await db.rpc("hungry_release_order", { p_order: o.id });
         if (releaseError || released !== true) throw new Error("This order changed before it could be cancelled. Refresh and try again.");
+        let r: Awaited<ReturnType<typeof orders.createRefundRequest>>;
+        try {
+          r = await orders.createRefundRequest({ order: o, amount: o.total, reason: "Cancelled by the canteen", requestedBy: "canteen" });
+        } catch (error) {
+          const reason = error instanceof Error ? error.message : "Could not create a refund record.";
+          const { sendEmail } = await import("@/lib/mailer.server");
+          const templates = await import("@/lib/email-templates");
+          const { data: customerProfile } = await db.from("profiles").select("email").eq("id", o.user_id).maybeSingle();
+          await sendEmail(
+            "admin_refund_update",
+            templates.ADMIN_ALERT_EMAIL,
+            templates.adminRefundEmail({ stage: "failed to create", orderNumber: o.order_number, canteenName: c.name, customerEmail: customerProfile?.email ?? "unknown", amount: o.total, reason }),
+            `order:${o.id}:refund-create-failed`,
+          );
+          const notifications = await orders.sendOrderStatusUpdate(o.id, "cancelled");
+          return { ok: true, refund: false, refundNeedsAttention: true, notificationsSent: notifications.sent };
+        }
         try {
           await orders.startRefund(r.id);
         } catch {

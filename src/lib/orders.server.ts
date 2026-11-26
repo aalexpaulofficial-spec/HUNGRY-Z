@@ -403,8 +403,12 @@ export async function startRefund(refundId: string) {
     await db.rpc("hungry_release_order", { p_order: order.id });
     const { error: paymentStatusError } = await db.from("orders").update({ payment_status: "refund_pending" }).eq("id", order.id);
     if (paymentStatusError) throw new Error("Razorpay accepted the refund, but the order payment status could not be updated.");
-    if (who.email)
-      await sendEmailOnce("refund_processing", who.email, T.refundProcessingEmail({ customerName: order.customer_name, orderNumber: order.order_number, amount: r.amount, refundReference }), r.id);
+    if (who.email) {
+      const processingEmail = r.requested_by === "canteen"
+        ? T.canteenCancelledRefundEmail({ customerName: order.customer_name, orderNumber: order.order_number, amount: r.amount, refundReference })
+        : T.refundProcessingEmail({ customerName: order.customer_name, orderNumber: order.order_number, amount: r.amount, refundReference });
+      await sendEmailOnce("refund_processing", who.email, processingEmail, r.id);
+    }
     await sendEmailOnce(
       "admin_refund_update",
       T.ADMIN_ALERT_EMAIL,
