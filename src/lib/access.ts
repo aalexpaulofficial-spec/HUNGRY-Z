@@ -40,8 +40,6 @@ export const applicationSchema = z.object({
   universityName: z.string().trim().min(2, "Enter the university / campus").max(150),
   campusLocation: z.string().trim().min(2, "Enter the campus location").max(200),
   contactEmail: z.string().trim().email("Enter a valid email").max(255),
-  fssaiLicense: z.string().trim().min(5, "Enter the FSSAI licence number").max(40),
-  ownerIdProof: z.string().trim().min(4, "Enter a government ID number").max(60),
   notes: z.string().trim().max(500).optional().default(""),
 });
 

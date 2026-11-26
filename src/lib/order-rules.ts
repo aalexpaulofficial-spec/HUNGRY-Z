@@ -65,6 +65,11 @@ export function canRequestRefund(o: { payment_method: string; payment_status: st
   return o.payment_method === "razorpay" && o.payment_status === "paid" && ["placed", "preparing", "ready"].includes(o.status);
 }
 
+/** A canteen cancellation of a captured Razorpay order must start a full refund. */
+export function shouldAutoRefundCanteenCancellation(o: { payment_method: string; payment_status: string }): boolean {
+  return o.payment_method === "razorpay" && o.payment_status === "paid";
+}
+
 /** Kitchen status flow; cancelling is only possible before preparation starts. */
 export const OWNER_TRANSITIONS: Record<string, string[]> = {
   placed: ["preparing", "cancelled"],

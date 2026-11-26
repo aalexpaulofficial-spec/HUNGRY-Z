@@ -35,6 +35,7 @@ vi.mock("@/integrations/supabase/client", () => {
       storage: {
         from: () => ({
           upload: async (path: string) => { mocks.uploadedPath = path; return { error: null }; },
+          uploadToSignedUrl: async (path: string) => { mocks.uploadedPath = path; return { error: null }; },
           getPublicUrl: (path: string) => ({ data: { publicUrl: `https://storage.example/${path}` } }),
           remove: async () => ({ error: null }),
         }),
@@ -53,6 +54,7 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 });
 vi.mock("@/lib/hungry.functions", () => ({
   createCanteenMenuImageUpload: vi.fn(),
+  createCanteenBannerUpload: vi.fn(async () => ({ path: "canteen-1/banner.png", token: "upload-token", publicUrl: "https://storage.example/canteen-1/banner.png" })),
   getCanteenOwnerAccess: vi.fn(),
   ownerRecordConfirmedBillPrint: vi.fn(),
   saveCanteenAvailability: vi.fn(),
@@ -99,8 +101,8 @@ describe("canteen template save flow", () => {
     pointer("pointermove", 60, 40);
     pointer("pointerup", 60, 40);
     fireEvent.change(screen.getByRole("slider", { name: "Banner image zoom" }), { target: { value: "1.8" } });
-    fireEvent.change(screen.getByPlaceholderText("Heading (optional)"), { target: { value: "Welcome" } });
-    fireEvent.change(screen.getByPlaceholderText("Description (optional)"), { target: { value: "Fresh food" } });
+    fireEvent.change(screen.getByPlaceholderText("Browse campus food."), { target: { value: "Welcome" } });
+    fireEvent.change(screen.getByPlaceholderText("Add a short message for students"), { target: { value: "Fresh food" } });
 
     fireEvent.click(screen.getByRole("button", { name: "Save template" }));
     await waitFor(() => expect(mocks.savedPayload).toMatchObject({
@@ -108,8 +110,8 @@ describe("canteen template save flow", () => {
       banner_image_url: expect.stringMatching(/^https:\/\/storage\.example\/canteen-1\//),
       heading: "Welcome",
       description: "Fresh food",
-      banner_crop_x: 0,
-      banner_crop_y: 100,
+      banner_crop_x: 50,
+      banner_crop_y: 50,
       banner_crop_zoom: 1.8,
     }));
     expect(mocks.uploadedPath).toMatch(/^canteen-1\//);
@@ -117,7 +119,7 @@ describe("canteen template save flow", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /CHANGE TEMPLATE/ }));
     await waitFor(() => expect(screen.getByRole("slider", { name: "Banner image zoom" })).toHaveValue("1.8"));
-    expect(container.querySelector(".cursor-grab img")).toHaveStyle({ transform: "translate(40%, -40%) scale(1.8)" });
+    expect(container.querySelector(".cursor-grab img")).toHaveStyle({ transform: "translate(0%, 0%) scale(1.8)" });
   });
 
   it("uses one editable search field for physical and on-screen input and closes the keypad on cancel", async () => {
@@ -143,7 +145,7 @@ describe("canteen template save flow", () => {
     expect(search).toHaveValue("");
     fireEvent.click(screen.getByRole("button", { name: "A" }));
 
-    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    fireEvent.click(screen.getByRole("button", { name: "Hide keypad" }));
     expect(screen.queryByRole("group", { name: "On-screen search keyboard" })).not.toBeInTheDocument();
     fireEvent.focus(search);
     expect(screen.getByRole("group", { name: "On-screen search keyboard" })).toBeInTheDocument();

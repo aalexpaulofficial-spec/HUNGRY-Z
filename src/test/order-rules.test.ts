@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { allowedPaymentMethods, canOwnerMove, canRequestRefund, friendlyOrderError, isPaymentAllowed, mergeLines, rupeesToPaise } from "@/lib/order-rules";
+import { allowedPaymentMethods, canOwnerMove, canRequestRefund, friendlyOrderError, isPaymentAllowed, mergeLines, rupeesToPaise, shouldAutoRefundCanteenCancellation } from "@/lib/order-rules";
 
 describe("order & payment rules", () => {
   it("parcel orders can pay online with Razorpay or at the counter", () => {
@@ -26,6 +26,11 @@ describe("order & payment rules", () => {
     expect(canOwnerMove("preparing", "cancelled")).toBe(false);
     expect(canOwnerMove("pending_payment", "preparing")).toBe(false);
     expect(canOwnerMove("ready", "collected")).toBe(true);
+  });
+  it("automatically initiates a refund only for canteen-cancelled paid Razorpay orders", () => {
+    expect(shouldAutoRefundCanteenCancellation({ payment_method: "razorpay", payment_status: "paid" })).toBe(true);
+    expect(shouldAutoRefundCanteenCancellation({ payment_method: "counter", payment_status: "paid" })).toBe(false);
+    expect(shouldAutoRefundCanteenCancellation({ payment_method: "razorpay", payment_status: "pending" })).toBe(false);
   });
   it("duplicate cart lines are merged", () => {
     expect(mergeLines([{ id: "a", qty: 1 }, { id: "a", qty: 2 }, { id: "b", qty: 1 }])).toEqual([{ id: "a", qty: 3 }, { id: "b", qty: 1 }]);

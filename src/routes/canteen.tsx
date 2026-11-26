@@ -905,7 +905,7 @@ export function Dashboard({ canteen, ownerUserId, notificationOrderId, notificat
   }, [templateImage]);
 
   async function setStatus(o: Order, status: "preparing" | "ready" | "collected" | "cancelled") {
-    if (status === "cancelled" && !window.confirm(o.payment_status === "paid" ? `Cancel ${o.order_number}? The customer will be refunded ₹${o.total} automatically.` : `Cancel ${o.order_number}?`)) return;
+    if (status === "cancelled" && !window.confirm(o.payment_method === "razorpay" && o.payment_status === "paid" ? `Cancel ${o.order_number}? The customer will be refunded ₹${o.total} automatically.` : `Cancel ${o.order_number}?`)) return;
     setBusyOrder(o.id);
     setOrderMsg("");
     const previousStatus = o.status;

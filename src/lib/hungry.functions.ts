@@ -25,6 +25,7 @@ import {
   friendlyOrderError,
   isPaymentAllowed,
   mergeLines,
+  shouldAutoRefundCanteenCancellation,
 } from "@/lib/order-rules";
 
 async function admin() {
@@ -36,104 +37,28 @@ function canteenDashboardInstallUrl() {
   return "https://www.hungryz.in/install/canteen";
 }
 
-const CANTEEN_DOCUMENT_BUCKET = "canteen-registration-documents";
-const canteenDocumentPathSchema = z.string().regex(/^applications\/[0-9a-f-]{36}\/(?:fssai|owner-id)\.pdf$/i);
-const canteenDocumentPathsSchema = z.object({
-  fssaiDocumentPath: canteenDocumentPathSchema,
-  ownerIdDocumentPath: canteenDocumentPathSchema,
-});
-
-/** Issues one-time upload URLs for the two private application PDFs. */
-export const createCanteenDocumentUploadUrls = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) => z.object({}).strict().parse(input))
-  .handler(async () => {
-    const db = await admin();
-    const request = getRequest();
-    const forwarded = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
-    const ip = forwarded || request.headers.get("x-real-ip")?.trim() || "unknown";
-    const [ipKey, flowKey] = await Promise.all([
-      ownerLoginRateLimitKey(`ip:canteen-registration-documents:${ip}`),
-      ownerLoginRateLimitKey(`owner:canteen-registration-documents:${ip}`),
-    ]);
-    const { data: allowed, error: limitError } = await db.rpc("hungry_allow_canteen_owner_login", {
-      p_ip_key: ipKey,
-      p_owner_key: flowKey,
-    });
-    if (limitError || !allowed) throw new Error("Too many document upload attempts. Please wait 15 minutes and try again.");
-    const applicationKey = crypto.randomUUID();
-    const paths = {
-      fssai: `applications/${applicationKey}/fssai.pdf`,
-      ownerId: `applications/${applicationKey}/owner-id.pdf`,
-    };
-    const [fssai, ownerId] = await Promise.all([
-      db.storage.from(CANTEEN_DOCUMENT_BUCKET).createSignedUploadUrl(paths.fssai),
-      db.storage.from(CANTEEN_DOCUMENT_BUCKET).createSignedUploadUrl(paths.ownerId),
-    ]);
-    if (fssai.error || ownerId.error || !fssai.data || !ownerId.data) {
-      throw new Error("Secure document upload is not configured. Please contact support.");
-    }
-    return {
-      fssai: { path: fssai.data.path, signedUrl: fssai.data.signedUrl },
-      ownerId: { path: ownerId.data.path, signedUrl: ownerId.data.signedUrl },
-    };
-  });
-
-async function verifyCanteenPdf(path: string, expectedKind: "fssai" | "owner-id") {
-  if (!path.endsWith(`/${expectedKind}.pdf`)) throw new Error("The uploaded registration document is invalid.");
-  const db = await admin();
-  const { data, error } = await db.storage.from(CANTEEN_DOCUMENT_BUCKET).download(path);
-  if (error || !data || data.size < 5 || data.size > 10 * 1024 * 1024) {
-    throw new Error("A required PDF could not be verified. Please select the documents and try again.");
-  }
-  const signature = new Uint8Array(await data.slice(0, 5).arrayBuffer());
-  if (String.fromCharCode(...signature) !== "%PDF-") throw new Error("Upload valid PDF documents only.");
-}
-
-async function removeCanteenDocuments(paths: string[]) {
-  const db = await admin();
-  await db.storage.from(CANTEEN_DOCUMENT_BUCKET).remove(paths);
-}
-
-export const submitCanteenApplicationWithDocuments = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) => z.object({
-    application: applicationSchema,
-    ...canteenDocumentPathsSchema.shape,
-  }).refine((paths) => paths.fssaiDocumentPath.split("/")[1] === paths.ownerIdDocumentPath.split("/")[1]).parse(input))
+export const submitCanteenApplication = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => applicationSchema.parse(input))
   .handler(async ({ data }) => {
-    try {
-      await Promise.all([
-        verifyCanteenPdf(data.fssaiDocumentPath, "fssai"),
-        verifyCanteenPdf(data.ownerIdDocumentPath, "owner-id"),
-      ]);
-    } catch (error) {
-      await removeCanteenDocuments([data.fssaiDocumentPath, data.ownerIdDocumentPath]);
-      throw error;
-    }
     const db = await admin();
     const { count } = await db
       .from("canteen_applications")
       .select("id", { count: "exact", head: true })
-      .eq("contact_email", data.application.contactEmail.toLowerCase())
+      .eq("contact_email", data.contactEmail.toLowerCase())
       .eq("status", "pending");
     if ((count ?? 0) >= 3) {
-      await removeCanteenDocuments([data.fssaiDocumentPath, data.ownerIdDocumentPath]);
       throw new Error("You already have applications under review for this email.");
     }
     const { data: application, error } = await db.from("canteen_applications").insert({
-      owner_name: data.application.ownerName,
-      owner_phone: data.application.ownerPhone,
-      canteen_name: data.application.canteenName,
-      university_name: data.application.universityName,
-      campus_location: data.application.campusLocation,
-      contact_email: data.application.contactEmail.toLowerCase(),
-      fssai_license: data.application.fssaiLicense,
-      owner_id_proof: data.application.ownerIdProof,
-      fssai_license_document_path: data.fssaiDocumentPath,
-      owner_id_document_path: data.ownerIdDocumentPath,
-      notes: data.application.notes || null,
+      owner_name: data.ownerName,
+      owner_phone: data.ownerPhone,
+      canteen_name: data.canteenName,
+      university_name: data.universityName,
+      campus_location: data.campusLocation,
+      contact_email: data.contactEmail.toLowerCase(),
+      notes: data.notes || null,
     }).select("id").single();
     if (error) {
-      await removeCanteenDocuments([data.fssaiDocumentPath, data.ownerIdDocumentPath]);
       throw new Error("Could not submit your application. Please try again.");
     }
     try {
@@ -141,8 +66,8 @@ export const submitCanteenApplicationWithDocuments = createServerFn({ method: "P
       const { sendEmailOnce } = await import("@/lib/mailer.server");
       const email = await sendEmailOnce(
         "registration_confirmation",
-        data.application.contactEmail,
-        registrationConfirmationEmail({ name: data.application.ownerName, registrationType: "canteen_owner" }),
+        data.contactEmail,
+        registrationConfirmationEmail({ name: data.ownerName, registrationType: "canteen_owner" }),
         `canteen-registration:${application.id}`,
       );
       return { ok: true, emailSent: email.sent };
@@ -1638,7 +1563,7 @@ export const ownerUpdateOrderStatus = createServerFn({ method: "POST" })
     if (!canOwnerMove(o.status, data.status)) throw new Error("That status change isn't allowed.");
 
     if (data.status === "cancelled") {
-      if (o.payment_method === "razorpay" && o.payment_status === "paid") {
+      if (shouldAutoRefundCanteenCancellation(o)) {
         const r = await orders.createRefundRequest({ order: o, amount: o.total, reason: "Cancelled by the canteen", requestedBy: "canteen" });
         const { data: released, error: releaseError } = await db.rpc("hungry_release_order", { p_order: o.id });
         if (releaseError || released !== true) throw new Error("This order changed before it could be cancelled. Refresh and try again.");
