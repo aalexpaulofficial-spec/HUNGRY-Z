@@ -65,6 +65,7 @@ CREATE PUBLICATION supabase_realtime;`);
       .replace("CREATE EXTENSION IF NOT EXISTS pg_net WITH SCHEMA extensions;", "-- pg_net is stubbed by this in-memory database test.");
     await db.exec(pushMigration);
     await db.exec(readFileSync(path.join(root, "drizzle/migrations/0028_simplify_canteen_application.sql"), "utf8"));
+    await db.exec(readFileSync(path.join(root, "drizzle/migrations/0029_canteen_application_photo.sql"), "utf8"));
 
     const failures: string[] = [];
     const ok = (c: boolean | undefined, m: string) => { if (!c) failures.push(m); };
@@ -81,7 +82,7 @@ CREATE PUBLICATION supabase_realtime;`);
     const [adminUser] = await q(`INSERT INTO auth.users (email, raw_user_meta_data) VALUES ('admin@hungry.invalid','{}') RETURNING id`);
     await q(`INSERT INTO user_roles(user_id,role) VALUES ($1,'admin')`, [adminUser.id]);
     await q(`INSERT INTO canteen_applications(owner_name,owner_phone,canteen_name,university_name,campus_location,contact_email) VALUES ('Owner','9999999999','New Cafe','Uni','Block B','cafe@uni.invalid')`);
-    ok((await q(`SELECT fssai_license IS NULL AND owner_id_proof IS NULL AS omitted FROM canteen_applications WHERE contact_email='cafe@uni.invalid'`))[0].omitted, "new canteen applications can omit licence and government-ID details");
+    ok((await q(`SELECT fssai_license IS NULL AND owner_id_proof IS NULL AND photo_path IS NULL AS omitted FROM canteen_applications WHERE contact_email='cafe@uni.invalid'`))[0].omitted, "new canteen applications can omit licence and government-ID details and a photo");
     ok((await q(`SELECT count(*)::int n FROM notifications WHERE recipient_user_id=$1 AND notification_type='canteen_registration'`, [adminUser.id]))[0].n === 1, "a new canteen application creates a single notification for each admin");
     ok((await q(`SELECT count(*)::int n FROM profiles`))[0].n === 3, "student, faculty, and guest users receive profiles but owner identities do not");
     const [c] = await q(`INSERT INTO canteens (code, name, university_name, campus_location, contact_email, owner_user_id) VALUES ('ABC1234','Main','Uni','Block A','o@x.com',$1) RETURNING id`, [owner.id]);

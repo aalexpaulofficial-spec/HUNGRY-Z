@@ -20,14 +20,15 @@ export type Database = {
           canteen_name: string
           contact_email: string
           created_at: string
-          fssai_license: string
+          fssai_license: string | null
           fssai_license_document_path: string | null
           id: string
           notes: string | null
-          owner_id_proof: string
+          owner_id_proof: string | null
           owner_id_document_path: string | null
           owner_name: string
           owner_phone: string
+          photo_path: string | null
           reviewed_at: string | null
           status: string
           university_name: string
@@ -37,14 +38,15 @@ export type Database = {
           canteen_name: string
           contact_email: string
           created_at?: string
-          fssai_license: string
+          fssai_license?: string | null
           fssai_license_document_path?: string | null
           id?: string
           notes?: string | null
-          owner_id_proof: string
+          owner_id_proof?: string | null
           owner_id_document_path?: string | null
           owner_name: string
           owner_phone: string
+          photo_path?: string | null
           reviewed_at?: string | null
           status?: string
           university_name: string
@@ -54,14 +56,15 @@ export type Database = {
           canteen_name?: string
           contact_email?: string
           created_at?: string
-          fssai_license?: string
+          fssai_license?: string | null
           fssai_license_document_path?: string | null
           id?: string
           notes?: string | null
-          owner_id_proof?: string
+          owner_id_proof?: string | null
           owner_id_document_path?: string | null
           owner_name?: string
           owner_phone?: string
+          photo_path?: string | null
           reviewed_at?: string | null
           status?: string
           university_name?: string

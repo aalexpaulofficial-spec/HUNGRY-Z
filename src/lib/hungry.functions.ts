@@ -37,28 +37,90 @@ function canteenDashboardInstallUrl() {
   return "https://www.hungryz.in/install/canteen";
 }
 
+const CANTEEN_APPLICATION_BUCKET = "canteen-registration-documents";
+const canteenPhotoTypes = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+  "image/avif": "avif",
+} as const;
+const canteenPhotoTypeSchema = z.enum(["image/jpeg", "image/png", "image/webp", "image/avif"]);
+const canteenPhotoPathSchema = z.string().regex(/^applications\/[0-9a-f-]{36}\/canteen-photo\.(?:jpg|png|webp|avif)$/i);
+
+export const createCanteenApplicationPhotoUploadUrl = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => z.object({ contentType: canteenPhotoTypeSchema }).parse(input))
+  .handler(async ({ data }) => {
+    const request = getRequest();
+    const forwarded = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+    const ip = forwarded || request.headers.get("x-real-ip")?.trim() || "unknown";
+    const [ipKey, flowKey] = await Promise.all([
+      ownerLoginRateLimitKey(`ip:canteen-application-photo:${ip}`),
+      ownerLoginRateLimitKey(`owner:canteen-application-photo:${ip}`),
+    ]);
+    const db = await admin();
+    const { data: allowed, error } = await db.rpc("hungry_allow_canteen_owner_login", { p_ip_key: ipKey, p_owner_key: flowKey });
+    if (error || !allowed) throw new Error("Too many photo upload attempts. Please wait 15 minutes and try again.");
+    const path = `applications/${crypto.randomUUID()}/canteen-photo.${canteenPhotoTypes[data.contentType]}`;
+    const { data: signed, error: uploadError } = await db.storage.from(CANTEEN_APPLICATION_BUCKET).createSignedUploadUrl(path);
+    if (uploadError || !signed) throw new Error("Secure photo upload is unavailable. Please try again soon.");
+    return { path: signed.path, token: signed.token };
+  });
+
+async function removeCanteenApplicationPhoto(path?: string | null) {
+  if (!path) return;
+  const db = await admin();
+  await db.storage.from(CANTEEN_APPLICATION_BUCKET).remove([path]);
+}
+
+async function verifyCanteenApplicationPhoto(path: string) {
+  const db = await admin();
+  const { data, error } = await db.storage.from(CANTEEN_APPLICATION_BUCKET).download(path);
+  if (error || !data || data.size === 0 || data.size > 8 * 1024 * 1024 || !(data.type in canteenPhotoTypes)) {
+    await removeCanteenApplicationPhoto(path);
+    throw new Error("The canteen photo could not be verified. Choose a JPG, PNG, WebP, or AVIF image under 8 MB.");
+  }
+  const bytes = new Uint8Array(await data.slice(0, 12).arrayBuffer());
+  const signature = [...bytes].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+  const valid = data.type === "image/jpeg" ? signature.startsWith("ffd8ff")
+    : data.type === "image/png" ? signature.startsWith("89504e470d0a1a0a")
+      : data.type === "image/webp" ? String.fromCharCode(...bytes.slice(0, 4)) === "RIFF" && String.fromCharCode(...bytes.slice(8, 12)) === "WEBP"
+        : data.type === "image/avif" ? String.fromCharCode(...bytes.slice(4, 8)) === "ftyp" && ["avif", "avis"].includes(String.fromCharCode(...bytes.slice(8, 12)))
+          : false;
+  if (!valid) {
+    await removeCanteenApplicationPhoto(path);
+    throw new Error("The canteen photo file is invalid. Choose a valid image and try again.");
+  }
+}
+
 export const submitCanteenApplication = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) => applicationSchema.parse(input))
+  .inputValidator((input: unknown) => z.object({
+    application: applicationSchema,
+    photoPath: canteenPhotoPathSchema.nullable().optional(),
+  }).parse(input))
   .handler(async ({ data }) => {
     const db = await admin();
+    if (data.photoPath) await verifyCanteenApplicationPhoto(data.photoPath);
     const { count } = await db
       .from("canteen_applications")
       .select("id", { count: "exact", head: true })
-      .eq("contact_email", data.contactEmail.toLowerCase())
+      .eq("contact_email", data.application.contactEmail.toLowerCase())
       .eq("status", "pending");
     if ((count ?? 0) >= 3) {
+      await removeCanteenApplicationPhoto(data.photoPath);
       throw new Error("You already have applications under review for this email.");
     }
     const { data: application, error } = await db.from("canteen_applications").insert({
-      owner_name: data.ownerName,
-      owner_phone: data.ownerPhone,
-      canteen_name: data.canteenName,
-      university_name: data.universityName,
-      campus_location: data.campusLocation,
-      contact_email: data.contactEmail.toLowerCase(),
-      notes: data.notes || null,
+      owner_name: data.application.ownerName,
+      owner_phone: data.application.ownerPhone,
+      canteen_name: data.application.canteenName,
+      university_name: data.application.universityName,
+      campus_location: data.application.campusLocation,
+      contact_email: data.application.contactEmail.toLowerCase(),
+      photo_path: data.photoPath ?? null,
+      notes: data.application.notes || null,
     }).select("id").single();
     if (error) {
+      await removeCanteenApplicationPhoto(data.photoPath);
       throw new Error("Could not submit your application. Please try again.");
     }
     try {
@@ -66,8 +128,8 @@ export const submitCanteenApplication = createServerFn({ method: "POST" })
       const { sendEmailOnce } = await import("@/lib/mailer.server");
       const email = await sendEmailOnce(
         "registration_confirmation",
-        data.contactEmail,
-        registrationConfirmationEmail({ name: data.ownerName, registrationType: "canteen_owner" }),
+        data.application.contactEmail,
+        registrationConfirmationEmail({ name: data.application.ownerName, registrationType: "canteen_owner" }),
         `canteen-registration:${application.id}`,
       );
       return { ok: true, emailSent: email.sent };

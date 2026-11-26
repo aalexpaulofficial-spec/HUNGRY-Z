@@ -109,7 +109,7 @@ function AdminLogin({ onDone, initialError = "" }: { onDone: () => Promise<void>
   );
 }
 
-type App = { id: string; owner_name: string; owner_phone: string; canteen_name: string; university_name: string; campus_location: string; contact_email: string; notes: string | null; status: string; created_at: string };
+type App = { id: string; owner_name: string; owner_phone: string; canteen_name: string; university_name: string; campus_location: string; contact_email: string; photo_path: string | null; notes: string | null; status: string; created_at: string };
 type Canteen = { id: string; code: string; name: string; university_name: string; contact_email: string; visibility: string; owner_user_id: string | null };
 
 function Dashboard({ userId, onSignOut }: { userId: string; onSignOut: () => void }) {
@@ -123,6 +123,7 @@ function Dashboard({ userId, onSignOut }: { userId: string; onSignOut: () => voi
   const [canteens, setCanteens] = useState<Canteen[]>([]);
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
+  const [photoLinks, setPhotoLinks] = useState<Record<string, string>>({});
 
   const load = useCallback(async () => {
     const [{ data: a }, { data: c }] = await Promise.all([
@@ -144,6 +145,20 @@ function Dashboard({ userId, onSignOut }: { userId: string; onSignOut: () => voi
       await load();
     } catch (e) {
       setMsg(e instanceof Error ? e.message : "Action failed");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function openCanteenPhoto(applicationId: string, path: string) {
+    setBusy(applicationId);
+    setMsg("");
+    try {
+      const { data, error } = await supabase.storage.from("canteen-registration-documents").createSignedUrl(path, 300);
+      if (error || !data?.signedUrl) throw new Error("Could not open the canteen photo. Check Storage admin access.");
+      setPhotoLinks((current) => ({ ...current, [applicationId]: data.signedUrl }));
+    } catch (error) {
+      setMsg(error instanceof Error ? error.message : "Could not open this canteen photo.");
     } finally {
       setBusy(null);
     }
@@ -196,6 +211,19 @@ function Dashboard({ userId, onSignOut }: { userId: string; onSignOut: () => voi
                     <div key={k}><dt className="text-[10px] uppercase tracking-widest text-muted-foreground">{k}</dt><dd className="break-words">{v}</dd></div>
                   ))}
                 </dl>
+                {a.photo_path && (
+                  <div className="mt-4">
+                    {photoLinks[a.id] ? (
+                      <a href={photoLinks[a.id]} target="_blank" rel="noopener noreferrer" className="inline-block">
+                        <img src={photoLinks[a.id]} alt={`${a.canteen_name} application photo`} className="max-h-48 max-w-full rounded-2xl border border-border object-cover" />
+                      </a>
+                    ) : (
+                      <button type="button" disabled={busy === a.id} onClick={() => void openCanteenPhoto(a.id, a.photo_path!)} className="rounded-full border border-border px-4 py-2 text-xs font-semibold text-foreground hover:border-primary disabled:opacity-50">
+                        {busy === a.id ? "Preparing photo…" : "View canteen photo"}
+                      </button>
+                    )}
+                  </div>
+                )}
                 {a.notes && <p className="mt-3 text-sm text-muted-foreground">“{a.notes}”</p>}
                 {a.status === "pending" && (
                   <div className="mt-5 flex gap-2">
