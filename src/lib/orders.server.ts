@@ -401,6 +401,14 @@ export async function startRefund(refundId: string) {
     if (saveRefundError) throw new Error("Razorpay accepted the refund, but the refund record could not be updated. Retry from the admin dashboard.");
     // Stop the kitchen and return stock/coupon if the food wasn't collected yet.
     await db.rpc("hungry_release_order", { p_order: order.id });
+    if (rf.status === "failed") {
+      await finalizeRefund(rf.id, "failed");
+      return { razorpayRefundId: rf.id, status: rf.status };
+    }
+    if (rf.status === "processed") {
+      await finalizeRefund(rf.id, "processed", refundReference);
+      return { razorpayRefundId: rf.id, status: rf.status };
+    }
     const { error: paymentStatusError } = await db.from("orders").update({ payment_status: "refund_pending" }).eq("id", order.id);
     if (paymentStatusError) throw new Error("Razorpay accepted the refund, but the order payment status could not be updated.");
     if (who.email) {
@@ -415,8 +423,6 @@ export async function startRefund(refundId: string) {
       T.adminRefundEmail({ stage: "initiated", orderNumber: order.order_number, canteenName: cName, customerEmail: who.email, amount: r.amount, reason: r.reason, refundId: rf.id }),
       r.id,
     );
-    if (rf.status === "processed") await finalizeRefund(rf.id, "processed", refundReference);
-    if (rf.status === "failed") await finalizeRefund(rf.id, "failed");
     return { razorpayRefundId: rf.id, status: rf.status };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);

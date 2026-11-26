@@ -1646,7 +1646,8 @@ export const ownerUpdateOrderStatus = createServerFn({ method: "POST" })
           return { ok: true, refund: false, refundNeedsAttention: true, notificationsSent: notifications.sent };
         }
         try {
-          await orders.startRefund(r.id);
+          const refund = await orders.startRefund(r.id);
+          if (refund.status === "failed") throw new Error("Razorpay marked the refund as failed.");
         } catch {
           const notifications = await orders.sendOrderStatusUpdate(o.id, "cancelled");
           return { ok: true, refund: false, refundNeedsAttention: true, notificationsSent: notifications.sent };

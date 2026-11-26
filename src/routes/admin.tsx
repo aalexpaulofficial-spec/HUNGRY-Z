@@ -309,7 +309,7 @@ function RefundsPanel() {
           {r.admin_note && <p className="mt-1 text-xs text-muted-foreground">Note: {r.admin_note}</p>}
           {(r.status === "requested" || r.status === "failed") && (
             <div className="mt-4 flex flex-wrap gap-2">
-              <button disabled={busy === r.id} onClick={() => act(r.id, async () => { await approve({ data: { id: r.id } }); return "Refund sent to Razorpay."; })} className="flex items-center gap-1.5 rounded-full bg-primary px-5 py-2.5 text-xs font-semibold text-primary-foreground disabled:opacity-50"><Check className="h-4 w-4" /> {r.status === "failed" ? "Retry refund" : "Approve & refund"}</button>
+              <button disabled={busy === r.id} onClick={() => act(r.id, async () => { const result = await approve({ data: { id: r.id } }); return result.status === "failed" ? "Razorpay marked this refund as failed. The customer and Admin have been notified." : result.status === "processed" ? "Razorpay processed the refund." : "Refund sent to Razorpay."; })} className="flex items-center gap-1.5 rounded-full bg-primary px-5 py-2.5 text-xs font-semibold text-primary-foreground disabled:opacity-50"><Check className="h-4 w-4" /> {r.status === "failed" ? "Retry refund" : "Approve & refund"}</button>
               {r.status === "requested" && (
                 <button disabled={busy === r.id} onClick={() => { const note = window.prompt("Reason for declining (sent to the customer):", "") ?? ""; void act(r.id, async () => { await reject({ data: { id: r.id, note } }); return "Refund declined."; }); }} className="flex items-center gap-1.5 rounded-full border border-border px-5 py-2.5 text-xs font-semibold text-muted-foreground disabled:opacity-50"><X className="h-4 w-4" /> Decline</button>
               )}
