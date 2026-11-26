@@ -17,9 +17,6 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { isInstalledMobileStudentApp, isStandaloneApp, isStudentPwaInstalled, markAppInstalled } from "../lib/pwa-install";
 import { GlobalLoadingScreen } from "../components/foodexa/GlobalLoadingScreen";
 import { hasCompletedStudentIntro, MobileAppIntro } from "../components/foodexa/MobileAppIntro";
-import { MaintenanceScreen } from "../components/MaintenanceScreen";
-
-const maintenanceMode = import.meta.env.VITE_PUBLIC_SITE_MAINTENANCE === "true";
 
 function NotFoundComponent() {
   return (
@@ -138,7 +135,6 @@ function RootShell({ children }: { children: ReactNode }) {
 let bundleReloadAttempted = false;
 
 function RootComponent() {
-  if (maintenanceMode) return <MaintenanceScreen />;
   return <FullSiteRootComponent />;
 }
 
